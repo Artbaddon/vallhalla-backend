@@ -11,6 +11,7 @@ import rolePermissionsRouter from "../routers/rolesPermissions.js";
 import documentTypeRouter from "../routers/documentType.router.js";
 import userStatusRouter from "../routers/userStatus.router.js";
 import modulesRouter from "../routers/modules.router.js";
+import towerRouter from "../routers/tower.router.js"
 
 const name = "/api_v1";
 const app = express();
@@ -34,6 +35,8 @@ app.use(name, verifyToken, rolePermissionsRouter);
 app.use(name, verifyToken, documentTypeRouter);
 app.use(name, verifyToken, userStatusRouter);
 app.use(name, verifyToken, modulesRouter);
+app.use(name, verifyToken, towerRouter);
+
 
 app.use((req, res, next) => {
   res.status(404).json({
