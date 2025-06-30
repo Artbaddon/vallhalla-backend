@@ -36,13 +36,13 @@ const sqlStatements = [
   `DROP TABLE IF EXISTS pqrs_tracking`,
   `DROP TABLE IF EXISTS pqrs_tracking_status`,
   `DROP TABLE IF EXISTS profile`,
-  `DROP TABLE IF EXISTS questions`,
+  `DROP TABLE IF EXISTS question`,
   `DROP TABLE IF EXISTS question_type`,
+  `DROP TABLE IF EXISTS survey`,
   `DROP TABLE IF EXISTS reservation`,
   `DROP TABLE IF EXISTS reservation_status`,
   `DROP TABLE IF EXISTS reservation_type`,
   `DROP TABLE IF EXISTS role`,
-  `DROP TABLE IF EXISTS survey`,
   `DROP TABLE IF EXISTS tower`,
   `DROP TABLE IF EXISTS users`,
   `DROP TABLE IF EXISTS user_status`,
@@ -55,7 +55,7 @@ const sqlStatements = [
     PRIMARY KEY (Apartment_id),
     KEY Owner_FK_ID (Owner_FK_ID)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
-   `CREATE TABLE apartment_status (
+  `CREATE TABLE apartment_status (
     Apartment_status_id int(11) NOT NULL AUTO_INCREMENT,
     Apartment_status_name varchar(30) NOT NULL,
     PRIMARY KEY (Apartment_status_id),
@@ -114,7 +114,7 @@ const sqlStatements = [
     UNIQUE KEY Parking_type_name (Parking_type_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
-   `CREATE TABLE parking (
+  `CREATE TABLE parking (
     Parking_id int(11) NOT NULL AUTO_INCREMENT,
     Parking_number varchar(20) NOT NULL,
     Parking_status_id int(11),
@@ -125,7 +125,8 @@ const sqlStatements = [
     UNIQUE KEY (Parking_number),
     FOREIGN KEY (Parking_status_id) REFERENCES parking_status(Parking_status_id) ON DELETE SET NULL,
     FOREIGN KEY (Parking_type_id) REFERENCES parking_type(Parking_type_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
   `CREATE TABLE payment (
     payment_id int(11) NOT NULL AUTO_INCREMENT,
     Payment_reference_number varchar(50) DEFAULT NULL,
@@ -190,18 +191,36 @@ const sqlStatements = [
     PRIMARY KEY (Profile_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
-  `CREATE TABLE questions (
-    Questions_id int(11) NOT NULL AUTO_INCREMENT,
-    Questions_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (Questions_id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+  `CREATE TABLE survey (
+    survey_id INT(11) NOT NULL AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL,
+    status VARCHAR(20),
+    result TEXT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (survey_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
 
   `CREATE TABLE question_type (
-    Question_type_id int(11) NOT NULL AUTO_INCREMENT,
-    Question_type_name varchar(30) NOT NULL,
-    PRIMARY KEY (Question_type_id),
-    UNIQUE KEY Question_type_name (Question_type_name)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+    question_type_id INT(11) NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    description TEXT,
+    options JSON, -- Para almacenar una lista de strings
+    PRIMARY KEY (question_type_id),
+    UNIQUE KEY name (name)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
+  `CREATE TABLE question (
+    question_id INT(11) NOT NULL AUTO_INCREMENT,
+    survey_id INT(11) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    question_type_id INT(11) NOT NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (question_id),
+    FOREIGN KEY (survey_id) REFERENCES survey(survey_id) ON DELETE CASCADE,
+    FOREIGN KEY (question_type_id) REFERENCES question_type(question_type_id) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
 
   `CREATE TABLE reservation (
     Reservation_id int(11) NOT NULL AUTO_INCREMENT,
@@ -230,12 +249,6 @@ const sqlStatements = [
     Role_name varchar(50),
     PRIMARY KEY (Role_id),
     UNIQUE KEY Role_name (Role_name)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
-
-  `CREATE TABLE survey (
-    Survey_id int(11) NOT NULL AUTO_INCREMENT,
-    Survey_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (Survey_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
   `CREATE TABLE tower (
@@ -272,9 +285,9 @@ const sqlStatements = [
 
   `INSERT INTO apartment_status (Apartment_status_name) VALUES ('Available'), ('Occupied');`,
   // Insert a user first, then insert guard referencing that user
-  `INSERT INTO parking (Parking_updatedAt) VALUES (NOW());`,
   `INSERT INTO parking_status (Parking_status_name) VALUES ('Inactive'), ('Free'), ('Occupied');`,
   `INSERT INTO parking_type (Parking_type_name) VALUES ('Car'), ('Bike');`,
+   `INSERT INTO parking (Parking_number, Parking_status_id, Parking_type_id) VALUES ('A1', 2, 1), ('A2', 2, 1);`,
 ];
 // --- STORED PROCEDURES ---
 sqlStatements.push(
