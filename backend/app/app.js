@@ -11,6 +11,7 @@ import rolePermissionsRouter from "../routers/rolesPermissions.js";
 import documentTypeRouter from "../routers/documentType.router.js";
 import userStatusRouter from "../routers/userStatus.router.js";
 import modulesRouter from "../routers/modules.router.js";
+import apartmentStatusRouter from "../routers/apartmentStatus.router.js";
 
 const name = "/api_v1";
 const app = express();
@@ -25,8 +26,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(name, authRouter);
 
 // Protected routes (authentication required)
-app.use(name, verifyToken, webUserRouter);
-app.use(name, verifyToken, apiUserRouter);
 app.use(name, verifyToken, profileRouter);
 app.use(name, verifyToken, rolesRouter);
 app.use(name, verifyToken, permissionsRouter);

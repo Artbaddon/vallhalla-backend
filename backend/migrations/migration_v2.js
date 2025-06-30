@@ -642,8 +642,8 @@ const sqlStatements = [
   // Search users by name
   `DROP PROCEDURE IF EXISTS sp_search_users;`,
   `CREATE PROCEDURE sp_search_users(IN p_search_term VARCHAR(100))
-  BEGIN
-    SELECT 
+  BEGIN 
+  SELECT
       u.Users_id,
       u.Users_name,
       us.User_status_name,
@@ -663,8 +663,8 @@ const sqlStatements = [
   // Get apartment occupancy report
   `DROP PROCEDURE IF EXISTS sp_get_apartment_occupancy_report;`,
   `CREATE PROCEDURE sp_get_apartment_occupancy_report()
-  BEGIN
-    SELECT 
+    BEGIN 
+  SELECT
       t.Tower_name,
       ast.Apartment_status_name,
       COUNT(*) as apartment_count
