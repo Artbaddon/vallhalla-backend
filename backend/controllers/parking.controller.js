@@ -154,6 +154,10 @@ class ParkingistratorController {
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
+
+  async assingVehicle(req, rees) {
+    
+  }
 }
 
 export default new ParkingistratorController();

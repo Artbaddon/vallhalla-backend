@@ -21,8 +21,9 @@ const sqlStatements = [
   `DROP TABLE IF EXISTS module_role`,
   `DROP TABLE IF EXISTS notification`,
   `DROP TABLE IF EXISTS notification_type`,
-  `DROP TABLE IF EXISTS owner`,
   `DROP TABLE IF EXISTS parking`,
+  `DROP TABLE IF EXISTS vehicle_type`,
+  `DROP TABLE IF EXISTS owner`,
   `DROP TABLE IF EXISTS parkingstatus`,
   `DROP TABLE IF EXISTS parking_status`,
   `DROP TABLE IF EXISTS parking_type`,
@@ -36,7 +37,7 @@ const sqlStatements = [
   `DROP TABLE IF EXISTS pqrs_tracking`,
   `DROP TABLE IF EXISTS pqrs_tracking_status`,
   `DROP TABLE IF EXISTS profile`,
-  `DROP TABLE IF EXISTS questions`,
+  `DROP TABLE IF EXISTS question`,
   `DROP TABLE IF EXISTS question_type`,
   `DROP TABLE IF EXISTS reservation`,
   `DROP TABLE IF EXISTS reservation_status`,
@@ -46,7 +47,6 @@ const sqlStatements = [
   `DROP TABLE IF EXISTS tower`,
   `DROP TABLE IF EXISTS users`,
   `DROP TABLE IF EXISTS user_status`,
-  `DROP TABLE IF EXISTS vehicle_type`,
 
   // Create tables (structure and names as in vallhalladb.sql)
   `CREATE TABLE apartment (
@@ -100,6 +100,15 @@ const sqlStatements = [
     PRIMARY KEY (Owner_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
+    `CREATE TABLE vehicle_type (
+    Vehicle_type_id int(11) NOT NULL AUTO_INCREMENT,
+    Vehicle_name varchar(30) NOT NULL,
+    Vehicle_number varchar(30) NOT NULL,
+    Owner_id int(11),
+    PRIMARY KEY (Vehicle_type_id),
+    FOREIGN KEY (Owner_id) REFERENCES owner (Owner_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+
   `CREATE TABLE parking_status (
     Parking_status_id int(11) NOT NULL AUTO_INCREMENT,
     Parking_status_name varchar(30) NOT NULL,
@@ -119,13 +128,16 @@ const sqlStatements = [
     Parking_number varchar(20) NOT NULL,
     Parking_status_id int(11),
     Parking_type_id int(11),
+    Vehicle_type_id int(11),
     Parking_createdAt timestamp DEFAULT current_timestamp(),
     Parking_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
     PRIMARY KEY (Parking_id),
     UNIQUE KEY (Parking_number),
     FOREIGN KEY (Parking_status_id) REFERENCES parking_status(Parking_status_id) ON DELETE SET NULL,
-    FOREIGN KEY (Parking_type_id) REFERENCES parking_type(Parking_type_id) ON DELETE SET NULL
+    FOREIGN KEY (Parking_type_id) REFERENCES parking_type(Parking_type_id) ON DELETE SET NULL,
+    FOREIGN KEY (Vehicle_type_id) REFERENCES vehicle_type(Vehicle_type_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
   `CREATE TABLE payment (
     payment_id int(11) NOT NULL AUTO_INCREMENT,
     Payment_reference_number varchar(50) DEFAULT NULL,
@@ -190,7 +202,7 @@ const sqlStatements = [
     PRIMARY KEY (Profile_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
-  `CREATE TABLE questions (
+  `CREATE TABLE question (
     Questions_id int(11) NOT NULL AUTO_INCREMENT,
     Questions_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
     PRIMARY KEY (Questions_id)
@@ -256,12 +268,6 @@ const sqlStatements = [
     User_status_name varchar(30) NOT NULL,
     PRIMARY KEY (User_status_id),
     UNIQUE KEY User_status_name (User_status_name)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
-
-  `CREATE TABLE vehicle_type (
-    Vehicle_type_id int(11) NOT NULL AUTO_INCREMENT,
-    vehicle_engineCC varchar(30) DEFAULT NULL,
-    PRIMARY KEY (Vehicle_type_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
   `CREATE TABLE visitor (
