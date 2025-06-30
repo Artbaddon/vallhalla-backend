@@ -5,6 +5,8 @@ const router = Router();
 const name = "/parking";
 
 // Define all routes
+router.post(`${name}/assignVehicle`, ParkingController.assignVehicle);
+
 router.route(name)
   .post(ParkingController.register)    // Create parking
   .get(ParkingController.show);        // List all parkings

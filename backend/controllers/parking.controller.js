@@ -77,7 +77,7 @@ class ParkingistratorController {
       if (!updateResult) {
         return res.status(400).json({
           success: false,
-          error: "No se realizaron cambios en el parking"
+          error: "No se realizaron cambios en el parking",
         });
       }
 
@@ -94,7 +94,7 @@ class ParkingistratorController {
       });
     }
   }
-  
+
   async show(req, res) {
     try {
       const parkings = await ParkingModel.show();
@@ -155,8 +155,40 @@ class ParkingistratorController {
     }
   }
 
-  async assingVehicle(req, rees) {
-    
+  async assignVehicle(req, res) {
+    try {
+      const { parkingId, vehicleTypeId } = req.body;
+
+      if (!parkingId || !vehicleTypeId) {
+        return res.status(400).json({
+          success: false,
+          error: "parkingId y vehicleTypeId son requeridos",
+        });
+      }
+
+      const success = await ParkingModel.assignVehicle(
+        parkingId,
+        vehicleTypeId
+      );
+
+      if (!success) {
+        return res.status(400).json({
+          success: false,
+          error: "No se pudo asignar el vehículo al parqueadero",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Vehículo asignado exitosamente al parqueadero",
+      });
+    } catch (error) {
+      console.error("Error en assignVehicle:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor al asignar vehículo",
+      });
+    }
   }
 }
 

@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import { verifyToken } from "../middleware/authMiddleware.js";
 // Importar rutas
-import parkingRouter from '../routers/parking.route.js'
+import parkingRouter from '../routers/parking.route.js';
+import vehicleTypeRouter from '../routers/vehicleType.route.js';
 
 const name = '/'
 const app = express()
@@ -12,7 +12,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //Rutas
-app.use('/', parkingRouter);
+app.use(name, parkingRouter);
+app.use(name, vehicleTypeRouter);
 
 
 // End point losses

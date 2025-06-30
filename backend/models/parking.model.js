@@ -71,6 +71,22 @@ class ParkingModel {
       return null;
     }
   }
+
+  static async assignVehicle(parkingId, vehicleTypeId) {
+    try {
+      const [result] = await connect.query(
+        `UPDATE parking 
+         SET Vehicle_type_id = ?, 
+             Parking_updatedAt = CURRENT_TIMESTAMP 
+         WHERE Parking_id = ?`,
+        [vehicleTypeId, parkingId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error asignando vehículo al parqueadero:", error.message);
+      return false;
+    }
+  }
 }
 
 export default ParkingModel;
