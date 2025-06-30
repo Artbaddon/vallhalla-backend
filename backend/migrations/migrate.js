@@ -1,4 +1,4 @@
-import {runMigration} from './migration_v2.js';
+import {runMigration} from './migration_v1.js';
 
 runMigration()
   .then(result => {
