@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import { verifyToken } from "../middleware/authMiddleware.js";
-// Importar rutas
-import parkingRouter from '../routers/parking.route.js'
+// Importar ruta
+import surveyRouter from '../routers/survey.route.js'
+import questionRouter from '../routers/question.route.js'
+import answerRouter from '../routers/answer.route.js'
 
 const name = '/'
 const app = express()
@@ -12,8 +13,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //Rutas
-app.use('/', parkingRouter);
-
+app.use(name, surveyRouter);
+app.use(name, questionRouter);
+app.use(name, answerRouter);
 
 // End point losses
 app.use((rep, res, next) => {

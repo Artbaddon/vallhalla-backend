@@ -1,43 +1,35 @@
-import ParkingModel from "../models/parking.model.js";
+import SurveyModel from "../models/survey.model.js";
 import dotenv from "dotenv";
-
 dotenv.config();
-class ParkingistratorController {
+
+class SurveyController {
   async register(req, res) {
     try {
-      const { number, type_id, status_id } = req.body;
+      const { title, status } = req.body;
 
-      // Validación básica
-      if (!number) {
+      if (!title) {
         return res.status(400).json({
           success: false,
-          error: "El número de parking es requerido",
+          error: "El título de la encuesta es requerido",
         });
       }
 
-      // Crear el parking
-      const parkingId = await ParkingModel.create({
-        number,
-        type_id: type_id,
-        status_id: status_id || 2,
-      });
+      const surveyId = await SurveyModel.create({ title, status });
 
-      if (!parkingId) {
+      if (!surveyId) {
         return res.status(500).json({
           success: false,
-          error: "Error al crear el parking",
+          error: "Error al crear la encuesta",
         });
       }
 
       res.status(201).json({
         success: true,
-        message: "Parking creado exitosamente",
-        data: {
-          id: parkingId,
-        },
+        message: "Encuesta creada exitosamente",
+        data: { id: surveyId },
       });
     } catch (error) {
-      console.error("Error en register parking:", error);
+      console.error("Error en register survey:", error);
       res.status(500).json({
         success: false,
         error: error.message || "Error interno del servidor",
@@ -48,112 +40,120 @@ class ParkingistratorController {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { number, type_id, status_id } = req.body;
+      const { title, status } = req.body;
 
-      // Validación básica
-      if (!number && !type_id && !status_id) {
+      if (!title && !status) {
         return res.status(400).json({
           success: false,
           error: "Debe proporcionar al menos un campo para actualizar",
         });
       }
 
-      // Verificar si el parking existe
-      const existingParking = await ParkingModel.findById(id);
-      if (!existingParking) {
+      const existingSurvey = await SurveyModel.findById(id);
+      if (!existingSurvey) {
         return res.status(404).json({
           success: false,
-          error: "Parking no encontrado",
+          error: "Encuesta no encontrada",
         });
       }
 
-      // Actualizar
-      const updateResult = await ParkingModel.update(id, {
-        number,
-        type_id,
-        status_id,
-      });
+      const updateResult = await SurveyModel.update(id, { title, status });
 
       if (!updateResult) {
         return res.status(400).json({
           success: false,
-          error: "No se realizaron cambios en el parking"
+          error: "No se realizaron cambios en la encuesta",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: "Parking actualizado exitosamente",
-        data: updateResult.parking || { id },
+        message: "Encuesta actualizada exitosamente",
+        data: { id },
       });
     } catch (error) {
-      console.error("Error en update parking:", error);
+      console.error("Error en update survey:", error);
       res.status(500).json({
         success: false,
-        error: "Error interno del servidor al actualizar parking",
+        error: "Error interno del servidor al actualizar encuesta",
       });
     }
   }
-  
+
   async show(req, res) {
     try {
-      const parkings = await ParkingModel.show();
+      const surveys = await SurveyModel.show();
 
       res.status(200).json({
         success: true,
-        message: "Lista de parkings obtenida exitosamente",
-        data: parkings,
-        count: parkings.length,
+        message: "Lista de encuestas obtenida exitosamente",
+        data: surveys,
+        count: surveys.length,
       });
     } catch (error) {
-      console.error("Error en show parkings:", error);
+      console.error("Error en show surveys:", error);
       res.status(500).json({
         success: false,
-        error: "Error interno del servidor al obtener parkings",
+        error: "Error interno del servidor al obtener encuestas",
       });
     }
   }
 
   async delete(req, res) {
     try {
-      const id = req.params.id;
-      // Basic validate
+      const { id } = req.params;
+
       if (!id) {
-        return res.status(400).json({ error: "Required fields are missing" });
+        return res.status(400).json({ error: "El ID es requerido" });
       }
-      // Verify if the parking already exists
-      const deleteParkingModel = await ParkingModel.delete(id);
-      res.status(201).json({
-        message: "User delete successfully",
-        data: deleteParkingModel,
+
+      const deleteResult = await SurveyModel.delete(id);
+
+      if (!deleteResult) {
+        return res.status(404).json({
+          success: false,
+          error: "Encuesta no encontrada o ya eliminada",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Encuesta eliminada exitosamente",
+        data: { id },
       });
     } catch (error) {
-      console.error("Error in registration:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      console.error("Error en delete survey:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   }
 
   async findById(req, res) {
     try {
-      const id = req.params.id;
-      // Basic validate
+      const { id } = req.params;
+
       if (!id) {
-        return res.status(400).json({ error: "Required fields are missing" });
+        return res.status(400).json({ error: "El ID es requerido" });
       }
-      // Verify if the parkingg already exists
-      const existingParkingModel = await ParkingModel.findById(id);
-      if (!existingParkingModel) {
-        return res.status(409).json({ error: "The Parking No already exists" });
+
+      const survey = await SurveyModel.findById(id);
+
+      if (!survey) {
+        return res.status(404).json({
+          success: false,
+          error: "Encuesta no encontrada",
+        });
       }
-      res.status(201).json({
-        message: "Parking successfully",
-        data: existingParkingModel,
+
+      res.status(200).json({
+        success: true,
+        message: "Encuesta obtenida exitosamente",
+        data: survey,
       });
     } catch (error) {
-      console.error("Error in registration:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      console.error("Error en findById survey:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   }
 }
 
-export default new ParkingistratorController();
+export default new SurveyController();

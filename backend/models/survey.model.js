@@ -1,73 +1,69 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class SurveyModel {
-  static async create({ number, status_id, type_id }) {
+  static async create({ title, status }) {
     try {
       const [result] = await connect.query(
-        "INSERT INTO parking (Parking_number, Parking_status_id, Parking_type_id) VALUES (?, ?, ?)",
-        [number, status_id, type_id]
+        "INSERT INTO survey (title, status) VALUES (?, ?)",
+        [title, status]
       );
-      return result.insertId; // Retorna solo el ID insertado
+      return result.insertId;
     } catch (error) {
-      console.error("Error creating parking:", error.message);
+      console.error("Error creating survey:", error.message);
       return null;
     }
   }
 
   static async show() {
     try {
-      const [parkings] = await connect.query(
-        "CALL sp_list_parkings_with_details()"
-      );
-      return parkings[0];
+      const [surveys] = await connect.query("SELECT * FROM survey");
+      return surveys;
     } catch (error) {
-      console.error("Error en ParkingModel.show:", error.message);
-      return []; // Retornar array vacío en lugar de [0] para consistencia
+      console.error("Error in SurveyModel.show:", error.message);
+      return [];
     }
   }
 
-  static async update(id, { number, type_id, status_id }) {
+  static async update(id, { title, status }) {
     try {
       const [result] = await connect.query(
-        `UPDATE parking 
-             SET 
-                Parking_number = ?,
-                Parking_type_id = ?,
-                Parking_status_id = ?,
-                Parking_updatedAt = CURRENT_TIMESTAMP
-             WHERE Parking_id = ?`,
-        [number, type_id, status_id, id]
+        `UPDATE survey 
+         SET 
+           title = ?,
+           status = ?,
+           updatedAt = CURRENT_TIMESTAMP
+         WHERE survey_id = ?`,
+        [title, status, id]
       );
-
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating parking:", error.message);
+      console.error("Error updating survey:", error.message);
       return false;
     }
   }
 
   static async delete(id) {
     try {
-      let sqlQuery = "DELETE FROM parking WHERE Parking_id=?";
-      const [result] = await connect.query(sqlQuery, id);
-      if (result.affectedRows === 0) {
-        return [0];
-      } else {
-        return result.affectedRows;
-      }
+      const [result] = await connect.query(
+        "DELETE FROM survey WHERE survey_id = ?",
+        [id]
+      );
+      return result.affectedRows;
     } catch (error) {
-      return [0];
+      console.error("Error deleting survey:", error.message);
+      return 0;
     }
   }
 
   static async findById(id) {
     try {
-      const [result] = await connect.query("CALL sp_get_parking_by_id(?)", [
-        id,
-      ]);
-      return result[0][0] || null;
+      const [result] = await connect.query(
+        "SELECT * FROM survey WHERE survey_id = ?",
+        [id]
+      );
+      return result[0] || null;
     } catch (error) {
-      console.error("Error finding parking by ID:", error.message);
+      console.error("Error finding survey by ID:", error.message);
       return null;
     }
   }

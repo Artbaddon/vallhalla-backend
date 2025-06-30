@@ -1,17 +1,17 @@
 import { Router } from "express";
-import ParkingController from "../controllers/parking.controller.js";
+import SurveyController from "../controllers/survey.controller.js";
 
 const router = Router();
-const name = "/parking";
+const name = "/survey";
 
 // Define all routes
 router.route(name)
-  .post(ParkingController.register)    // Create parking
-  .get(ParkingController.show);        // List all parkings
+  .post(SurveyController.register)  // Crear encuesta
+  .get(SurveyController.show);      // Listar todas las encuestas
 
 router.route(`${name}/:id`)
-  .get(ParkingController.findById)     // Get specific parking
-  .put(ParkingController.update)       // Update parking
-  .delete(ParkingController.delete);   // Delete parking
+  .get(SurveyController.findById)  // Obtener encuesta por ID
+  .put(SurveyController.update)    // Actualizar encuesta
+  .delete(SurveyController.delete); // Eliminar encuesta
 
 export default router;
