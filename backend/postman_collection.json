@@ -484,6 +484,36 @@
 			]
 		},
 		{
+			"name": "tower",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Towers", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/towers/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/towers/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Tower", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"Tower_name\": \"Tower A\"\n}" }, "url": "{{baseUrl}}/towers" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Tower", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"Tower_name\": \"Tower A Updated\"\n}" }, "url": "{{baseUrl}}/towers/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Tower", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/towers/1" } }
+					]
+				}
+			]
+		},
+		{
 			"name": "payment",
 			"item": [
 				{
@@ -511,6 +541,241 @@
 					"name": "delete",
 					"item": [
 						{ "name": "Delete Payment", "request": { "method": "DELETE", "url": "{{baseUrl}}/payments/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "parking",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Parking", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/parking/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/parking/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Parking", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"parking_number\": \"P001\",\n  \"status_id\": 1,\n  \"vehicle_type_id\": 1,\n  \"user_id\": 1\n}" }, "url": "{{baseUrl}}/parking" } },
+						{ "name": "Assign Vehicle", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"parking_id\": 1,\n  \"vehicle_id\": 1\n}" }, "url": "{{baseUrl}}/parking/assignVehicle" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Parking", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"parking_number\": \"P002\",\n  \"status_id\": 2,\n  \"vehicle_type_id\": 1\n}" }, "url": "{{baseUrl}}/parking/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Parking", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/parking/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "pet",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Pets", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/pets/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/pets/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Pet", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Buddy\",\n  \"species\": \"Dog\",\n  \"breed\": \"Golden Retriever\",\n  \"owner_id\": 1,\n  \"vaccination_card\": \"vaccination_card_url\",\n  \"photos\": \"photo_urls\"\n}" }, "url": "{{baseUrl}}/pets" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Pet", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Buddy Updated\",\n  \"species\": \"Dog\",\n  \"breed\": \"Labrador Retriever\"\n}" }, "url": "{{baseUrl}}/pets/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Pet", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/pets/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "survey",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Surveys", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/survey/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/survey/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Survey", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Customer Satisfaction Survey\",\n  \"description\": \"Survey to measure customer satisfaction\",\n  \"questions\": [1, 2, 3]\n}" }, "url": "{{baseUrl}}/survey" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Survey", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Customer Satisfaction Survey\",\n  \"description\": \"Updated survey description\"\n}" }, "url": "{{baseUrl}}/survey/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Survey", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/survey/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "vehicleType",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Vehicle Types", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/vehicleType/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/vehicleType/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Vehicle Type", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"plate\": \"ABC123\",\n  \"model\": \"Toyota Camry\",\n  \"brand\": \"Toyota\",\n  \"color\": \"Blue\",\n  \"user_id\": 1\n}" }, "url": "{{baseUrl}}/vehicleType" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Vehicle Type", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"plate\": \"XYZ789\",\n  \"model\": \"Honda Civic\",\n  \"brand\": \"Honda\",\n  \"color\": \"Red\"\n}" }, "url": "{{baseUrl}}/vehicleType/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Vehicle Type", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/vehicleType/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "question",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/question/1" } },
+						{ "name": "Find By Survey", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/question/bySurvey/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Question", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"question_text\": \"How satisfied are you with our service?\",\n  \"question_type\": \"multiple_choice\",\n  \"options\": [\"Very satisfied\", \"Satisfied\", \"Neutral\", \"Dissatisfied\", \"Very dissatisfied\"]\n}" }, "url": "{{baseUrl}}/question" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Question", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"question_text\": \"Updated question text\",\n  \"question_type\": \"text\"\n}" }, "url": "{{baseUrl}}/question/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Question", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/question/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "answer",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Find By Survey", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/answer/bySurvey/1" } },
+						{ "name": "Find By User", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/answer/byUser/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Answer", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"question_id\": 1,\n  \"user_id\": 1,\n  \"answer_text\": \"Very satisfied\",\n  \"survey_id\": 1\n}" }, "url": "{{baseUrl}}/answer" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Answer", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/answer/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "reservationStatus",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Reservation Statuses", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-status/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-status/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Create Reservation Status", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"status_name\": \"Confirmed\"\n}" }, "url": "{{baseUrl}}/reservation-status" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Reservation Status", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"status_name\": \"Cancelled\"\n}" }, "url": "{{baseUrl}}/reservation-status/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Reservation Status", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-status/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "reservationType",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Reservation Types", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-type/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-type/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Create Reservation Type", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"type_name\": \"Conference Room\"\n}" }, "url": "{{baseUrl}}/reservation-type" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Reservation Type", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"type_name\": \"Meeting Room\"\n}" }, "url": "{{baseUrl}}/reservation-type/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Reservation Type", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-type/1" } }
 					]
 				}
 			]

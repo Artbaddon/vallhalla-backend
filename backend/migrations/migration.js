@@ -12,7 +12,7 @@ const dbConfig = {
   multipleStatements: true,
 };
 
-console.log('Starting migration...');
+console.log("Starting migration...");
 
 const sqlStatements = [
   // Drop and recreate database
@@ -269,34 +269,6 @@ const sqlStatements = [
     UNIQUE KEY Question_type_name (Question_type_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
-  `CREATE TABLE questions (
-    Questions_id int(11) NOT NULL AUTO_INCREMENT,
-    Questions_type_FK_ID int(11) NOT NULL,
-    Questions_description text NOT NULL,
-    Questions_answer text DEFAULT NULL,
-    Questions_createdAt timestamp NOT NULL DEFAULT current_timestamp(),
-    Questions_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (Questions_id),
-    KEY Questions_type_FK_ID (Questions_type_FK_ID),
-    CONSTRAINT fk_questions_type FOREIGN KEY (Questions_type_FK_ID) REFERENCES question_type (Question_type_id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
-
-  `CREATE TABLE survey (
-    Survey_id int(11) NOT NULL AUTO_INCREMENT,
-    Survey_name varchar(30) NOT NULL,
-    Survey_description text NOT NULL,
-    Questions_FK_ID int(11) NOT NULL,
-    Survey_result text DEFAULT NULL,
-    User_FK_ID int(11) NOT NULL,
-    Survey_createdAt timestamp NOT NULL DEFAULT current_timestamp(),
-    Survey_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (Survey_id),
-    KEY Questions_FK_ID (Questions_FK_ID),
-    KEY User_FK_ID (User_FK_ID),
-    CONSTRAINT fk_survey_questions FOREIGN KEY (Questions_FK_ID) REFERENCES questions (Questions_id),
-    CONSTRAINT fk_survey_user FOREIGN KEY (User_FK_ID) REFERENCES users (Users_id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
-
   `CREATE TABLE reservation_type (
     Reservation_type_id int(11) NOT NULL AUTO_INCREMENT,
     Reservation_type_name varchar(30) NOT NULL,
@@ -398,6 +370,47 @@ const sqlStatements = [
     KEY Owner_FK_ID (Owner_FK_ID),
     CONSTRAINT fk_pet_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+   
+  `CREATE TABLE survey (
+    survey_id INT(11) NOT NULL AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL,
+    status VARCHAR(20),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (survey_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
+  `CREATE TABLE question_type (
+  question_type_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  description TEXT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
+  `CREATE TABLE question (
+  question_id INT AUTO_INCREMENT PRIMARY KEY,
+  survey_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  question_type_id INT NOT NULL,
+  options JSON,                          
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (survey_id) REFERENCES survey(survey_id) ON DELETE CASCADE,
+  FOREIGN KEY (question_type_id) REFERENCES question_type(question_type_id) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
+  `CREATE TABLE answer (
+  answer_id INT AUTO_INCREMENT PRIMARY KEY,
+  survey_id INT NOT NULL,
+  question_id INT NOT NULL,
+  user_id INT NULL,
+  value TEXT NOT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (survey_id) REFERENCES survey(survey_id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
+
+  `INSERT INTO apartment_status (Apartment_status_name) VALUES ('Available'), ('Occupied');`,
+  `INSERT INTO question_type (name, description) VALUES ('text', 'Respuesta de texto libre'), ('multiple_choice', 'Seleccionar una opción de varias');`,
 
   // Insert initial data
   `INSERT INTO tower (Tower_name) VALUES ('Tower A'), ('Tower B'), ('North')`,
@@ -432,19 +445,19 @@ const sqlStatements = [
    ('Party Room', 'Event space for celebrations', 50),
    ('BBQ Area', 'Outdoor grilling space', 15),
    ('Tennis Court', 'Professional tennis court', 4)`,
-   
+
   // Insert initial user, role, and owner for testing
   `INSERT INTO user_status (User_status_name) VALUES ('Active')`,
-  
+
   `INSERT INTO role (Role_name, Role_description) VALUES ('Admin', 'Administrator role')`,
-  
+
   `INSERT INTO users (Users_name, Users_password, User_status_FK_ID, Role_FK_ID) 
-   VALUES ('admin', '${bcrypt.hashSync('12345678', 10)}', 1, 1)`,
-   
+   VALUES ('admin', '${bcrypt.hashSync("12345678", 10)}', 1, 1)`,
+
   `INSERT INTO owner (User_FK_ID, Owner_is_tenant, Owner_birth_date) VALUES (1, 0, NOW())`,
-  
+
   `INSERT INTO apartment (Apartment_number, Tower_FK_ID, Apartment_status_FK_ID, Owner_FK_ID)
-   VALUES ('101', 1, 1, 1)`
+   VALUES ('101', 1, 1, 1)`,
 ];
 
 export async function runMigration() {
@@ -455,54 +468,58 @@ export async function runMigration() {
       host: dbConfig.host,
       user: dbConfig.user,
       password: dbConfig.password,
-      multipleStatements: true
+      multipleStatements: true,
     });
-    console.log('Connected to database server');
-    
+    console.log("Connected to database server");
+
     // Drop and recreate database
     await connection.query(`DROP DATABASE IF EXISTS ${dbConfig.database};`);
     console.log(`Dropped database ${dbConfig.database}`);
-    
-    await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database};`);
+
+    await connection.query(
+      `CREATE DATABASE IF NOT EXISTS ${dbConfig.database};`
+    );
     console.log(`Created database ${dbConfig.database}`);
-    
+
     // Close initial connection
     await connection.end();
-    console.log('Reconnecting to the new database...');
-    
+    console.log("Reconnecting to the new database...");
+
     // Connect to the new database
     connection = await mysql.createConnection({
       host: dbConfig.host,
       user: dbConfig.user,
       password: dbConfig.password,
       database: dbConfig.database,
-      multipleStatements: true
+      multipleStatements: true,
     });
-    
+
     // Execute USE statement
     await connection.query(sqlStatements[2]);
-    console.log('Database selected');
-    
+    console.log("Database selected");
+
     // Execute each CREATE TABLE statement separately
     for (let i = 3; i < sqlStatements.length; i++) {
       try {
         await connection.query(sqlStatements[i]);
-        console.log(`Executed statement #${i}: ${sqlStatements[i].substring(0, 30)}...`);
+        console.log(
+          `Executed statement #${i}: ${sqlStatements[i].substring(0, 30)}...`
+        );
       } catch (error) {
         console.error(`Error executing statement #${i}: ${error.message}`);
         throw error;
       }
     }
-    
-    console.log('Migration completed successfully');
+
+    console.log("Migration completed successfully");
     return true;
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error("Migration failed:", error);
     throw error;
   } finally {
     if (connection) {
       await connection.end();
-      console.log('Database connection closed');
+      console.log("Database connection closed");
     }
   }
 }
@@ -512,4 +529,4 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
   runMigration()
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
-} 
+}

@@ -1,0 +1,71 @@
+import { connect } from "../config/db/connectMysql.js";
+
+class PetModel {
+  static async create({ name, species, breed, vaccination_card, photo, owner_id }) {
+    try {
+      const [result] = await connect.query(
+        "INSERT INTO pet (Pet_name, Pet_species, Pet_breed, Pet_vaccination_card, Pet_photo, Owner_id) VALUES (?, ?, ?, ?, ?, ?)",
+        [name, species, breed, vaccination_card, photo, owner_id]
+      );
+      return result.insertId; // Retorna solo el ID insertado
+    } catch (error) {
+      console.error("Error creating pet:", error.message);
+      return null;
+    }
+  }
+
+  static async show() {
+      const [rows] = await connect.query(
+      'SELECT * FROM pet ORDER BY Pet_id'
+    );
+    return rows;
+  }
+
+  static async update(id, { name, species, breed, vaccination_card, photo, owner_id }) {
+    try {
+      const [result] = await connect.query(
+        `UPDATE pet 
+             SET 
+                Pet_name = ?, Pet_species = ?, Pet_breed = ?, Pet_vaccination_card = ?, Pet_photo = ?, Owner_id = ?,
+                Pet_createdAt = CURRENT_TIMESTAMP,
+                Pet_updatedAt = CURRENT_TIMESTAMP
+             WHERE Pet_id = ?`,
+        [name, species, breed, vaccination_card, photo, owner_id, id]
+      );
+
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating pet:", error.message);
+      return false;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      let sqlQuery = "DELETE FROM pet WHERE Pet_id=?";
+      const [result] = await connect.query(sqlQuery, id);
+      if (result.affectedRows === 0) {
+        return [0];
+      } else {
+        return result.affectedRows;
+      }
+    } catch (error) {
+      return [0];
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const [rows] = await connect.query(
+        "SELECT * FROM pet WHERE Pet_id = ?", 
+        [id]
+    );
+      return rows[0];
+    } catch (error) {
+      console.error("Error finding pet by ID:", error.message);
+      return null;
+    }
+  }
+}
+
+export default PetModel;

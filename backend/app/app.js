@@ -34,6 +34,13 @@ import reservationTypeRouter from "../routers/reservationType.router.js";
 import pqrsRouter from "../routers/pqrs.router.js";
 import pqrsCategoryRouter from "../routers/pqrsCategory.router.js";
 import notificationRouter from "../routers/notification.router.js";
+import towerRouter from "../routers/tower.router.js";
+import petRouter from "../routers/pet.router.js";
+import parkingRouter from "../routers/parking.router.js";
+import vehicleTypeRouter from "../routers/vehicleType.router.js";
+import surveyRouter from "../routers/survey.router.js";
+import questionRouter from "../routers/question.router.js";
+import answerRouter from "../routers/answers.router.js";
 
 const name = "/api";
 const app = express();
@@ -84,6 +91,14 @@ app.use(name + "/reservation-types", reservationTypeRouter);
 app.use(name + "/pqrs", pqrsRouter);
 app.use(name + "/pqrs-categories", pqrsCategoryRouter);
 app.use(name + "/notifications", notificationRouter);
+app.use(name + "/towers", towerRouter);
+app.use(name + "/pets", petRouter);
+app.use(name + "/parking", parkingRouter);
+app.use(name + "/vehicle-types", vehicleTypeRouter);  
+app.use(name + "/surveys", surveyRouter);
+app.use(name + "/questions", questionRouter);
+app.use(name + "/answers", answerRouter);
+
 
 // ===== ERROR HANDLING =====
 
