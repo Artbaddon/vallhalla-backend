@@ -133,6 +133,53 @@ class PetController {
     }
   }
 
+  // New method to get pets owned by the current user
+  async getMyPets(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      if (!userId) {
+        return res.status(400).json({ 
+          success: false,
+          error: "User ID is required" 
+        });
+      }
+      
+      // First get the owner ID from the user ID
+      // You may need to add this method to your model or use another model
+      const owner = await PetModel.findOwnerByUserId(userId);
+      
+      if (!owner) {
+        return res.status(404).json({ 
+          success: false,
+          error: "Owner not found for this user" 
+        });
+      }
+      
+      // Then get all pets for this owner
+      const pets = await PetModel.findByOwner(owner.Owner_id);
+      
+      if (!pets) {
+        return res.status(404).json({ 
+          success: false,
+          error: "No pets found for this owner" 
+        });
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: "Owner's pets retrieved successfully",
+        data: pets,
+        count: pets.length
+      });
+    } catch (error) {
+      console.error("Error in getMyPets:", error);
+      res.status(500).json({ 
+        success: false,
+        error: "Internal server error while retrieving pets" 
+      });
+    }
+  }
 }
 
 export default new PetController();

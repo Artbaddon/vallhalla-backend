@@ -1,23 +1,56 @@
 import express from "express";
-import { authMiddleware, ownerResourceAccess } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
 import UserController from "../controllers/user.controller.js";
+import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 // Special routes (must come first)
-router.get("/me/profile", authMiddleware([]), UserController.getMyProfile);
-router.get("/details", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.showWithDetails);
-router.get("/search", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.findByName);
-router.patch("/:id/status", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.updateStatus);
+router.get("/me/profile", 
+  requirePermission("users", "read"), 
+  UserController.getMyProfile
+);
+
+router.get("/details", 
+  requirePermission("users", "read"), 
+  UserController.showWithDetails
+);
+
+router.get("/search", 
+  requirePermission("users", "read"), 
+  UserController.findByName
+);
+
+router.patch("/:id/status", 
+  requirePermission("users", "update"), 
+  UserController.updateStatus
+);
 
 // Base routes
-router.get("/", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.show);
-router.post("/", authMiddleware([ROLES.ADMIN]), UserController.register);
+router.get("/", 
+  requirePermission("users", "read"), 
+  UserController.show
+);
+
+router.post("/", 
+  requirePermission("users", "create"), 
+  UserController.register
+);
 
 // Routes with ID parameter (must come last)
-router.get("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id', 'userId'), UserController.findById);
-router.put("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.update);
-router.delete("/:id", authMiddleware([ROLES.ADMIN]), UserController.delete);
+router.get("/:id", 
+  requirePermission("users", "read"),
+  requireOwnership("user", "id", "userId"),
+  UserController.findById
+);
+
+router.put("/:id", 
+  requirePermission("users", "update"), 
+  UserController.update
+);
+
+router.delete("/:id", 
+  requirePermission("users", "delete"), 
+  UserController.delete
+);
 
 export default router; 

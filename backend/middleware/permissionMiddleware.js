@@ -1,63 +1,100 @@
 import { connect } from "../config/db/connectMysql.js";
+import { hasPermission, isAdmin, ownsResource } from "./rbacConfig.js";
 
-// Let's check the database for real admin users
+// Middleware to check if user is admin
 export const requireAdmin = async (req, res, next) => {
   try {
-    const userId = req.user.userId; // ✅ Use req.user.userId
+    const userId = req.user.userId;
+    console.log("Checking if user", userId, "is admin");
 
-    console.log("Checking if user", userId, "has admin role in database");
-
-    const query = `
-      SELECT r.name as role_name 
-      FROM web_users u
-      JOIN web_user_roles ur ON u.id = ur.user_id
-      JOIN roles r ON ur.role_id = r.id
-      WHERE u.id = ? AND r.name = 'Admin'
-    `;
-
-    const [result] = await connect.query(query, [userId]);
-
-    if (result.length > 0) {
-      console.log("✅ User has admin role, allowing access");
+    const isUserAdmin = await isAdmin(connect, userId);
+    if (isUserAdmin) {
+      console.log("✅ User is admin, allowing access");
       next();
     } else {
-      console.log("❌ User does not have admin role, blocking access");
+      console.log("❌ User is not admin, blocking access");
       res.status(403).json({ error: "Admin access required" });
     }
   } catch (error) {
-    console.log("❌ Database error:", error.message);
+    console.error("❌ Admin check error:", error);
     res.status(500).json({ error: "Permission check failed" });
   }
 };
 
-// Check for any specific permission
-export const requirePermission = (requiredPermission) => {
+// Middleware to check for specific module permission
+export const requirePermission = (moduleName, permissionName) => {
   return async (req, res, next) => {
     try {
-      const userId = req.user.userId; // ✅ Use req.user.userId
-      
-      console.log(`Checking if user ${userId} has permission: ${requiredPermission}`);
-      
-      const query = `
-        SELECT p.name as permission_name
-        FROM web_users wu
-        JOIN web_user_roles wur ON wu.id = wur.user_id
-        JOIN roles r ON wur.role_id = r.id
-        JOIN role_permissions rp ON r.id = rp.role_id
-        JOIN permissions p ON rp.permission_id = p.id
-        WHERE wu.id = ? AND p.name = ? AND r.is_active = TRUE AND p.is_active = TRUE
-      `;
-      
-      const [result] = await connect.query(query, [userId, requiredPermission]);
-      
-      if (result.length > 0) {
+      const userId = req.user.userId;
+      console.log(`Checking if user ${userId} has permission: ${permissionName} on module: ${moduleName}`);
+
+      // Check permission (hasPermission already includes admin check)
+      const hasUserPermission = await hasPermission(connect, userId, moduleName, permissionName);
+      if (hasUserPermission) {
+        console.log(`✅ User has permission: ${permissionName} on module: ${moduleName}`);
         next();
       } else {
-        console.log(`❌ User lacks permission: ${requiredPermission}`);
-        res.status(403).json({ error: `Permission required: ${requiredPermission}` });
+        console.log(`❌ User lacks permission: ${permissionName} on module: ${moduleName}`);
+        res.status(403).json({ error: `Permission denied: ${permissionName} required for ${moduleName}` });
       }
     } catch (error) {
-      console.log("❌ Permission check error:", error.message);
+      console.error("❌ Permission check error:", error);
+      res.status(500).json({ error: "Permission check failed" });
+    }
+  };
+};
+
+// Middleware to check resource ownership
+export const requireOwnership = (resourceType, idParam = 'id') => {
+  return async (req, res, next) => {
+    try {
+      const userId = req.user.userId;
+      const resourceId = req.params[idParam];
+      
+      // Check ownership (ownsResource already includes admin check)
+      const owns = await ownsResource(connect, userId, resourceType, resourceId);
+      if (owns) {
+        console.log(`✅ User has access to ${resourceType}`);
+        next();
+      } else {
+        console.log(`❌ User does not have access to ${resourceType}`);
+        res.status(403).json({ error: `Access denied: You don't have access to this ${resourceType}` });
+      }
+    } catch (error) {
+      console.error("❌ Access check error:", error);
+      res.status(500).json({ error: "Access check failed" });
+    }
+  };
+};
+
+// Middleware to check multiple permissions at once
+export const requirePermissions = (permissions) => {
+  return async (req, res, next) => {
+    try {
+      const userId = req.user.userId;
+
+      // First check if user is admin
+      const isUserAdmin = await isAdmin(connect, userId);
+      if (isUserAdmin) {
+        console.log("✅ User is admin, allowing access");
+        return next();
+      }
+
+      // Check each permission
+      for (const { module: moduleName, permission: permissionName } of permissions) {
+        const hasUserPermission = await hasPermission(connect, userId, moduleName, permissionName);
+        if (!hasUserPermission) {
+          console.log(`❌ User lacks permission: ${permissionName} on module: ${moduleName}`);
+          return res.status(403).json({ 
+            error: `Permission denied: ${permissionName} required for ${moduleName}` 
+          });
+        }
+      }
+
+      console.log("✅ User has all required permissions");
+      next();
+    } catch (error) {
+      console.error("❌ Permission check error:", error);
       res.status(500).json({ error: "Permission check failed" });
     }
   };

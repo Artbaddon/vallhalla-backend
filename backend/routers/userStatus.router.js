@@ -1,14 +1,33 @@
 import { Router } from "express";
 import UserStatusController from "../controllers/userStatus.controller.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
+
 const router = Router();
-const name = "/user_status";
 
-//Public Route
+// Admin-only routes
+router.post("/", 
+  requirePermission("userStatus", "create"), 
+  UserStatusController.register
+);
 
-router.post(name, UserStatusController.register);
-router.get(name + "/", UserStatusController.show);
-router.get(name + "/:id", UserStatusController.findById);
-router.put(name + "/:id", UserStatusController.update);
-router.delete(name + "/:id", UserStatusController.delete);
+router.get("/", 
+  requirePermission("userStatus", "read"), 
+  UserStatusController.show
+);
+
+router.get("/:id", 
+  requirePermission("userStatus", "read"), 
+  UserStatusController.findById
+);
+
+router.put("/:id", 
+  requirePermission("userStatus", "update"), 
+  UserStatusController.update
+);
+
+router.delete("/:id", 
+  requirePermission("userStatus", "delete"), 
+  UserStatusController.delete
+);
 
 export default router;

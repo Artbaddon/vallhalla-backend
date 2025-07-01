@@ -15,12 +15,12 @@ const dbConfig = {
 console.log("Starting migration...");
 
 const sqlStatements = [
-  // Drop and recreate database
-  `DROP DATABASE IF EXISTS ${dbConfig.database};`,
-  `CREATE DATABASE IF NOT EXISTS ${dbConfig.database} DEFAULT CHARACTER SET utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-  `USE ${dbConfig.database};`,
+  `DROP DATABASE IF EXISTS ${dbConfig.database}`,
+  
+  `CREATE DATABASE ${dbConfig.database}`,
+  
+  `USE ${dbConfig.database}`,
 
-  // Create base tables first (no foreign keys)
   `CREATE TABLE user_status (
     User_status_id int(11) NOT NULL AUTO_INCREMENT,
     User_status_name varchar(30) NOT NULL,
@@ -28,19 +28,28 @@ const sqlStatements = [
     UNIQUE KEY User_status_name (User_status_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
+  `INSERT INTO user_status (User_status_name) VALUES 
+   ('Active'),
+   ('Inactive'),
+   ('Pending'),
+   ('Blocked')`,
+
   `CREATE TABLE role (
     Role_id int(11) NOT NULL AUTO_INCREMENT,
-    Role_name varchar(50) NOT NULL,
-    Role_description text NOT NULL,
-    Role_createdAt timestamp NOT NULL DEFAULT current_timestamp(),
-    Role_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    Role_name varchar(30) NOT NULL,
+    Role_description text,
     PRIMARY KEY (Role_id),
     UNIQUE KEY Role_name (Role_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
+  `INSERT INTO role (Role_name, Role_description) VALUES 
+   ('Admin', 'Full system access'),
+   ('Owner', 'Apartment owner with limited access'),
+   ('Security', 'Security guard with specific access')`,
+
   `CREATE TABLE users (
     Users_id int(11) NOT NULL AUTO_INCREMENT,
-    Users_name varchar(50) NOT NULL,
+    Users_name varchar(30) NOT NULL,
     Users_password varchar(255) NOT NULL,
     User_status_FK_ID int(11) NOT NULL,
     Role_FK_ID int(11) NOT NULL,
@@ -50,8 +59,8 @@ const sqlStatements = [
     UNIQUE KEY Users_name (Users_name),
     KEY User_status_FK_ID (User_status_FK_ID),
     KEY Role_FK_ID (Role_FK_ID),
-    CONSTRAINT fk_users_status FOREIGN KEY (User_status_FK_ID) REFERENCES user_status (User_status_id),
-    CONSTRAINT fk_users_role FOREIGN KEY (Role_FK_ID) REFERENCES role (Role_id)
+    CONSTRAINT fk_users_role FOREIGN KEY (Role_FK_ID) REFERENCES role (Role_id),
+    CONSTRAINT fk_users_status FOREIGN KEY (User_status_FK_ID) REFERENCES user_status (User_status_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
   `CREATE TABLE profile (
@@ -227,14 +236,19 @@ const sqlStatements = [
 
   `CREATE TABLE pqrs (
     PQRS_id int(11) NOT NULL AUTO_INCREMENT,
+    Owner_FK_ID int(11) NOT NULL,
     PQRS_category_FK_ID int(11) NOT NULL,
+    PQRS_subject varchar(255) NOT NULL,
     PQRS_description text NOT NULL,
+    PQRS_priority enum('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
     PQRS_file varchar(255) DEFAULT NULL,
     PQRS_answer text DEFAULT NULL,
     PQRS_createdAt timestamp NOT NULL DEFAULT current_timestamp(),
     PQRS_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
     PRIMARY KEY (PQRS_id),
+    KEY Owner_FK_ID (Owner_FK_ID),
     KEY PQRS_category_FK_ID (PQRS_category_FK_ID),
+    CONSTRAINT fk_pqrs_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id),
     CONSTRAINT fk_pqrs_category FOREIGN KEY (PQRS_category_FK_ID) REFERENCES pqrs_category (PQRS_category_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
@@ -265,6 +279,7 @@ const sqlStatements = [
   `CREATE TABLE question_type (
     Question_type_id int(11) NOT NULL AUTO_INCREMENT,
     Question_type_name varchar(30) NOT NULL,
+    Question_type_description text,
     PRIMARY KEY (Question_type_id),
     UNIQUE KEY Question_type_name (Question_type_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
@@ -380,12 +395,6 @@ const sqlStatements = [
     PRIMARY KEY (survey_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
 
-  `CREATE TABLE question_type (
-  question_type_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(50) NOT NULL UNIQUE,
-  description TEXT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
-
   `CREATE TABLE question (
   question_id INT AUTO_INCREMENT PRIMARY KEY,
   survey_id INT NOT NULL,
@@ -410,7 +419,7 @@ const sqlStatements = [
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
 
   `INSERT INTO apartment_status (Apartment_status_name) VALUES ('Available'), ('Occupied');`,
-  `INSERT INTO question_type (name, description) VALUES ('text', 'Respuesta de texto libre'), ('multiple_choice', 'Seleccionar una opción de varias');`,
+  `INSERT INTO question_type (Question_type_name, Question_type_description) VALUES ('text', 'Free text response question'), ('multiple_choice', 'Multiple choice question with single answer'), ('checkbox', 'Multiple choice question with multiple answers allowed'), ('rating', 'Rating scale question'), ('date', 'Date input question');`,
 
   // Insert initial data
   `INSERT INTO tower (Tower_name) VALUES ('Tower A'), ('Tower B'), ('North')`,
@@ -423,10 +432,6 @@ const sqlStatements = [
    ('Confirmed'),
    ('Cancelled')`,
 
-  `INSERT INTO apartment_status (Apartment_status_name) VALUES 
-   ('Available'),
-   ('Occupied'),
-   ('Under Maintenance')`,
 
   `INSERT INTO payment_status (Payment_status_name) VALUES 
    ('Pending'),
@@ -446,18 +451,104 @@ const sqlStatements = [
    ('BBQ Area', 'Outdoor grilling space', 15),
    ('Tennis Court', 'Professional tennis court', 4)`,
 
-  // Insert initial user, role, and owner for testing
-  `INSERT INTO user_status (User_status_name) VALUES ('Active')`,
+  // Insert modules
+  `INSERT INTO module (module_name, module_description) VALUES 
+   ('users', 'User management module'),
+   ('owners', 'Owner management module'),
+   ('apartments', 'Apartment management module'),
+   ('parking', 'Parking management module'),
+   ('pets', 'Pet management module'),
+   ('pqrs', 'PQRS management module'),
+   ('reservations', 'Reservation management module'),
+   ('payments', 'Payment management module'),
+   ('visitors', 'Visitor management module'),
+   ('surveys', 'Survey management module')`,
 
-  `INSERT INTO role (Role_name, Role_description) VALUES ('Admin', 'Administrator role')`,
+  // Insert basic permissions
+  `INSERT INTO permissions (Permissions_name, Permissions_description) VALUES 
+   ('create', 'Create new records'),
+   ('read', 'Read records'),
+   ('update', 'Update existing records'),
+   ('delete', 'Delete records')`,
 
+  // Insert module-role associations for Admin (all modules)
+  `INSERT INTO module_role (Role_FK_ID, Module_FK_ID)
+   SELECT r.Role_id, m.module_id
+   FROM role r
+   CROSS JOIN module m
+   WHERE r.Role_name = 'Admin'`,
+
+  // Insert permissions for Admin (all permissions on all modules)
+  `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
+   SELECT mr.Module_role_id, p.Permissions_id
+   FROM module_role mr
+   CROSS JOIN permissions p
+   JOIN role r ON mr.Role_FK_ID = r.Role_id
+   WHERE r.Role_name = 'Admin'`,
+
+  // Insert module-role associations for Owner
+  `INSERT INTO module_role (Role_FK_ID, Module_FK_ID)
+   SELECT r.Role_id, m.module_id
+   FROM role r
+   CROSS JOIN module m
+   WHERE r.Role_name = 'Owner'
+   AND m.module_name IN ('owners', 'apartments', 'parking', 'pets', 'pqrs', 'reservations', 'payments', 'surveys')`,
+
+  // Insert permissions for Owner role
+  `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
+   SELECT mr.Module_role_id, p.Permissions_id
+   FROM module_role mr
+   JOIN module m ON mr.Module_FK_ID = m.module_id
+   JOIN permissions p ON 1=1
+   JOIN role r ON mr.Role_FK_ID = r.Role_id
+   WHERE r.Role_name = 'Owner'
+   AND (
+     (m.module_name = 'owners' AND p.Permissions_name IN ('read', 'update'))
+     OR (m.module_name = 'apartments' AND p.Permissions_name = 'read')
+     OR (m.module_name = 'parking' AND p.Permissions_name IN ('read', 'create'))
+     OR (m.module_name = 'pets' AND p.Permissions_name IN ('create', 'read', 'update', 'delete'))
+     OR (m.module_name = 'pqrs' AND p.Permissions_name IN ('create', 'read', 'update'))
+     OR (m.module_name = 'reservations' AND p.Permissions_name IN ('create', 'read', 'update', 'delete'))
+     OR (m.module_name = 'payments' AND p.Permissions_name IN ('create', 'read'))
+     OR (m.module_name = 'surveys' AND p.Permissions_name IN ('read', 'create'))
+   )`,
+
+  // Insert module-role associations for Security
+  `INSERT INTO module_role (Role_FK_ID, Module_FK_ID)
+   SELECT r.Role_id, m.module_id
+   FROM role r
+   CROSS JOIN module m
+   WHERE r.Role_name = 'Security'
+   AND m.module_name IN ('visitors', 'parking')`,
+
+  // Insert permissions for Security role
+  `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
+   SELECT mr.Module_role_id, p.Permissions_id
+   FROM module_role mr
+   JOIN module m ON mr.Module_FK_ID = m.module_id
+   JOIN permissions p ON 1=1
+   JOIN role r ON mr.Role_FK_ID = r.Role_id
+   WHERE r.Role_name = 'Security'
+   AND (
+     (m.module_name = 'visitors' AND p.Permissions_name IN ('create', 'read', 'update'))
+     OR (m.module_name = 'parking' AND p.Permissions_name IN ('read', 'update'))
+   )`,
+
+  // Create test users
   `INSERT INTO users (Users_name, Users_password, User_status_FK_ID, Role_FK_ID) 
-   VALUES ('admin', '${bcrypt.hashSync("12345678", 10)}', 1, 1)`,
+   VALUES 
+   ('testadmin', '${bcrypt.hashSync("12345678", 10)}', 1, (SELECT Role_id FROM role WHERE Role_name = 'Admin')),
+   ('testowner', '${bcrypt.hashSync("12345678", 10)}', 1, (SELECT Role_id FROM role WHERE Role_name = 'Owner')),
+   ('testsecurity', '${bcrypt.hashSync("12345678", 10)}', 1, (SELECT Role_id FROM role WHERE Role_name = 'Security'))`,
 
-  `INSERT INTO owner (User_FK_ID, Owner_is_tenant, Owner_birth_date) VALUES (1, 0, NOW())`,
+  // Create test owner record
+  `INSERT INTO owner (User_FK_ID, Owner_is_tenant, Owner_birth_date) 
+   SELECT Users_id, 0, NOW() 
+   FROM users 
+   WHERE Users_name = 'testowner'`,
 
   `INSERT INTO apartment (Apartment_number, Tower_FK_ID, Apartment_status_FK_ID, Owner_FK_ID)
-   VALUES ('101', 1, 1, 1)`,
+   VALUES ('101', 1, 1, 1)`
 ];
 
 export async function runMigration() {
@@ -473,32 +564,16 @@ export async function runMigration() {
     console.log("Connected to database server");
 
     // Drop and recreate database
-    await connection.query(`DROP DATABASE IF EXISTS ${dbConfig.database};`);
+    await connection.query(`DROP DATABASE IF EXISTS ${dbConfig.database}`);
     console.log(`Dropped database ${dbConfig.database}`);
 
-    await connection.query(
-      `CREATE DATABASE IF NOT EXISTS ${dbConfig.database};`
-    );
+    await connection.query(`CREATE DATABASE ${dbConfig.database}`);
     console.log(`Created database ${dbConfig.database}`);
 
-    // Close initial connection
-    await connection.end();
-    console.log("Reconnecting to the new database...");
-
-    // Connect to the new database
-    connection = await mysql.createConnection({
-      host: dbConfig.host,
-      user: dbConfig.user,
-      password: dbConfig.password,
-      database: dbConfig.database,
-      multipleStatements: true,
-    });
-
-    // Execute USE statement
-    await connection.query(sqlStatements[2]);
+    await connection.query(`USE ${dbConfig.database}`);
     console.log("Database selected");
 
-    // Execute each CREATE TABLE statement separately
+    // Execute each statement separately
     for (let i = 3; i < sqlStatements.length; i++) {
       try {
         await connection.query(sqlStatements[i]);

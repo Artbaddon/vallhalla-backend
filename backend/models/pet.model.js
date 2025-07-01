@@ -66,6 +66,38 @@ class PetModel {
       return null;
     }
   }
+
+  // New method to find owner by user ID
+  static async findOwnerByUserId(userId) {
+    try {
+      const [rows] = await connect.query(
+        `SELECT o.* 
+         FROM owner o
+         WHERE o.User_FK_ID = ?`,
+        [userId]
+      );
+      return rows[0];
+    } catch (error) {
+      console.error("Error finding owner by user ID:", error.message);
+      return null;
+    }
+  }
+
+  // New method to find pets by owner ID
+  static async findByOwner(ownerId) {
+    try {
+      const [rows] = await connect.query(
+        `SELECT p.*
+         FROM pet p
+         WHERE p.Owner_id = ?`,
+        [ownerId]
+      );
+      return rows;
+    } catch (error) {
+      console.error("Error finding pets by owner:", error.message);
+      return [];
+    }
+  }
 }
 
 export default PetModel;

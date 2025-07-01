@@ -1,25 +1,68 @@
 import { Router } from "express";
 import NotificationController from "../controllers/notification.controller.js";
+import { requirePermission } from '../middleware/permissionMiddleware.js';
 
 const router = Router();
-const name = "/notification";
 
-// Public Routes
-router.post(name, NotificationController.register);
-router.get(name + "/", NotificationController.show);
-router.get(name + "/stats", NotificationController.getStats);
-router.get(name + "/:id", NotificationController.findById);
-router.get(
-  name + "/recipient/:recipient_id/:recipient_type",
+// Protected routes
+// Admin can see all notifications
+router.get("/", 
+  requirePermission("notifications", "read"),
+  NotificationController.show
+);
+
+// Get notification stats (admin only)
+router.get("/stats",
+  requirePermission("notifications", "read"),
+  NotificationController.getStats
+);
+
+// View specific notification
+router.get("/:id",
+  requirePermission("notifications", "read"),
+  NotificationController.findById
+);
+
+// Create notification (admin only)
+router.post("/",
+  requirePermission("notifications", "create"),
+  NotificationController.register
+);
+
+// Update notification (admin only)
+router.put("/:id",
+  requirePermission("notifications", "update"),
+  NotificationController.update
+);
+
+// Delete notification (admin only)
+router.delete("/:id",
+  requirePermission("notifications", "delete"),
+  NotificationController.delete
+);
+
+// Find notifications by recipient
+router.get("/recipient/:recipient_id/:recipient_type",
+  requirePermission("notifications", "read"),
   NotificationController.findByRecipient
 );
-router.get(
-  name + "/unread/:recipient_id/:recipient_type",
+
+// Find unread notifications
+router.get("/unread/:recipient_id/:recipient_type",
+  requirePermission("notifications", "read"),
   NotificationController.findUnread
 );
-router.get(name + "/type/:type_id", NotificationController.findByType);
-router.put(name + "/:id", NotificationController.update);
-router.put(name + "/:id/read", NotificationController.markAsRead);
-router.delete(name + "/:id", NotificationController.delete);
+
+// Find notifications by type
+router.get("/type/:type_id",
+  requirePermission("notifications", "read"),
+  NotificationController.findByType
+);
+
+// Mark notification as read
+router.put("/:id/read",
+  requirePermission("notifications", "update"),
+  NotificationController.markAsRead
+);
 
 export default router;

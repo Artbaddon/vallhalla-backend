@@ -1,21 +1,33 @@
 import { Router } from "express";
 import ReservationTypeController from "../controllers/reservationType.controller.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
 
-// Define roles that can access these endpoints
-const ADMIN_ROLES = [1]; // Assuming role ID 1 is admin
-const MANAGER_ROLES = [1, 2]; // Assuming role IDs 1 and 2 are admin and manager
-const VIEW_ROLES = [1, 2, 3]; // Assuming role IDs 1, 2, 3 are admin, manager, and regular user
+// Protected routes
+router.get("/", 
+  requirePermission("reservationTypes", "read"), 
+  ReservationTypeController.show
+);
 
-// Public endpoints (view only)
-router.get("/", authMiddleware(VIEW_ROLES), ReservationTypeController.show);
-router.get("/:id", authMiddleware(VIEW_ROLES), ReservationTypeController.findById);
+router.get("/:id", 
+  requirePermission("reservationTypes", "read"), 
+  ReservationTypeController.findById
+);
 
-// Protected endpoints (admin/manager only)
-router.post("/", authMiddleware(MANAGER_ROLES), ReservationTypeController.create);
-router.put("/:id", authMiddleware(MANAGER_ROLES), ReservationTypeController.update);
-router.delete("/:id", authMiddleware(ADMIN_ROLES), ReservationTypeController.delete);
+router.post("/", 
+  requirePermission("reservationTypes", "create"), 
+  ReservationTypeController.create
+);
+
+router.put("/:id", 
+  requirePermission("reservationTypes", "update"), 
+  ReservationTypeController.update
+);
+
+router.delete("/:id", 
+  requirePermission("reservationTypes", "delete"), 
+  ReservationTypeController.delete
+);
 
 export default router; 

@@ -67,6 +67,122 @@ class SurveyModel {
       return null;
     }
   }
+
+  // New method to get questions for a specific survey
+  static async getQuestions(surveyId) {
+    try {
+      const [questions] = await connect.query(
+        `SELECT q.* 
+         FROM question q
+         WHERE q.survey_id = ?
+         ORDER BY q.question_order ASC`,
+        [surveyId]
+      );
+      return questions;
+    } catch (error) {
+      console.error("Error getting survey questions:", error.message);
+      return [];
+    }
+  }
+
+  // New method to submit an answer to a survey question
+  static async submitAnswer({ survey_id, question_id, user_id, value }) {
+    try {
+      const [result] = await connect.query(
+        `INSERT INTO answer 
+         (survey_id, question_id, user_id, value, created_at)
+         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [survey_id, question_id, user_id, value]
+      );
+      return result.insertId;
+    } catch (error) {
+      console.error("Error submitting answer:", error.message);
+      return null;
+    }
+  }
+
+  // New method to get surveys the user has already answered
+  static async getAnsweredSurveys(userId) {
+    try {
+      const [surveys] = await connect.query(
+        `SELECT DISTINCT s.* 
+         FROM survey s
+         JOIN answer a ON s.survey_id = a.survey_id
+         WHERE a.user_id = ?`,
+        [userId]
+      );
+      return surveys;
+    } catch (error) {
+      console.error("Error getting answered surveys:", error.message);
+      return [];
+    }
+  }
+
+  // New method to get surveys the user hasn't answered yet
+  static async getPendingSurveys(userId) {
+    try {
+      const [surveys] = await connect.query(
+        `SELECT s.*
+         FROM survey s
+         WHERE s.status = 'active'
+         AND s.survey_id NOT IN (
+           SELECT DISTINCT a.survey_id
+           FROM answer a
+           WHERE a.user_id = ?
+         )`,
+        [userId]
+      );
+      return surveys;
+    } catch (error) {
+      console.error("Error getting pending surveys:", error.message);
+      return [];
+    }
+  }
+
+  // New method to get survey statistics
+  static async getStats() {
+    try {
+      // Get overall survey stats
+      const [totalSurveys] = await connect.query(
+        `SELECT COUNT(*) as total FROM survey`
+      );
+      
+      // Get answer stats
+      const [answerStats] = await connect.query(
+        `SELECT 
+           s.survey_id,
+           s.title,
+           COUNT(DISTINCT a.user_id) as total_respondents,
+           COUNT(a.answer_id) as total_answers
+         FROM survey s
+         LEFT JOIN answer a ON s.survey_id = a.survey_id
+         GROUP BY s.survey_id
+         ORDER BY total_respondents DESC`
+      );
+      
+      // Get question stats
+      const [questionStats] = await connect.query(
+        `SELECT 
+           q.question_id,
+           q.survey_id,
+           q.question_text,
+           COUNT(a.answer_id) as answer_count,
+           AVG(CASE WHEN q.question_type = 'rating' THEN a.value END) as avg_rating
+         FROM question q
+         LEFT JOIN answer a ON q.question_id = a.question_id
+         GROUP BY q.question_id`
+      );
+      
+      return {
+        total_surveys: totalSurveys[0].total,
+        surveys: answerStats,
+        questions: questionStats
+      };
+    } catch (error) {
+      console.error("Error getting survey stats:", error.message);
+      return null;
+    }
+  }
 }
 
 export default SurveyModel;

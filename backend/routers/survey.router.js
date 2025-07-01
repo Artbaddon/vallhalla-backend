@@ -1,19 +1,70 @@
 import { Router } from "express";
 import SurveyController from "../controllers/survey.controller.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
-const name = "/survey";
 
-// Define all routes
-router.route(name)
-  .post(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), SurveyController.register)  // Crear encuesta
-  .get(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), SurveyController.show);      // Listar todas las encuestas
+// Public routes (if any)
 
-router.route(`${name}/:id`)
-  .get(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), SurveyController.findById)  // Obtener encuesta por ID
-  .put(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), SurveyController.update)    // Actualizar encuesta
-  .delete(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), SurveyController.delete); // Eliminar encuesta
+// Protected routes
+// Everyone can see all surveys
+router.get("/", 
+  requirePermission("surveys", "read"),
+  SurveyController.show
+);
+
+// Only admin can create surveys
+router.post("/",
+  requirePermission("surveys", "create"),
+  SurveyController.register
+);
+
+// Everyone can view specific surveys
+router.get("/:id",
+  requirePermission("surveys", "read"),
+  SurveyController.findById
+);
+
+// Only admin can update surveys
+router.put("/:id",
+  requirePermission("surveys", "update"),
+  SurveyController.update
+);
+
+// Only admin can delete surveys
+router.delete("/:id",
+  requirePermission("surveys", "delete"),
+  SurveyController.delete
+);
+
+// Everyone can get survey questions
+router.get("/:id/questions",
+  requirePermission("surveys", "read"),
+  SurveyController.getQuestions
+);
+
+// Everyone can submit survey answers
+router.post("/:id/answer",
+  requirePermission("surveys", "create"),
+  SurveyController.submitAnswer
+);
+
+// Get my answered surveys
+router.get("/my/answered",
+  requirePermission("surveys", "read"),
+  SurveyController.getMyAnsweredSurveys
+);
+
+// Get surveys I haven't answered yet
+router.get("/my/pending",
+  requirePermission("surveys", "read"),
+  SurveyController.getMyPendingSurveys
+);
+
+// Get survey statistics (admin only)
+router.get("/stats/overview",
+  requirePermission("surveys", "read"),
+  SurveyController.getStats
+);
 
 export default router;

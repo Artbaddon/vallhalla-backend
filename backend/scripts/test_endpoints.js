@@ -1,363 +1,341 @@
 import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const BASE_URL = 'http://localhost:3000/api';
-let authToken = '';
 
-// Test user credentials
-const TEST_USER = {
-    username: 'testadmin',
-    password: 'test123',
-    user_status_id: 1,  // Active status
-    role_id: 1         // Admin role
+// Test users
+const ADMIN_USER = {
+  username: 'testadmin',
+  password: '12345678',
+  email: 'admin@test.com'
 };
 
-// Test data
-const TEST_APARTMENT = {
-    apartment_number: "101",
-    status_id: 1,
-    tower_id: 1,
-    owner_id: 1
+const OWNER_USER = {
+  username: 'testowner',
+  password: '12345678',
+  email: 'owner@test.com'
 };
 
-const TEST_OWNER = {
-    user_id: 1,
-    is_tenant: false,
-    birth_date: "1990-01-01"
+const SECURITY_USER = {
+  username: 'testsecurity',
+  password: '12345678',
+  email: 'security@test.com'
 };
 
-const TEST_PAYMENT = {
-    amount: 1000,
+// Store tokens
+let adminToken = '';
+let ownerToken = '';
+let securityToken = '';
+let securityToken = '';
+
+// Helper function to make authenticated requests
+async function authenticatedRequest(endpoint, method = 'GET', token = null, body = null) {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const options = {
+    method,
+    headers
+  };
+  
+  if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    options.body = JSON.stringify(body);
+  }
+  
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, options);
+    const data = await response.json();
+    return { status: response.status, data };
+  } catch (error) {
+    console.error(`Error making request to ${endpoint}:`, error);
+    return { status: 500, error: error.message };
+  }
+}
+
+// Login function
+async function login(username, password) {
+  const result = await authenticatedRequest('/auth/login', 'POST', null, { username, password });
+  if (result.status === 200 && result.data.token) {
+    return result.data.token;
+  }
+  return null;
+}
+
+// Test functions for each module
+async function testUsersModule(role, token) {
+  console.log(`\n--- Testing Users Module as ${role} ---`);
+  
+  // Get all users
+  console.log('\nGET /users');
+  const allUsers = await authenticatedRequest('/users', 'GET', token);
+  console.log(`Status: ${allUsers.status}`);
+  console.log(`Success: ${allUsers.data.success}`);
+  console.log(`Count: ${allUsers.data.count || 0}`);
+  
+  // Get user profile
+  console.log('\nGET /users/me/profile');
+  const profile = await authenticatedRequest('/users/me/profile', 'GET', token);
+  console.log(`Status: ${profile.status}`);
+  console.log(`Success: ${profile.data.success}`);
+  
+  if (role === 'Admin') {
+    // Create a new user (admin only)
+    console.log('\nPOST /users');
+    const newUser = {
+      username: `testuser_${Date.now()}`,
+      password: 'test123',
+      email: `test${Date.now()}@example.com`,
+      user_status_id: 1,
+      role_id: 3
+    };
+    
+    const createUser = await authenticatedRequest('/users', 'POST', token, newUser);
+    console.log(`Status: ${createUser.status}`);
+    console.log(`Success: ${createUser.data.success}`);
+    
+    if (createUser.data.success) {
+      const userId = createUser.data.data.id;
+      
+      // Update user
+      console.log(`\nPUT /users/${userId}`);
+      const updateUser = await authenticatedRequest(`/users/${userId}`, 'PUT', token, {
+        email: `updated${Date.now()}@example.com`
+      });
+      console.log(`Status: ${updateUser.status}`);
+      console.log(`Success: ${updateUser.data.success}`);
+      
+      // Delete user
+      console.log(`\nDELETE /users/${userId}`);
+      const deleteUser = await authenticatedRequest(`/users/${userId}`, 'DELETE', token);
+      console.log(`Status: ${deleteUser.status}`);
+      console.log(`Success: ${deleteUser.data.success}`);
+    }
+  }
+}
+
+async function testReservationsModule(role, token) {
+  console.log(`\n--- Testing Reservations Module as ${role} ---`);
+  
+  // Get all reservations
+  console.log('\nGET /reservations');
+  const allReservations = await authenticatedRequest('/reservations', 'GET', token);
+  console.log(`Status: ${allReservations.status}`);
+  console.log(`Success: ${allReservations.data.success}`);
+  console.log(`Count: ${allReservations.data.count || 0}`);
+  
+  // Create a new reservation
+  console.log('\nPOST /reservations');
+  const newReservation = {
+    reservation_date: new Date().toISOString().split('T')[0],
+    reservation_start_time: '10:00:00',
+    reservation_end_time: '12:00:00',
+    reservation_type_id: 1,
     owner_id: 1,
-    payment_method: "CASH",
-    reference_number: "REF123"
-};
+    notes: 'Test reservation'
+  };
+  
+  const createReservation = await authenticatedRequest('/reservations', 'POST', token, newReservation);
+  console.log(`Status: ${createReservation.status}`);
+  console.log(`Success: ${createReservation.data.success}`);
+  
+  if (createReservation.data.success) {
+    const reservationId = createReservation.data.data.id;
+    
+    // Get specific reservation
+    console.log(`\nGET /reservations/${reservationId}`);
+    const getReservation = await authenticatedRequest(`/reservations/${reservationId}`, 'GET', token);
+    console.log(`Status: ${getReservation.status}`);
+    console.log(`Success: ${getReservation.data.success}`);
+    
+    // Update reservation
+    console.log(`\nPUT /reservations/${reservationId}`);
+    const updateReservation = await authenticatedRequest(`/reservations/${reservationId}`, 'PUT', token, {
+      notes: 'Updated test reservation'
+    });
+    console.log(`Status: ${updateReservation.status}`);
+    console.log(`Success: ${updateReservation.data.success}`);
+    
+    if (role === 'Admin') {
+      // Delete reservation (admin only)
+      console.log(`\nDELETE /reservations/${reservationId}`);
+      const deleteReservation = await authenticatedRequest(`/reservations/${reservationId}`, 'DELETE', token);
+      console.log(`Status: ${deleteReservation.status}`);
+      console.log(`Success: ${deleteReservation.data.success}`);
+    }
+  }
+}
 
-const TEST_PQRS = {
-    title: "Test PQRS",
-    description: "Test description",
-    category_id: 1,
+async function testPetsModule(role, token) {
+  console.log(`\n--- Testing Pets Module as ${role} ---`);
+  
+  // Get all pets
+  console.log('\nGET /pets');
+  const allPets = await authenticatedRequest('/pets', 'GET', token);
+  console.log(`Status: ${allPets.status}`);
+  console.log(`Success: ${allPets.data.success}`);
+  console.log(`Count: ${allPets.data.count || 0}`);
+  
+  // Create a new pet
+  console.log('\nPOST /pets');
+  const newPet = {
+    pet_name: `Test Pet ${Date.now()}`,
+    pet_type: 'Dog',
+    pet_breed: 'Mixed',
+    pet_color: 'Brown',
+    pet_age: 3,
     owner_id: 1
-};
-
-const TEST_VISITOR = {
-    name: "John Doe",
-    identification: "123456789",
-    host_id: 1,
-    visit_date: "2024-03-20"
-};
-
-const TEST_RESERVATION = {
-    owner_id: 1,
-    facility_id: 1,
-    start_date: "2024-03-20T10:00:00",
-    end_date: "2024-03-20T12:00:00"
-};
-
-const TEST_GUARD = {
-    name: "Security Guard",
-    identification: "987654321",
-    shift: "morning",
-    arl: "ARL123",
-    eps: "EPS123"
-};
-
-const TEST_PROFILE = {
-    user_id: 1,
-    full_name: "Test User",
-    document_type: "ID",
-    document_number: "123456789"
-};
-
-const TEST_ROLE = {
-    name: "test_role",
-    description: "Test role description"
-};
-
-const TEST_PERMISSION = {
-    name: "test:permission",
-    description: "Test permission description"
-};
-
-const TEST_MODULE = {
-    name: "test_module",
-    description: "Test module description"
-};
-
-const TEST_NOTIFICATION = {
-    recipient_id: 1,
-    recipient_type: "user",
-    message: "Test notification"
-};
-
-// Add a test facility object
-const TEST_FACILITY = {
-    name: "Test Facility",
-    description: "Test facility description",
-    capacity: 20,
-    status: "available"
-};
-
-async function register() {
-    try {
-        const response = await fetch(`${BASE_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(TEST_USER)
-        });
-
-        const data = await response.json();
-        if (data.id) {
-            console.log('\n✅ Registration successful');
-            return true;
-        } else {
-            console.log('\n❌ Registration failed:', data.error);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Registration failed:', error);
-        return false;
-    }
+  };
+  
+  const createPet = await authenticatedRequest('/pets', 'POST', token, newPet);
+  console.log(`Status: ${createPet.status}`);
+  console.log(`Success: ${createPet.data.success}`);
+  
+  if (createPet.data.success) {
+    const petId = createPet.data.data.id;
+    
+    // Get specific pet
+    console.log(`\nGET /pets/${petId}`);
+    const getPet = await authenticatedRequest(`/pets/${petId}`, 'GET', token);
+    console.log(`Status: ${getPet.status}`);
+    console.log(`Success: ${getPet.data.success}`);
+    
+    // Update pet
+    console.log(`\nPUT /pets/${petId}`);
+    const updatePet = await authenticatedRequest(`/pets/${petId}`, 'PUT', token, {
+      pet_name: `Updated Pet ${Date.now()}`
+    });
+    console.log(`Status: ${updatePet.status}`);
+    console.log(`Success: ${updatePet.data.success}`);
+    
+    // Delete pet
+    console.log(`\nDELETE /pets/${petId}`);
+    const deletePet = await authenticatedRequest(`/pets/${petId}`, 'DELETE', token);
+    console.log(`Status: ${deletePet.status}`);
+    console.log(`Success: ${deletePet.data.success}`);
+  }
 }
 
-async function login() {
-    try {
-        const loginPayload = {
-            username: TEST_USER.username,
-            password: TEST_USER.password
-        };
-
-        const response = await fetch(`${BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(loginPayload)
-        });
-
-        const data = await response.json();
-        if (data.token) {
-            authToken = data.token;
-            console.log('\n✅ Login successful');
-            return true;
-        } else {
-            console.log('\n❌ Login failed:', data.error);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Login failed:', error);
-        return false;
-    }
+async function testPaymentsModule(role, token) {
+  console.log(`\n--- Testing Payments Module as ${role} ---`);
+  
+  // Get all payments
+  console.log('\nGET /payments');
+  const allPayments = await authenticatedRequest('/payments', 'GET', token);
+  console.log(`Status: ${allPayments.status}`);
+  console.log(`Success: ${allPayments.data.success}`);
+  console.log(`Count: ${allPayments.data.count || 0}`);
+  
+  // Create a new payment
+  console.log('\nPOST /payments');
+  const newPayment = {
+    total_payment: 100.00,
+    payment_date: new Date().toISOString().split('T')[0],
+    payment_method: 'Credit Card',
+    reference_number: `REF-${Date.now()}`,
+    owner_id: 1
+  };
+  
+  const createPayment = await authenticatedRequest('/payments', 'POST', token, newPayment);
+  console.log(`Status: ${createPayment.status}`);
+  console.log(`Success: ${createPayment.data.success}`);
+  
+  if (createPayment.data.success && role === 'Admin') {
+    const paymentId = createPayment.data.data.id;
+    
+    // Get specific payment
+    console.log(`\nGET /payments/${paymentId}`);
+    const getPayment = await authenticatedRequest(`/payments/${paymentId}`, 'GET', token);
+    console.log(`Status: ${getPayment.status}`);
+    console.log(`Success: ${getPayment.data.success}`);
+    
+    // Update payment (admin only)
+    console.log(`\nPUT /payments/${paymentId}`);
+    const updatePayment = await authenticatedRequest(`/payments/${paymentId}`, 'PUT', token, {
+      total_payment: 150.00
+    });
+    console.log(`Status: ${updatePayment.status}`);
+    console.log(`Success: ${updatePayment.data.success}`);
+    
+    // Delete payment (admin only)
+    console.log(`\nDELETE /payments/${paymentId}`);
+    const deletePayment = await authenticatedRequest(`/payments/${paymentId}`, 'DELETE', token);
+    console.log(`Status: ${deletePayment.status}`);
+    console.log(`Success: ${deletePayment.data.success}`);
+  }
 }
 
-async function testEndpoint(endpoint, method = 'GET', data = null) {
-    try {
-        const options = {
-            method,
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        };
-
-        if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-            options.body = JSON.stringify(data);
-        }
-
-        console.log(`\n🔍 Testing ${method} ${endpoint}`);
-        const response = await fetch(`${BASE_URL}${endpoint}`, options);
-        const result = await response.json();
-        console.log('Response:', result);
-        return result;
-    } catch (error) {
-        console.error(`❌ ${method} ${endpoint} failed:`, error);
-        return null;
-    }
-}
-
-async function testAuthEndpoints() {
-    console.log('\n📋 Testing Auth Endpoints...');
-    await testEndpoint('/auth/login', 'POST', TEST_USER);
-    await testEndpoint('/auth/register', 'POST', TEST_USER);
-    await testEndpoint('/auth/validate-token');
-}
-
-async function testUserEndpoints() {
-    console.log('\n📋 Testing User Management Endpoints...');
-    // Core User Management
-    await testEndpoint('/users');
-    await testEndpoint('/users/details');
-    await testEndpoint('/users/search?name=test');
-    await testEndpoint('/users/1');
-    await testEndpoint('/users', 'POST', TEST_USER);
-    
-    // User Status
-    await testEndpoint('/user-status');
-    await testEndpoint('/user-status/1');
-    
-    // Profile
-    await testEndpoint('/profile');
-    await testEndpoint('/profile/1');
-    await testEndpoint('/profile', 'POST', TEST_PROFILE);
-    
-    // Roles & Permissions
-    await testEndpoint('/roles');
-    await testEndpoint('/roles/1');
-    await testEndpoint('/roles', 'POST', TEST_ROLE);
-    
-    await testEndpoint('/permissions');
-    await testEndpoint('/permissions/1');
-    await testEndpoint('/permissions', 'POST', TEST_PERMISSION);
-    
-    await testEndpoint('/role-permissions');
-    await testEndpoint('/role-permissions/1');
-    
-    // Modules
-    await testEndpoint('/modules');
-    await testEndpoint('/modules/1');
-    await testEndpoint('/modules', 'POST', TEST_MODULE);
-}
-
-async function testPropertyEndpoints() {
-    console.log('\n📋 Testing Property Management Endpoints...');
-    
-    // Apartments
-    await testEndpoint('/apartments');
-    await testEndpoint('/apartments/details');
-    await testEndpoint('/apartments/search/number?apartment_number=101');
-    await testEndpoint('/apartments/search/owner?owner_id=1');
-    await testEndpoint('/apartments/search/status?status_id=1');
-    await testEndpoint('/apartments/search/tower?tower_id=1');
-    await testEndpoint('/apartments/report/occupancy');
-    await testEndpoint('/apartments/1');
-    await testEndpoint('/apartments/1/details');
-    await testEndpoint('/apartments', 'POST', TEST_APARTMENT);
-    
-    // Apartment Status
-    await testEndpoint('/apartment-status');
-    await testEndpoint('/apartment-status/1');
-    
-    // Owners
-    await testEndpoint('/owners');
-    await testEndpoint('/owners/details');
-    await testEndpoint('/owners/search?user_id=1');
-    await testEndpoint('/owners/tenant-status');
-    await testEndpoint('/owners/1');
-    await testEndpoint('/owners/1/details');
-    await testEndpoint('/owners', 'POST', TEST_OWNER);
-}
-
-async function testPaymentEndpoints() {
-    console.log('\n📋 Testing Payment Endpoints...');
-    await testEndpoint('/payments');
-    await testEndpoint('/payments/stats');
-    await testEndpoint('/payments/1');
-    await testEndpoint('/payments/owner/1');
-    await testEndpoint('/payments', 'POST', TEST_PAYMENT);
-}
-
-async function testPQRSEndpoints() {
-    console.log('\n📋 Testing PQRS Endpoints...');
-    await testEndpoint('/pqrs');
-    await testEndpoint('/pqrs/search');
-    await testEndpoint('/pqrs/stats');
-    await testEndpoint('/pqrs/1');
-    await testEndpoint('/pqrs/owner/1');
-    await testEndpoint('/pqrs/status/1');
-    await testEndpoint('/pqrs/category/1');
-    await testEndpoint('/pqrs', 'POST', TEST_PQRS);
-    
-    await testEndpoint('/pqrs-categories');
-    await testEndpoint('/pqrs-categories/1');
-}
-
-async function testSecurityEndpoints() {
-    console.log('\n📋 Testing Security Endpoints...');
-    
-    // Visitors
-    await testEndpoint('/visitors');
-    await testEndpoint('/visitors/1');
-    await testEndpoint('/visitors/host/1');
-    await testEndpoint('/visitors/date/2024-03-20');
-    await testEndpoint('/visitors', 'POST', TEST_VISITOR);
-    
-    // Guards
-    await testEndpoint('/guards');
-    await testEndpoint('/guards/1');
-    await testEndpoint('/guards/shift/morning');
-    await testEndpoint('/guards', 'POST', TEST_GUARD);
-}
-
-async function testReservationEndpoints() {
-    console.log('\n📋 Testing Reservation Endpoints...');
-    await testEndpoint('/reservations');
-    await testEndpoint('/reservations/1');
-    await testEndpoint('/reservations/owner/1');
-    await testEndpoint('/reservations/date-range?start_date=2024-03-20&end_date=2024-03-21');
-    await testEndpoint('/reservations', 'POST', TEST_RESERVATION);
-    
-    await testEndpoint('/reservation-status');
-    await testEndpoint('/reservation-status/1');
-    
-    await testEndpoint('/reservation-types');
-    await testEndpoint('/reservation-types/1');
-}
-
-async function testNotificationEndpoints() {
-    console.log('\n📋 Testing Notification Endpoints...');
-    await testEndpoint('/notifications');
-    await testEndpoint('/notifications/stats');
-    await testEndpoint('/notifications/1');
-    await testEndpoint('/notifications/recipient/1/user');
-    await testEndpoint('/notifications/unread/1/user');
-    await testEndpoint('/notifications/type/1');
-    await testEndpoint('/notifications', 'POST', TEST_NOTIFICATION);
-}
-
-// Add a facility endpoints test function
-async function testFacilityEndpoints() {
-    console.log('\n📋 Testing Facility Endpoints...');
-    await testEndpoint('/facilities');
-    await testEndpoint('/facilities/availability');
-    await testEndpoint('/facilities/status?status=available');
-    await testEndpoint('/facilities/1');
-    await testEndpoint('/facilities', 'POST', TEST_FACILITY);
-    await testEndpoint('/facilities/1', 'PUT', { name: "Updated Facility", description: "Updated description" });
-    await testEndpoint('/facilities/1/status', 'PUT', { status: "maintenance" });
-}
-
-// Update the runTests function to include facility tests
+// Main test function
 async function runTests() {
-    console.log('🚀 Starting endpoint tests...\n');
+  console.log('=== API ENDPOINT TESTS ===');
+  
+  // Login as admin
+  console.log('\nLogging in as admin...');
+  adminToken = await login(ADMIN_USER.username, ADMIN_USER.password);
+  
+  if (adminToken) {
+    console.log('✅ Admin login successful');
     
-    // First try to login
-    let loginSuccess = await login();
+    // Run admin tests
+    await testUsersModule('Admin', adminToken);
+    await testReservationsModule('Admin', adminToken);
+    await testPetsModule('Admin', adminToken);
+    await testPaymentsModule('Admin', adminToken);
+  } else {
+    console.log('❌ Admin login failed');
+  }
+  
+  // Login as owner
+  console.log('\nLogging in as owner...');
+  ownerToken = await login(OWNER_USER.username, OWNER_USER.password);
+  
+  if (ownerToken) {
+    console.log('✅ Owner login successful');
     
-    // If login fails, try to register and then login
-    if (!loginSuccess) {
-        console.log('\nAttempting to register new test user...');
-        const registerSuccess = await register();
-        if (registerSuccess) {
-            console.log('\nAttempting to login with new user...');
-            loginSuccess = await login();
-        }
-    }
+    // Run owner tests
+    await testUsersModule('Owner', ownerToken);
+    await testReservationsModule('Owner', ownerToken);
+    await testPetsModule('Owner', ownerToken);
+    await testPaymentsModule('Owner', ownerToken);
+  } else {
+    console.log('❌ Owner login failed');
+  }
+  
+  // Login as security
+  console.log('\nLogging in as security...');
+  securityToken = await login(SECURITY_USER.username, SECURITY_USER.password);
+  
+  if (securityToken) {
+    console.log('✅ Security login successful');
     
-    if (loginSuccess) {
-        // Test all endpoint categories
-        await testAuthEndpoints();
-        await testReservationEndpoints();
-        await testFacilityEndpoints();
-        
-        // These endpoints may not be fully implemented yet
-        await testUserEndpoints();
-        await testPropertyEndpoints();
-        await testPaymentEndpoints();
-        await testPQRSEndpoints();
-        await testSecurityEndpoints();
-        await testNotificationEndpoints();
-        
-        console.log('\n✅ Tests completed!');
-    } else {
-        console.log('\n❌ Tests failed - could not authenticate');
-    }
+    // Test visitor endpoints (security should have access)
+    console.log('\n--- Testing Visitor Module as Security ---');
+    
+    // Get all visitors
+    console.log('\nGET /visitors');
+    const allVisitors = await authenticatedRequest('/visitors', 'GET', securityToken);
+    console.log(`Status: ${allVisitors.status}`);
+    console.log(`Success: ${allVisitors.data.success}`);
+    
+    // Test parking endpoints (security should have limited access)
+    console.log('\n--- Testing Parking Module as Security ---');
+    
+    // Get all parking
+    console.log('\nGET /parking');
+    const allParking = await authenticatedRequest('/parking', 'GET', securityToken);
+    console.log(`Status: ${allParking.status}`);
+    console.log(`Success: ${allParking.data.success}`);
+  } else {
+    console.log('❌ Security login failed');
+  }
+  
+  console.log('\n=== ALL TESTS COMPLETED ===');
 }
 
 runTests(); 

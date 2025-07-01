@@ -1,17 +1,17 @@
 import express from "express";
-import AuthController from "../controllers/auth.controller.js";
+import authController from "../controllers/auth.controller.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // Public routes (no authentication required)
-router.post("/login", AuthController.login);
-router.post("/register", AuthController.register);
-router.post("/forgot-password", AuthController.forgotPassword);
-router.post("/reset-password", AuthController.resetPassword);
+router.post("/login", authController.login.bind(authController));
+router.post("/register", authController.register.bind(authController));
+router.post("/forgot-password", authController.forgotPassword.bind(authController));
+router.post("/reset-password", authController.resetPassword.bind(authController));
 
 // Protected routes (authentication required)
-router.post("/change-password", verifyToken, AuthController.changePassword);
-router.get("/validate-token", verifyToken, AuthController.validateToken);
+router.post("/change-password", verifyToken, authController.changePassword.bind(authController));
+router.get("/validate-token", verifyToken, authController.validateToken.bind(authController));
 
 export default router;

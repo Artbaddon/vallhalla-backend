@@ -1,8 +1,14 @@
 import { connect } from "../config/db/connectMysql.js";
-import { encryptPassword } from "../library/appBcrypt.js";
+import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// Helper function to encrypt passwords
+async function encryptPassword(password) {
+  const salt = await bcrypt.genSalt(10);
+  return await bcrypt.hash(password, salt);
+}
 
 const testData = {
   // User status data
@@ -329,6 +335,35 @@ async function createTestData() {
       [apiUserIds[2], 2, webUserIds[0]]
     );
     console.log(`✅ Assigned User role to service_api user`);
+
+    // 12. IMPORTANT: Assign all permissions to the Admin role in the regular users table
+    console.log("📝 Ensuring regular users with Admin role have all permissions...");
+    
+    // Check if there's an Admin role in the roles table for regular users
+    const [adminRoles] = await connect.query("SELECT Role_id FROM role WHERE Role_name = 'Admin'");
+    
+    if (adminRoles.length > 0) {
+      const adminRoleId = adminRoles[0].Role_id;
+      
+      // Get all permissions from the permissions table
+      const [allPermissions] = await connect.query("SELECT Permissions_id FROM permissions");
+      
+      // For each permission, create a link to the Admin role
+      for (const permission of allPermissions) {
+        try {
+          await connect.query(
+            "INSERT INTO permissions_module_role (Permissions_FK_ID, Module_FK_ID, Role_FK_ID) VALUES (?, 1, ?)",
+            [permission.Permissions_id, adminRoleId]
+          );
+        } catch (error) {
+          // If the entry already exists, just continue
+          console.log(`Note: Permission ${permission.Permissions_id} already assigned or error: ${error.message}`);
+        }
+      }
+      console.log(`✅ Assigned all permissions to Admin role (ID: ${adminRoleId}) for regular users`);
+    } else {
+      console.log("❌ No Admin role found in the regular users role table");
+    }
 
     console.log("");
     console.log("🎉 Test data creation completed successfully!");

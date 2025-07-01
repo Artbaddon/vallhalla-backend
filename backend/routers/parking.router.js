@@ -1,27 +1,44 @@
 import { Router } from "express";
 import ParkingController from "../controllers/parking.controller.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
-const name = "/parking";
 
-// Define all routes
-router.post(
-  `${name}/assignVehicle`,
-  authMiddleware([ROLES.ADMIN, ROLES.OWNER]),
-  ParkingController.assignVehicle
+// Protected routes
+// View all parking spots
+router.get('/', 
+  requirePermission('parking', 'read'),
+  ParkingController.show
 );
 
-router
-  .route(name)
-  .post(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), ParkingController.register) // Create parking
-  .get(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), ParkingController.show); // List all parkings
+// View specific parking spot
+router.get('/:id',
+  requirePermission('parking', 'read'),
+  ParkingController.findById
+);
 
-router
-  .route(`${name}/:id`)
-  .get(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), ParkingController.findById) // Get specific parking
-  .put(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), ParkingController.update) // Update parking
-  .delete(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), ParkingController.delete); // Delete parking
+// Only admin can create new parking spots
+router.post('/',
+  requirePermission('parking', 'create'),
+  ParkingController.register
+);
+
+// Only admin can update parking configuration
+router.put('/:id',
+  requirePermission('parking', 'update'),
+  ParkingController.update
+);
+
+// Only admin can delete parking spots
+router.delete('/:id',
+  requirePermission('parking', 'delete'),
+  ParkingController.delete
+);
+
+// Assign vehicle to parking spot
+router.post('/assign',
+  requirePermission('parking', 'update'),
+  ParkingController.assignVehicle
+);
 
 export default router;

@@ -1,31 +1,72 @@
 import express from "express";
-import { authMiddleware, ownerResourceAccess } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+
 import ApartmentController from "../controllers/apartment.controller.js";
+import {
+  requirePermission,
+  requireOwnership,
+} from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 // Public Routes - None for apartments
 
 // Admin-only routes
-router.post("/", authMiddleware([ROLES.ADMIN]), ApartmentController.register);
-router.put("/:id", authMiddleware([ROLES.ADMIN]), ApartmentController.update);
-router.patch("/:id/status", authMiddleware([ROLES.ADMIN]), ApartmentController.updateStatus);
-router.delete("/:id", authMiddleware([ROLES.ADMIN]), ApartmentController.delete);
+router.post(
+  "/",
+  requirePermission("apartments", "create"),
+  ApartmentController.register
+);
+router.put(
+  "/:id",
+  requirePermission("apartments", "update"),
+  ApartmentController.update
+);
+router.patch(
+  "/:id/status",
+  requirePermission("apartments", "update"),
+  ApartmentController.updateStatus
+);
+router.delete(
+  "/:id",
+  requirePermission("apartments", "delete"),
+  ApartmentController.delete
+);
 
-// Admin and Staff routes
-router.get("/report/occupancy", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), ApartmentController.getOccupancyReport);
+router.get(
+  "/report/occupancy",
+  requirePermission("apartments", "read"),
+  ApartmentController.getOccupancyReport
+);
 
-// Admin, Staff, and Owner routes
-router.get("/", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess(), ApartmentController.show);
-router.get("/details", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess(), ApartmentController.showWithDetails);
-router.get("/search/number", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ApartmentController.findByNumber);
-router.get("/search/status", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ApartmentController.findByStatus);
-router.get("/search/tower", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ApartmentController.findByTower);
 
-// Owner can only see their own apartments
-router.get("/search/owner", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess(), ApartmentController.findByOwner);
-router.get("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), ApartmentController.findById);
-router.get("/:id/details", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), ApartmentController.findWithDetails);
+router.get(
+  "/",
+  requirePermission("apartments", "read"),
+  requireOwnership("apartment"),
+  ApartmentController.show
+);
+router.get(
+  "/details",
+  requirePermission("apartments", "read"),
+  requireOwnership("apartment"),
+  ApartmentController.showWithDetails
+);
+router.get(
+  "/search/number",
+  requirePermission("apartments", "read"),
+  ApartmentController.findByNumber
+);
+router.get(
+  "/search/status",
+  requirePermission("apartments", "read"),
+  ApartmentController.findByStatus
+);
+router.get(
+  "/search/tower",
+  requirePermission("apartments", "read"),
+  ApartmentController.findByTower
+);
+
+
 
 export default router;

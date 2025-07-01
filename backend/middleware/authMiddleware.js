@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { ROLES, hasApiAccess } from "./rbacConfig.js";
+import { ROLES } from "./rbacConfig.js";
+import PermissionsModel from "../models/permissions.model.js";
 
 dotenv.config();
 
@@ -27,23 +28,32 @@ export const verifyToken = (req, res, next) => {
 export const authMiddleware = (allowedRoles = []) => {
   return (req, res, next) => {
     // First verify the token
-    verifyToken(req, res, () => {
-      // If no specific roles are required, just having a valid token is enough
-      if (!allowedRoles.length) {
-        return next();
-      }
+    verifyToken(req, res, async () => {
+      try {
+        // If no specific roles are required, just having a valid token is enough
+        if (!allowedRoles.length) {
+          return next();
+        }
 
-      const userRole = req.user.roleId;
-      
-      // Check if user's role is in the allowed roles list
-      if (!allowedRoles.includes(userRole)) {
-        console.log(`❌ Access denied. User role ${userRole} not in allowed roles: [${allowedRoles}]`);
-        return res.status(403).json({ 
-          message: "Access denied. You don't have permission to access this resource." 
-        });
-      }
+        const userRole = req.user.roleId;
+        
+        // Check if user's role is in the allowed roles list
+        if (!allowedRoles.includes(userRole)) {
+          console.log(`❌ Access denied. User role ${userRole} not in allowed roles: [${allowedRoles}]`);
+          return res.status(403).json({ 
+            message: "Access denied. You don't have permission to access this resource." 
+          });
+        }
 
-      next();
+        // Get user's permissions from the database
+        const userPermissions = await PermissionsModel.getUserPermissions(userRole);
+        req.userPermissions = userPermissions;
+
+        next();
+      } catch (error) {
+        console.error('Error in auth middleware:', error);
+        res.status(500).json({ message: "Internal server error during authorization." });
+      }
     });
   };
 };
@@ -51,38 +61,56 @@ export const authMiddleware = (allowedRoles = []) => {
 // API endpoint access middleware - checks if the user has access to the specific endpoint and method
 export const apiAccessMiddleware = (req, res, next) => {
   // First verify the token
-  verifyToken(req, res, () => {
-    const userRole = req.user.roleId;
-    const endpoint = req.originalUrl;
-    const method = req.method;
-    
-    // Check if user has access to this endpoint with this method
-    if (!hasApiAccess(endpoint, method, userRole)) {
-      console.log(`❌ API access denied. User role ${userRole} cannot ${method} ${endpoint}`);
-      return res.status(403).json({ 
-        message: "Access denied. You don't have permission to access this resource." 
-      });
+  verifyToken(req, res, async () => {
+    try {
+      const userRole = req.user.roleId;
+      const endpoint = req.originalUrl;
+      const method = req.method;
+      
+      // Extract module name from endpoint (e.g., /api/users -> users)
+      const moduleName = endpoint.split('/')[2];
+      
+      // Map HTTP methods to permission names
+      const methodPermissionMap = {
+        'GET': 'read',
+        'POST': 'create',
+        'PUT': 'update',
+        'DELETE': 'delete'
+      };
+      
+      const permissionName = methodPermissionMap[method];
+      
+      // Check if user has the required permission for this module
+      const hasPermission = await PermissionsModel.checkPermission(userRole, moduleName, permissionName);
+      
+      if (!hasPermission) {
+        console.log(`❌ API access denied. User role ${userRole} cannot ${method} ${endpoint}`);
+        return res.status(403).json({ 
+          message: "Access denied. You don't have permission to access this resource." 
+        });
+      }
+      
+      next();
+    } catch (error) {
+      console.error('Error in API access middleware:', error);
+      res.status(500).json({ message: "Internal server error during authorization." });
     }
-    
-    next();
   });
 };
 
 // Helper function to check specific permissions
-export const checkPermission = (permission) => {
+export const checkPermission = (moduleName, permissionName) => {
   return async (req, res, next) => {
     // First verify the token
     verifyToken(req, res, async () => {
       try {
         const userRole = req.user.roleId;
         
-        // Here you would typically check the role_permissions table
-        // to see if the role has the required permission
-        // This is a placeholder for the actual permission check logic
-        const hasPermission = true; // Replace with actual permission check
+        // Check the permission in the database
+        const hasPermission = await PermissionsModel.checkPermission(userRole, moduleName, permissionName);
         
         if (!hasPermission) {
-          console.log(`❌ Missing permission: ${permission}`);
+          console.log(`❌ Missing permission: ${moduleName}:${permissionName}`);
           return res.status(403).json({ 
             message: "Access denied. Missing required permission." 
           });

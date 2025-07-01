@@ -1,73 +1,91 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class PermissionsModel {
-  static async create({ name, description, action }) {
+  static async getUserPermissions(roleId) {
     try {
-      let sqlQuery = `INSERT INTO permissions (name, description, action) VALUES (?, ?, ?)`;
-      const [result] = await connect.query(sqlQuery, [
-        name,
-        description,
-        action,
-      ]);
-      return result.insertId;
+      const query = `
+        SELECT DISTINCT 
+          m.module_name,
+          p.Permissions_name
+        FROM module_role mr
+        JOIN module m ON mr.Module_FK_ID = m.module_id
+        JOIN permissions_module_role pmr ON pmr.Module_role_FK_ID = mr.Module_role_id
+        JOIN permissions p ON pmr.Permissions_FK_ID = p.Permissions_id
+        WHERE mr.Role_FK_ID = ?
+      `;
+      
+      const [rows] = await connect.query(query, [roleId]);
+      
+      // Transform the flat results into a grouped structure
+      const permissions = rows.reduce((acc, row) => {
+        if (!acc[row.module_name]) {
+          acc[row.module_name] = [];
+        }
+        acc[row.module_name].push(row.Permissions_name);
+        return acc;
+      }, {});
+      
+      return permissions;
     } catch (error) {
-      return { error: error.message };
+      console.error('Error getting user permissions:', error);
+      return null;
     }
   }
 
-  static async show() {
+  static async checkPermission(roleId, moduleName, permissionName) {
     try {
-      let sqlQuery = "SELECT * FROM `permissions` ORDER BY `id` ";
-      const [result] = await connect.query(sqlQuery);
-      return result;
+      const query = `
+        SELECT 1
+        FROM module_role mr
+        JOIN module m ON mr.Module_FK_ID = m.module_id
+        JOIN permissions_module_role pmr ON pmr.Module_role_FK_ID = mr.Module_role_id
+        JOIN permissions p ON pmr.Permissions_FK_ID = p.Permissions_id
+        WHERE mr.Role_FK_ID = ?
+        AND m.module_name = ?
+        AND p.Permissions_name = ?
+        LIMIT 1
+      `;
+      
+      const [rows] = await connect.query(query, [roleId, moduleName, permissionName]);
+      return rows.length > 0;
     } catch (error) {
-      return { error: error.message };
+      console.error('Error checking permission:', error);
+      return false;
     }
   }
 
-  static async update(id, { name, description, action }) {
+  static async getModulePermissions(moduleId) {
     try {
-      let sqlQuery =
-        "UPDATE permissions SET name = ?, description = ?, action = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;";
-      const [result] = await connect.query(sqlQuery, [
-        name,
-        description,
-        action,
-        id,
-      ]);
-      if (result.affectedRows === 0) {
-        return { error: "Permission not found" };
-      } else {
-        return result.affectedRows;
-      }
+      const query = `
+        SELECT DISTINCT p.Permissions_name
+        FROM permissions_module_role pmr
+        JOIN permissions p ON pmr.Permissions_FK_ID = p.Permissions_id
+        JOIN module_role mr ON pmr.Module_role_FK_ID = mr.Module_role_id
+        WHERE mr.Module_FK_ID = ?
+      `;
+      
+      const [rows] = await connect.query(query, [moduleId]);
+      return rows.map(row => row.Permissions_name);
     } catch (error) {
-      return { error: error.message };
+      console.error('Error getting module permissions:', error);
+      return [];
     }
   }
 
-  static async delete(id) {
+  static async getRoleModules(roleId) {
     try {
-      let sqlQuery = `DELETE FROM permissions WHERE id = ?`;
-      const [result] = await connect.query(sqlQuery, id);
-
-      if (result.affectedRows === 0) {
-        return { error: "Permission not found" };
-      } else {
-        return result.affectedRows;
-      }
+      const query = `
+        SELECT DISTINCT m.module_name
+        FROM module_role mr
+        JOIN module m ON mr.Module_FK_ID = m.module_id
+        WHERE mr.Role_FK_ID = ?
+      `;
+      
+      const [rows] = await connect.query(query, [roleId]);
+      return rows.map(row => row.module_name);
     } catch (error) {
-      return { error: error.message };
-    }
-  }
-
-  static async findById(id) {
-    try {
-      let sqlQuery = `SELECT * FROM permissions WHERE id = ?`;
-      const [result] = await connect.query(sqlQuery, id);
-
-      return result;
-    } catch (error) {
-      return { error: error.message };
+      console.error('Error getting role modules:', error);
+      return [];
     }
   }
 }

@@ -1,7 +1,7 @@
 import ReservationStatusModel from "../models/reservationStatus.model.js";
 
 class ReservationStatusController {
-  static async create(req, res) {
+  async create(req, res) {
     try {
       const { status_name } = req.body;
       
@@ -24,7 +24,7 @@ class ReservationStatusController {
     }
   }
 
-  static async show(req, res) {
+  async show(req, res) {
     try {
       const result = await ReservationStatusModel.show();
       
@@ -38,7 +38,7 @@ class ReservationStatusController {
     }
   }
 
-  static async update(req, res) {
+  async update(req, res) {
     try {
       const { id } = req.params;
       const { status_name } = req.body;
@@ -61,7 +61,7 @@ class ReservationStatusController {
     }
   }
 
-  static async delete(req, res) {
+  async delete(req, res) {
     try {
       const { id } = req.params;
       const result = await ReservationStatusModel.delete(id);
@@ -78,7 +78,7 @@ class ReservationStatusController {
     }
   }
 
-  static async findById(req, res) {
+  async findById(req, res) {
     try {
       const { id } = req.params;
       const result = await ReservationStatusModel.findById(id);
@@ -98,4 +98,4 @@ class ReservationStatusController {
   }
 }
 
-export default ReservationStatusController; 
+export default new ReservationStatusController(); 

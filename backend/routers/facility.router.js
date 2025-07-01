@@ -1,22 +1,50 @@
-import express from 'express';
-import * as facilityController from '../controllers/facility.controller.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
-import { ROLES } from '../middleware/rbacConfig.js';
+import { Router } from "express";
+import * as facilityController from "../controllers/facility.controller.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
 
-const router = express.Router();
+const router = Router();
 
 // Admin-only routes
-router.post('/', authMiddleware([ROLES.ADMIN]), facilityController.register);
-router.put('/:id', authMiddleware([ROLES.ADMIN]), facilityController.update);
-router.put('/:id/status', authMiddleware([ROLES.ADMIN]), facilityController.updateStatus);
-router.delete('/:id', authMiddleware([ROLES.ADMIN]), facilityController.remove);
+router.post("/", 
+  requirePermission("facilities", "create"),
+  facilityController.register
+);
 
-// Admin and Staff routes
-router.get('/availability', authMiddleware([ROLES.ADMIN, ROLES.STAFF]), facilityController.getAvailability);
+router.put("/:id", 
+  requirePermission("facilities", "update"),
+  facilityController.update
+);
 
-// Routes accessible to all authenticated users
-router.get('/', authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER, ROLES.SECURITY]), facilityController.show);
-router.get('/status', authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER, ROLES.SECURITY]), facilityController.findByStatus);
-router.get('/:id', authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER, ROLES.SECURITY]), facilityController.findById);
+router.put("/:id/status", 
+  requirePermission("facilities", "update"),
+  facilityController.updateStatus
+);
 
-export default router; 
+router.delete("/:id", 
+  requirePermission("facilities", "delete"),
+  facilityController.remove
+);
+
+// Staff and admin routes
+router.get("/availability", 
+  requirePermission("facilities", "read"),
+  facilityController.getAvailability
+);
+
+// All authenticated users
+router.get("/", 
+  requirePermission("facilities", "read"),
+  facilityController.show
+);
+
+router.get("/status", 
+  requirePermission("facilities", "read"),
+  facilityController.findByStatus
+);
+
+router.get("/:id", 
+  requirePermission("facilities", "read"),
+  facilityController.findById
+);
+
+export default router;

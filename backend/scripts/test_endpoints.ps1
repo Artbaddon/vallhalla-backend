@@ -6,55 +6,317 @@ $Blue = [System.ConsoleColor]::Blue
 # Base URL
 $BaseUrl = "http://localhost:3000/api"
 
-# Function to print test results
-function Print-Result {
+# Test users
+$adminUser = @{
+    username = "testadmin"
+    password = "admin123"
+    email = "admin@test.com"
+}
+
+$ownerUser = @{
+    username = "testowner"
+    password = "owner123"
+    email = "owner@test.com"
+}
+
+# Store tokens
+$adminToken = ""
+$ownerToken = ""
+
+# Helper function to make authenticated requests
+function Invoke-ApiRequest {
     param (
-        [bool]$success,
-        [string]$message
+        [string]$Endpoint,
+        [string]$Method = "GET",
+        [string]$Token = $null,
+        [object]$Body = $null
     )
     
-    if ($success) {
-        Write-Host "✓ $message - Success" -ForegroundColor $Green
-    } else {
-        Write-Host "✗ $message - Failed" -ForegroundColor $Red
+    $headers = @{
+        "Content-Type" = "application/json"
+    }
+    
+    if ($Token) {
+        $headers["Authorization"] = "Bearer $Token"
+    }
+    
+    $params = @{
+        Uri = "$BaseUrl$Endpoint"
+        Method = $Method
+        Headers = $headers
+        ContentType = "application/json"
+    }
+    
+    if ($Body -and ($Method -eq "POST" -or $Method -eq "PUT" -or $Method -eq "PATCH")) {
+        $params["Body"] = ($Body | ConvertTo-Json)
+    }
+    
+    try {
+        $response = Invoke-RestMethod @params -ErrorAction Stop
+        return @{
+            status = 200
+            data = $response
+        }
+    }
+    catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        $errorMessage = $_.ErrorDetails.Message
+        
+        if ($errorMessage) {
+            try {
+                $errorData = $errorMessage | ConvertFrom-Json
+            }
+            catch {
+                $errorData = @{ error = $errorMessage }
+            }
+        }
+        else {
+            $errorData = @{ error = $_.Exception.Message }
+        }
+        
+        return @{
+            status = $statusCode
+            data = $errorData
+        }
     }
 }
 
-# Function to make API calls
-function Make-Request {
+# Login function
+function Login-User {
     param (
-        [string]$method,
-        [string]$endpoint,
-        [string]$body = "",
-        [hashtable]$headers = @{}
+        [string]$Username,
+        [string]$Password
     )
     
-    try {
-        $fullUrl = "$BaseUrl$endpoint"
-        Write-Host "Testing URL: $fullUrl" -ForegroundColor $Blue
-        $headers["Content-Type"] = "application/json"
-        
-        if ($Token) {
-            $headers["Authorization"] = "Bearer $Token"
+    $body = @{
+        username = $Username
+        password = $Password
+    }
+    
+    $result = Invoke-ApiRequest -Endpoint "/auth/login" -Method "POST" -Body $body
+    
+    if ($result.status -eq 200 -and $result.data.token) {
+        return $result.data.token
+    }
+    
+    return $null
+}
+
+# Test functions for each module
+function Test-UsersModule {
+    param (
+        [string]$Role,
+        [string]$Token
+    )
+    
+    Write-Host "`n--- Testing Users Module as $Role ---" -ForegroundColor Cyan
+    
+    # Get all users
+    Write-Host "`nGET /users" -ForegroundColor Yellow
+    $allUsers = Invoke-ApiRequest -Endpoint "/users" -Token $Token
+    Write-Host "Status: $($allUsers.status)"
+    Write-Host "Success: $($allUsers.data.success)"
+    Write-Host "Count: $($allUsers.data.count)"
+    
+    # Get user profile
+    Write-Host "`nGET /users/me/profile" -ForegroundColor Yellow
+    $profile = Invoke-ApiRequest -Endpoint "/users/me/profile" -Token $Token
+    Write-Host "Status: $($profile.status)"
+    Write-Host "Success: $($profile.data.success)"
+    
+    if ($Role -eq "Admin") {
+        # Create a new user (admin only)
+        Write-Host "`nPOST /users" -ForegroundColor Yellow
+        $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+        $newUser = @{
+            username = "testuser_$timestamp"
+            password = "test123"
+            email = "test$timestamp@example.com"
+            user_status_id = 1
+            role_id = 3
         }
         
-        if ($body -ne "") {
-            $response = Invoke-RestMethod -Method $method -Uri $fullUrl -Headers $headers -Body $body -ContentType "application/json"
-        } else {
-            $response = Invoke-RestMethod -Method $method -Uri $fullUrl -Headers $headers
-        }
+        $createUser = Invoke-ApiRequest -Endpoint "/users" -Method "POST" -Token $Token -Body $newUser
+        Write-Host "Status: $($createUser.status)"
+        Write-Host "Success: $($createUser.data.success)"
         
-        Write-Host "Response: $($response | ConvertTo-Json -Depth 1)" -ForegroundColor $Blue
-        if ($response.token) {
-            $script:Token = $response.token
-            Write-Host "Token received: $Token" -ForegroundColor $Blue
+        if ($createUser.data.success) {
+            $userId = $createUser.data.data.id
+            
+            # Update user
+            Write-Host "`nPUT /users/$userId" -ForegroundColor Yellow
+            $updateTimestamp = Get-Date -Format "yyyyMMddHHmmss"
+            $updateUser = Invoke-ApiRequest -Endpoint "/users/$userId" -Method "PUT" -Token $Token -Body @{
+                email = "updated$updateTimestamp@example.com"
+            }
+            Write-Host "Status: $($updateUser.status)"
+            Write-Host "Success: $($updateUser.data.success)"
+            
+            # Delete user
+            Write-Host "`nDELETE /users/$userId" -ForegroundColor Yellow
+            $deleteUser = Invoke-ApiRequest -Endpoint "/users/$userId" -Method "DELETE" -Token $Token
+            Write-Host "Status: $($deleteUser.status)"
+            Write-Host "Success: $($deleteUser.data.success)"
         }
-        return $true
-    } catch {
-        Write-Host "Response: $($_.Exception.Message)" -ForegroundColor $Red
-        return $false
     }
 }
+
+function Test-ReservationsModule {
+    param (
+        [string]$Role,
+        [string]$Token
+    )
+    
+    Write-Host "`n--- Testing Reservations Module as $Role ---" -ForegroundColor Cyan
+    
+    # Get all reservations
+    Write-Host "`nGET /reservations" -ForegroundColor Yellow
+    $allReservations = Invoke-ApiRequest -Endpoint "/reservations" -Token $Token
+    Write-Host "Status: $($allReservations.status)"
+    Write-Host "Success: $($allReservations.data.success)"
+    Write-Host "Count: $($allReservations.data.count)"
+    
+    # Create a new reservation
+    Write-Host "`nPOST /reservations" -ForegroundColor Yellow
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $newReservation = @{
+        reservation_date = $today
+        reservation_start_time = "10:00:00"
+        reservation_end_time = "12:00:00"
+        reservation_type_id = 1
+        owner_id = 1
+        notes = "Test reservation"
+    }
+    
+    $createReservation = Invoke-ApiRequest -Endpoint "/reservations" -Method "POST" -Token $Token -Body $newReservation
+    Write-Host "Status: $($createReservation.status)"
+    Write-Host "Success: $($createReservation.data.success)"
+    
+    if ($createReservation.data.success) {
+        $reservationId = $createReservation.data.data.id
+        
+        # Get specific reservation
+        Write-Host "`nGET /reservations/$reservationId" -ForegroundColor Yellow
+        $getReservation = Invoke-ApiRequest -Endpoint "/reservations/$reservationId" -Token $Token
+        Write-Host "Status: $($getReservation.status)"
+        Write-Host "Success: $($getReservation.data.success)"
+        
+        # Update reservation
+        Write-Host "`nPUT /reservations/$reservationId" -ForegroundColor Yellow
+        $updateReservation = Invoke-ApiRequest -Endpoint "/reservations/$reservationId" -Method "PUT" -Token $Token -Body @{
+            notes = "Updated test reservation"
+        }
+        Write-Host "Status: $($updateReservation.status)"
+        Write-Host "Success: $($updateReservation.data.success)"
+        
+        if ($Role -eq "Admin") {
+            # Delete reservation (admin only)
+            Write-Host "`nDELETE /reservations/$reservationId" -ForegroundColor Yellow
+            $deleteReservation = Invoke-ApiRequest -Endpoint "/reservations/$reservationId" -Method "DELETE" -Token $Token
+            Write-Host "Status: $($deleteReservation.status)"
+            Write-Host "Success: $($deleteReservation.data.success)"
+        }
+    }
+}
+
+function Test-PetsModule {
+    param (
+        [string]$Role,
+        [string]$Token
+    )
+    
+    Write-Host "`n--- Testing Pets Module as $Role ---" -ForegroundColor Cyan
+    
+    # Get all pets
+    Write-Host "`nGET /pets" -ForegroundColor Yellow
+    $allPets = Invoke-ApiRequest -Endpoint "/pets" -Token $Token
+    Write-Host "Status: $($allPets.status)"
+    Write-Host "Success: $($allPets.data.success)"
+    Write-Host "Count: $($allPets.data.count)"
+    
+    # Create a new pet
+    Write-Host "`nPOST /pets" -ForegroundColor Yellow
+    $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+    $newPet = @{
+        pet_name = "Test Pet $timestamp"
+        pet_type = "Dog"
+        pet_breed = "Mixed"
+        pet_color = "Brown"
+        pet_age = 3
+        owner_id = 1
+    }
+    
+    $createPet = Invoke-ApiRequest -Endpoint "/pets" -Method "POST" -Token $Token -Body $newPet
+    Write-Host "Status: $($createPet.status)"
+    Write-Host "Success: $($createPet.data.success)"
+    
+    if ($createPet.data.success) {
+        $petId = $createPet.data.data.id
+        
+        # Get specific pet
+        Write-Host "`nGET /pets/$petId" -ForegroundColor Yellow
+        $getPet = Invoke-ApiRequest -Endpoint "/pets/$petId" -Token $Token
+        Write-Host "Status: $($getPet.status)"
+        Write-Host "Success: $($getPet.data.success)"
+        
+        # Update pet
+        Write-Host "`nPUT /pets/$petId" -ForegroundColor Yellow
+        $updateTimestamp = Get-Date -Format "yyyyMMddHHmmss"
+        $updatePet = Invoke-ApiRequest -Endpoint "/pets/$petId" -Method "PUT" -Token $Token -Body @{
+            pet_name = "Updated Pet $updateTimestamp"
+        }
+        Write-Host "Status: $($updatePet.status)"
+        Write-Host "Success: $($updatePet.data.success)"
+        
+        # Delete pet
+        Write-Host "`nDELETE /pets/$petId" -ForegroundColor Yellow
+        $deletePet = Invoke-ApiRequest -Endpoint "/pets/$petId" -Method "DELETE" -Token $Token
+        Write-Host "Status: $($deletePet.status)"
+        Write-Host "Success: $($deletePet.data.success)"
+    }
+}
+
+# Main test function
+function Run-Tests {
+    Write-Host "=== API ENDPOINT TESTS ===" -ForegroundColor Green
+    
+    # Login as admin
+    Write-Host "`nLogging in as admin..." -ForegroundColor Magenta
+    $script:adminToken = Login-User -Username $adminUser.username -Password $adminUser.password
+    
+    if ($adminToken) {
+        Write-Host "✅ Admin login successful" -ForegroundColor Green
+        
+        # Run admin tests
+        Test-UsersModule -Role "Admin" -Token $adminToken
+        Test-ReservationsModule -Role "Admin" -Token $adminToken
+        Test-PetsModule -Role "Admin" -Token $adminToken
+    }
+    else {
+        Write-Host "❌ Admin login failed" -ForegroundColor Red
+    }
+    
+    # Login as owner
+    Write-Host "`nLogging in as owner..." -ForegroundColor Magenta
+    $script:ownerToken = Login-User -Username $ownerUser.username -Password $ownerUser.password
+    
+    if ($ownerToken) {
+        Write-Host "✅ Owner login successful" -ForegroundColor Green
+        
+        # Run owner tests
+        Test-UsersModule -Role "Owner" -Token $ownerToken
+        Test-ReservationsModule -Role "Owner" -Token $ownerToken
+        Test-PetsModule -Role "Owner" -Token $ownerToken
+    }
+    else {
+        Write-Host "❌ Owner login failed" -ForegroundColor Red
+    }
+    
+    Write-Host "`n=== ALL TESTS COMPLETED ===" -ForegroundColor Green
+}
+
+# Run the tests
+Run-Tests
 
 Write-Host "Starting API Endpoint Tests" -ForegroundColor $Blue
 Write-Host "================================"

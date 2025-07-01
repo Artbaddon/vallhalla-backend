@@ -1,14 +1,33 @@
 import { Router } from "express";
 import PQRSCategoryController from "../controllers/pqrsCategory.controller.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
-const name = "/pqrs-category";
 
-// Public Routes
-router.post(name, PQRSCategoryController.register);
-router.get(name + "/", PQRSCategoryController.show);
-router.get(name + "/:id", PQRSCategoryController.findById);
-router.put(name + "/:id", PQRSCategoryController.update);
-router.delete(name + "/:id", PQRSCategoryController.delete);
+// Admin-only routes
+router.post("/", 
+  requirePermission("pqrsCategories", "create"), 
+  PQRSCategoryController.register
+);
+
+router.get("/", 
+  requirePermission("pqrsCategories", "read"), 
+  PQRSCategoryController.show
+);
+
+router.get("/:id", 
+  requirePermission("pqrsCategories", "read"), 
+  PQRSCategoryController.findById
+);
+
+router.put("/:id", 
+  requirePermission("pqrsCategories", "update"), 
+  PQRSCategoryController.update
+);
+
+router.delete("/:id", 
+  requirePermission("pqrsCategories", "delete"), 
+  PQRSCategoryController.delete
+);
 
 export default router;

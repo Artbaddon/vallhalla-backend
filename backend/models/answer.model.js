@@ -52,6 +52,104 @@ class AnswerModel {
       return false;
     }
   }
+
+  // New method to get all answers
+  static async getAll() {
+    try {
+      const [rows] = await connect.query(`
+        SELECT a.*, 
+               s.title as survey_title, 
+               q.question_text,
+               u.Users_name as user_name
+        FROM answer a
+        LEFT JOIN survey s ON a.survey_id = s.survey_id
+        LEFT JOIN question q ON a.question_id = q.question_id
+        LEFT JOIN users u ON a.user_id = u.Users_id
+        ORDER BY a.created_at DESC
+      `);
+      return rows;
+    } catch (error) {
+      console.error("Error fetching all answers:", error.message);
+      return [];
+    }
+  }
+
+  // New method to find answer by ID
+  static async findById(id) {
+    try {
+      const [rows] = await connect.query(
+        `SELECT a.*, 
+                s.title as survey_title, 
+                q.question_text,
+                u.Users_name as user_name
+         FROM answer a
+         LEFT JOIN survey s ON a.survey_id = s.survey_id
+         LEFT JOIN question q ON a.question_id = q.question_id
+         LEFT JOIN users u ON a.user_id = u.Users_id
+         WHERE a.answer_id = ?`,
+        [id]
+      );
+      return rows[0] || null;
+    } catch (error) {
+      console.error("Error fetching answer by ID:", error.message);
+      return null;
+    }
+  }
+
+  // New method to get answer statistics
+  static async getStats() {
+    try {
+      // Get total answers
+      const [totalAnswers] = await connect.query(
+        `SELECT COUNT(*) as total FROM answer`
+      );
+      
+      // Get answers per survey
+      const [surveyStats] = await connect.query(
+        `SELECT 
+           s.survey_id,
+           s.title,
+           COUNT(a.answer_id) as answer_count
+         FROM survey s
+         LEFT JOIN answer a ON s.survey_id = a.survey_id
+         GROUP BY s.survey_id
+         ORDER BY answer_count DESC`
+      );
+      
+      // Get answers per question type
+      const [questionTypeStats] = await connect.query(
+        `SELECT 
+           q.question_type,
+           COUNT(a.answer_id) as answer_count
+         FROM question q
+         LEFT JOIN answer a ON q.question_id = a.question_id
+         GROUP BY q.question_type`
+      );
+      
+      // Get answers per user (top 10)
+      const [userStats] = await connect.query(
+        `SELECT 
+           u.Users_id,
+           u.Users_name,
+           COUNT(a.answer_id) as answer_count
+         FROM users u
+         JOIN answer a ON u.Users_id = a.user_id
+         GROUP BY u.Users_id
+         ORDER BY answer_count DESC
+         LIMIT 10`
+      );
+      
+      return {
+        total_answers: totalAnswers[0].total,
+        surveys: surveyStats,
+        question_types: questionTypeStats,
+        top_users: userStats
+      };
+    } catch (error) {
+      console.error("Error getting answer stats:", error.message);
+      return null;
+    }
+  }
 }
 
 export default AnswerModel;

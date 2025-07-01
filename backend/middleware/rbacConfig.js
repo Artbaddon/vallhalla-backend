@@ -1,256 +1,176 @@
 /**
- * Role-Based Access Control Configuration
- * 
- * This file defines the mapping between frontend modules and backend endpoints,
- * specifying which roles have access to which resources.
+ * Permission-Based Access Control Configuration
+ * This file defines the core permission checking logic based on the database schema
  */
 
-// Define role constants
+// Define role constants for easier reference
 export const ROLES = {
   ADMIN: 1,
-  STAFF: 2,
-  OWNER: 3,
-  SECURITY: 4
+  OWNER: 2,
+  SECURITY: 3
 };
 
-// Define module access by role
-export const MODULE_ACCESS = {
-  // Admin modules - Admin can access everything
-  'admin/dashboard': [ROLES.ADMIN],
-  'admin/apartments': [ROLES.ADMIN],
-  'admin/guard': [ROLES.ADMIN],
-  'admin/notifications': [ROLES.ADMIN],
-  'admin/owners': [ROLES.ADMIN],
-  'admin/payments': [ROLES.ADMIN],
-  'admin/pqrs': [ROLES.ADMIN],
-  'admin/reservations': [ROLES.ADMIN],
-  'admin/users': [ROLES.ADMIN],
-  'admin/roles': [ROLES.ADMIN],
-  'admin/permissions': [ROLES.ADMIN],
-  'admin/surveys': [ROLES.ADMIN],
-  'admin/pets': [ROLES.ADMIN],
-  'admin/tenants': [ROLES.ADMIN],
-  'admin/parking': [ROLES.ADMIN],
-  'admin/visitors': [ROLES.ADMIN],
-  
-  // Owner modules
-  'owner/dashboard': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/parking': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/payments': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/pets': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/tenants': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/pqrs': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/profile': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/reservations': [ROLES.ADMIN, ROLES.OWNER],
-  'owner/surveys': [ROLES.ADMIN, ROLES.OWNER],
-  
-  // Security/Guard modules
-  'guard/dashboard': [ROLES.ADMIN, ROLES.SECURITY],
-  'guard/parking': [ROLES.ADMIN, ROLES.SECURITY],
-  'guard/profile': [ROLES.ADMIN, ROLES.SECURITY],
-  'guard/visitors': [ROLES.ADMIN, ROLES.SECURITY]
-};
+// Helper function to check if a user has a specific permission on a module
+export async function hasPermission(connection, userId, moduleName, permissionName) {
+  try {
+    // First check if user is admin - admins have all permissions
+    const isUserAdmin = await isAdmin(connection, userId);
+    if (isUserAdmin) {
+      return true;
+    }
 
-// Define API endpoint access by role
-export const API_ACCESS = {
-  // User management
-  '/api/users': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN],
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/users/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER, ROLES.SECURITY], // With owner resource access
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/users/me/profile': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER, ROLES.SECURITY]
-  },
-  
-  // Owner management
-  '/api/owners': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN],
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/owners/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/owners/me/profile': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER]
-  },
-  
-  // Apartment management
-  '/api/apartments': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // Filtered for owners
-    'POST': [ROLES.ADMIN],
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/apartments/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  
-  // Reservation management
-  '/api/reservations': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN, ROLES.OWNER],
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/reservations/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'DELETE': [ROLES.ADMIN, ROLES.OWNER] // Owners can delete their own reservations
-  },
-  '/api/reservations/my/reservations': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER]
-  },
-  '/api/reservations/date-range': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER]
-  },
-  
-  // Payment management
-  '/api/payments': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN, ROLES.OWNER], // Owners can make payments
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/payments/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/payments/owner/:owner_id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER] // Owners can view their own payments
-  },
-  
-  // PQRS management
-  '/api/pqrs': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN, ROLES.OWNER], // Owners can create PQRS
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/pqrs/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access for updates
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/pqrs/owner/:owner_id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER] // Owners can view their own PQRS
-  },
-  
-  // Visitor management
-  '/api/visitors': {
-    'GET': [ROLES.ADMIN, ROLES.SECURITY],
-    'POST': [ROLES.ADMIN, ROLES.SECURITY], // Security can register visitors
-    'PUT': [ROLES.ADMIN, ROLES.SECURITY],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/visitors/:id': {
-    'GET': [ROLES.ADMIN, ROLES.SECURITY, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN, ROLES.SECURITY],
-    'DELETE': [ROLES.ADMIN]
-  },
-  
-  // Parking management
-  '/api/parking': {
-    'GET': [ROLES.ADMIN, ROLES.SECURITY, ROLES.OWNER], // All can view parking
-    'POST': [ROLES.ADMIN],
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/parking/:id': {
-    'GET': [ROLES.ADMIN, ROLES.SECURITY, ROLES.OWNER], // All can view specific parking
-    'PUT': [ROLES.ADMIN, ROLES.SECURITY], // Security can assign parking
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/parking/reserve': {
-    'POST': [ROLES.ADMIN, ROLES.OWNER] // Owners can reserve parking
-  },
-  '/api/parking/available': {
-    'GET': [ROLES.ADMIN, ROLES.SECURITY, ROLES.OWNER] // All can view available parking
-  },
-  
-  // Pet management
-  '/api/pets': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN, ROLES.OWNER], // Owners can register pets
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/pets/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN, ROLES.OWNER], // Owners can update their pets
-    'DELETE': [ROLES.ADMIN, ROLES.OWNER] // Owners can delete their pets
-  },
-  '/api/pets/owner/:owner_id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER] // Owners can view their own pets
-  },
-  
-  // Tenant management
-  '/api/tenants': {
-    'GET': [ROLES.ADMIN],
-    'POST': [ROLES.ADMIN, ROLES.OWNER], // Owners can register tenants
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/tenants/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // With owner resource access
-    'PUT': [ROLES.ADMIN, ROLES.OWNER], // Owners can update their tenants
-    'DELETE': [ROLES.ADMIN, ROLES.OWNER] // Owners can delete their tenants
-  },
-  '/api/tenants/owner/:owner_id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER] // Owners can view their own tenants
-  },
-  
-  // Survey management
-  '/api/surveys': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // Owners can view surveys
-    'POST': [ROLES.ADMIN],
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/surveys/:id': {
-    'GET': [ROLES.ADMIN, ROLES.OWNER], // Owners can view specific surveys
-    'PUT': [ROLES.ADMIN],
-    'DELETE': [ROLES.ADMIN]
-  },
-  '/api/surveys/:id/respond': {
-    'POST': [ROLES.ADMIN, ROLES.OWNER] // Owners can respond to surveys
+    const query = `
+      SELECT COUNT(*) as count
+      FROM users u
+      JOIN role r ON u.Role_FK_ID = r.Role_id
+      JOIN module_role mr ON r.Role_id = mr.Role_FK_ID
+      JOIN module m ON mr.Module_FK_ID = m.module_id
+      JOIN permissions_module_role pmr ON mr.Module_role_id = pmr.Module_role_FK_ID
+      JOIN permissions p ON pmr.Permissions_FK_ID = p.Permissions_id
+      WHERE u.Users_id = ?
+        AND m.module_name = ?
+        AND p.Permissions_name = ?
+        AND u.User_status_FK_ID = 1  
+    `;
+
+    const [rows] = await connection.query(query, [userId, moduleName, permissionName]);
+    return rows[0].count > 0;
+  } catch (error) {
+    console.error('Permission check error:', error);
+    return false;
   }
-};
-
-// Helper function to check if a role has access to a specific API endpoint and method
-export function hasApiAccess(endpoint, method, roleId) {
-  // Find the most specific matching endpoint pattern
-  const matchingEndpoint = Object.keys(API_ACCESS)
-    .filter(pattern => {
-      // Convert pattern to regex by replacing :id with any character match
-      const regexPattern = pattern
-        .replace(/:\w+/g, '[^/]+')
-        .replace(/\//g, '\\/');
-      
-      return new RegExp(`^${regexPattern}$`).test(endpoint);
-    })
-    .sort((a, b) => b.length - a.length)[0]; // Sort by specificity (length)
-  
-  if (!matchingEndpoint) return false;
-  
-  const methodAccess = API_ACCESS[matchingEndpoint][method.toUpperCase()];
-  return methodAccess && methodAccess.includes(roleId);
 }
 
-// Helper function to check if a role has access to a specific frontend module
-export function hasModuleAccess(module, roleId) {
-  return MODULE_ACCESS[module] && MODULE_ACCESS[module].includes(roleId);
-} 
+// Helper function to get all permissions for a user
+export async function getUserPermissions(connection, userId) {
+  try {
+    // If user is admin, return all possible permissions
+    const isUserAdmin = await isAdmin(connection, userId);
+    if (isUserAdmin) {
+      const query = `
+        SELECT DISTINCT 
+          m.module_name,
+          p.Permissions_name
+        FROM module m
+        CROSS JOIN permissions p
+        ORDER BY m.module_name, p.Permissions_name
+      `;
+      const [rows] = await connection.query(query);
+      return rows;
+    }
+
+    // For non-admin users, get their specific permissions
+    const query = `
+      SELECT DISTINCT 
+        m.module_name,
+        p.Permissions_name
+      FROM users u
+      JOIN role r ON u.Role_FK_ID = r.Role_id
+      JOIN module_role mr ON r.Role_id = mr.Role_FK_ID
+      JOIN module m ON mr.Module_FK_ID = m.module_id
+      JOIN permissions_module_role pmr ON mr.Module_role_id = pmr.Module_role_FK_ID
+      JOIN permissions p ON pmr.Permissions_FK_ID = p.Permissions_id
+      WHERE u.Users_id = ?
+        AND u.User_status_FK_ID = 1  -- Active status
+      ORDER BY m.module_name, p.Permissions_name
+    `;
+
+    const [rows] = await connection.query(query, [userId]);
+    return rows;
+  } catch (error) {
+    console.error('Error getting user permissions:', error);
+    return [];
+  }
+}
+
+// Helper function to check if user is admin
+export async function isAdmin(connection, userId) {
+  try {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM users u
+      JOIN role r ON u.Role_FK_ID = r.Role_id
+      WHERE u.Users_id = ?
+        AND r.Role_id = ?
+        AND u.User_status_FK_ID = 1  -- Active status
+    `;
+
+    const [rows] = await connection.query(query, [userId, ROLES.ADMIN]);
+    return rows[0].count > 0;
+  } catch (error) {
+    console.error('Admin check error:', error);
+    return false;
+  }
+}
+
+// Helper function to check if user owns a resource
+export async function ownsResource(connection, userId, resourceType, resourceId) {
+  try {
+    // First check if user is admin - admins can access all resources
+    const isUserAdmin = await isAdmin(connection, userId);
+    if (isUserAdmin) {
+      return true;
+    }
+
+    let query;
+    switch (resourceType) {
+      case 'apartment':
+        query = `
+          SELECT COUNT(*) as count
+          FROM apartment a
+          JOIN owner o ON a.Owner_FK_ID = o.Owner_id
+          WHERE o.User_FK_ID = ? AND a.Apartment_id = ?
+        `;
+        break;
+      case 'pet':
+        query = `
+          SELECT COUNT(*) as count
+          FROM pet p
+          JOIN owner o ON p.Owner_FK_ID = o.Owner_id
+          WHERE o.User_FK_ID = ? AND p.Pet_id = ?
+        `;
+        break;
+      case 'pqrs':
+        query = `
+          SELECT COUNT(*) as count
+          FROM pqrs p
+          JOIN owner o ON p.Owner_FK_ID = o.Owner_id
+          WHERE o.User_FK_ID = ? AND p.PQRS_id = ?
+        `;
+        break;
+      case 'reservation':
+        query = `
+          SELECT COUNT(*) as count
+          FROM reservation r
+          JOIN owner o ON r.Owner_FK_ID = o.Owner_id
+          WHERE o.User_FK_ID = ? AND r.Reservation_id = ?
+        `;
+        break;
+      case 'payment':
+        query = `
+          SELECT COUNT(*) as count
+          FROM payment p
+          JOIN owner o ON p.Owner_ID_FK = o.Owner_id
+          WHERE o.User_FK_ID = ? AND p.payment_id = ?
+        `;
+        break;
+      case 'tenant':
+        query = `
+          SELECT COUNT(*) as count
+          FROM tenant t
+          JOIN owner o ON t.Owner_FK_ID = o.Owner_id
+          WHERE o.User_FK_ID = ? AND t.Tenant_id = ?
+        `;
+        break;
+      default:
+        return false;
+    }
+
+    const [rows] = await connection.query(query, [userId, resourceId]);
+    return rows[0].count > 0;
+  } catch (error) {
+    console.error('Resource ownership check error:', error);
+    return false;
+  }
+}
+

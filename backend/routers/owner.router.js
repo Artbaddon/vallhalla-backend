@@ -1,23 +1,58 @@
-import express from "express";
-import { authMiddleware, ownerResourceAccess } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+import { Router } from "express";
 import OwnerController from "../controllers/owner.controller.js";
+import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
 
-const router = express.Router();
+const router = Router();
 
 // Special routes (must come first)
-router.get("/me/profile", authMiddleware([ROLES.OWNER]), OwnerController.getMyProfile);
-router.get("/search", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess(), OwnerController.findByUserId);
-router.get("/details", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), OwnerController.showWithDetails);
+router.get("/me/profile", 
+  requirePermission("owners", "read"),
+  OwnerController.getMyProfile
+);
+
+router.get("/search", 
+  requirePermission("owners", "read"),
+  OwnerController.findByUserId
+);
+
+router.get("/details", 
+  requirePermission("owners", "read"),
+  OwnerController.showWithDetails
+);
 
 // Base routes
-router.get("/", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), OwnerController.show);
-router.post("/", authMiddleware([ROLES.ADMIN]), OwnerController.register);
+router.get("/", 
+  requirePermission("owners", "read"),
+  OwnerController.show
+);
+
+router.post("/", 
+  requirePermission("owners", "create"),
+  OwnerController.register
+);
 
 // Routes with ID parameter (must come last)
-router.get("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), OwnerController.findById);
-router.get("/:id/details", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), OwnerController.findWithDetails);
-router.put("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), OwnerController.update);
-router.delete("/:id", authMiddleware([ROLES.ADMIN]), OwnerController.delete);
+router.get("/:id", 
+  requirePermission("owners", "read"),
+  requireOwnership("owner", "id"),
+  OwnerController.findById
+);
+
+router.get("/:id/details", 
+  requirePermission("owners", "read"),
+  requireOwnership("owner", "id"),
+  OwnerController.findWithDetails
+);
+
+router.put("/:id", 
+  requirePermission("owners", "update"),
+  requireOwnership("owner", "id"),
+  OwnerController.update
+);
+
+router.delete("/:id", 
+  requirePermission("owners", "delete"),
+  OwnerController.delete
+);
 
 export default router; 

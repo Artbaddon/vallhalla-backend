@@ -9,13 +9,13 @@ class PaymentController {
         owner_id,
         status_id,
         payment_date,
-        description,
+        method
       } = req.body;
 
-      if (!reference_number || !amount || !owner_id || !status_id) {
+      if (!reference_number || !amount || !owner_id || !status_id || !method) {
         return res.status(400).json({
           error:
-            "Reference number, amount, owner_id, and status_id are required",
+            "Reference number, amount, owner_id, status_id, and method are required",
         });
       }
 
@@ -25,7 +25,7 @@ class PaymentController {
         owner_id,
         status_id,
         payment_date: payment_date || new Date(),
-        description: description || null,
+        method
       });
 
       if (paymentId.error) {
@@ -67,7 +67,7 @@ class PaymentController {
         owner_id,
         status_id,
         payment_date,
-        description,
+        method
       } = req.body;
 
       if (!id) {
@@ -80,7 +80,7 @@ class PaymentController {
         owner_id,
         status_id,
         payment_date,
-        description,
+        method
       });
 
       if (updateResult.error) {
@@ -97,29 +97,7 @@ class PaymentController {
     }
   }
 
-  async delete(req, res) {
-    try {
-      const id = req.params.id;
-
-      if (!id) {
-        return res.status(400).json({ error: "Payment ID is required" });
-      }
-
-      const deleteResult = await PaymentModel.delete(id);
-
-      if (deleteResult.error) {
-        return res.status(404).json({ error: deleteResult.error });
-      }
-
-      res.status(200).json({
-        message: "Payment deleted successfully",
-        id: id,
-      });
-    } catch (error) {
-      console.error("Error deleting payment:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
+  
 
   async findById(req, res) {
     try {

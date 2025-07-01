@@ -1,16 +1,41 @@
 import { Router } from "express";
 import PaymentController from "../controllers/payment.controller.js";
+import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
-const name = "/payment";
 
-// Public Routes
-router.post(name, PaymentController.register);
-router.get(name + "/", PaymentController.show);
-router.get(name + "/stats", PaymentController.getStats);
-router.get(name + "/:id", PaymentController.findById);
-router.get(name + "/owner/:owner_id", PaymentController.findByOwner);
-router.put(name + "/:id", PaymentController.update);
-router.delete(name + "/:id", PaymentController.delete);
+// Public routes (if any)
+
+// Protected routes
+// Admin can see all payments
+router.get("/", 
+  requirePermission("payments", "read"),
+  PaymentController.show
+);
+
+// Owners can create payments
+router.post("/",
+  requirePermission("payments", "create"),
+  PaymentController.register
+);
+
+// View specific payment (owners can only see their own)
+router.get("/:id",
+  requirePermission("payments", "read"),
+  requireOwnership("payment"),
+  PaymentController.findById
+);
+
+// Get payment statistics (admin only)
+router.get("/stats/overview",
+  requirePermission("payments", "read"),
+  PaymentController.getStats
+);
+
+// Get payments by owner
+router.get("/owner/:owner_id",
+  requirePermission("payments", "read"),
+  PaymentController.findByOwner
+);
 
 export default router;

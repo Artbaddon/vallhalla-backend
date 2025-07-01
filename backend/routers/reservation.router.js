@@ -1,32 +1,54 @@
-import express from "express";
-import { authMiddleware, ownerResourceAccess } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
-import ReservationController from "../controllers/reservation.controller.js";
+import { Router } from 'express';
+import ReservationController from '../controllers/reservation.controller.js';
+import { requirePermission, requireOwnership } from '../middleware/permissionMiddleware.js';
 
-const router = express.Router();
-const name = "";  // Base path is handled by app.js
+const router = Router();
 
-// Define roles that can access these endpoints
-const ADMIN_ROLES = [1]; // Assuming role ID 1 is admin
-const MANAGER_ROLES = [1, 2]; // Assuming role IDs 1 and 2 are admin and manager
-const VIEW_ROLES = [1, 2, 3]; // Assuming role IDs 1, 2, 3 are admin, manager, and regular user
+// Public routes (if any)
 
-// Define routes in order of specificity (most specific first)
+// Protected routes
+// Admin can see all reservations
+router.get('/', 
+  requirePermission('reservations', 'read'),
+  ReservationController.show
+);
 
-// Special routes
-router.get(name + "/my/reservations", authMiddleware([ROLES.OWNER]), ReservationController.findMyReservations);
-router.get(name + "/date-range", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ReservationController.findByDateRange);
+// Create reservation
+router.post('/',
+  requirePermission('reservations', 'create'),
+  ReservationController.register
+);
 
-// Routes with owner_id parameter
-router.get(name + "/owner/:owner_id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('owner_id'), ReservationController.findByOwner);
+// View specific reservation (owners can only see their own)
+router.get('/:id',
+  requirePermission('reservations', 'read'),
+  requireOwnership('reservation'),
+  ReservationController.findById
+);
 
-// Base routes
-router.get(name + "/", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), ReservationController.show);
-router.post(name + "/", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ReservationController.register);
+// Update reservation (owners can only update their own)
+router.put('/:id',
+  requirePermission('reservations', 'update'),
+  requireOwnership('reservation'),
+  ReservationController.update
+);
 
-// Routes with id parameter (must come last)
-router.get(name + "/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), ReservationController.findById);
-router.put(name + "/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id'), ReservationController.update);
-router.delete(name + "/:id", authMiddleware([ROLES.ADMIN]), ReservationController.delete);
+// Only admin can delete reservations
+router.delete('/:id',
+  requirePermission('reservations', 'delete'),
+  ReservationController.delete
+);
+
+// Get reservations by date range
+router.get('/date-range/:start/:end',
+  requirePermission('reservations', 'read'),
+  ReservationController.findByDateRange
+);
+
+// Get my reservations
+router.get('/my/reservations',
+  requirePermission('reservations', 'read'),
+  ReservationController.findMyReservations
+);
 
 export default router;

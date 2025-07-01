@@ -1,21 +1,57 @@
 import { Router } from "express";
 import AnswerController from "../controllers/answer.controller.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
-const base = "/answer";
 
-router.route(base)
-  .post(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), AnswerController.register);          // Crear respuesta
+// Protected routes
+// Admin can see all answers
+router.get('/', 
+  requirePermission('surveys', 'read'),
+  AnswerController.getAll
+);
 
-router.route(`${base}/bySurvey/:survey_id`)
-  .get(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), AnswerController.findBySurvey);       // Obtener respuestas por encuesta
+// Submit an answer
+router.post('/',
+  requirePermission('surveys', 'create'),
+  AnswerController.register
+);
 
-router.route(`${base}/byUser/:user_id`)
-  .get(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), AnswerController.findByUser);         // Obtener respuestas por usuario
+// View specific answer (owners can only see their own)
+router.get('/:id',
+  requirePermission('surveys', 'read'),
+  requireOwnership('answer'),
+  AnswerController.getById
+);
 
-router.route(`${base}/:id`)
-  .delete(authMiddleware([ROLES.ADMIN, ROLES.OWNER]), AnswerController.delete);           // Eliminar respuesta
+// Get answers by survey
+router.get('/survey/:survey_id',
+  requirePermission('surveys', 'read'),
+  AnswerController.findBySurvey
+);
+
+// Get answers by user
+router.get('/user/:user_id',
+  requirePermission('surveys', 'read'),
+  AnswerController.findByUser
+);
+
+// Get my answers
+router.get('/my/answers',
+  requirePermission('surveys', 'read'),
+  AnswerController.getMyAnswers
+);
+
+// Get answers statistics (admin only)
+router.get('/stats/overview',
+  requirePermission('surveys', 'read'),
+  AnswerController.getStats
+);
+
+// Only admin can delete answers
+router.delete('/:id',
+  requirePermission('surveys', 'delete'),
+  AnswerController.delete
+);
 
 export default router;

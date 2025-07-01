@@ -1,31 +1,33 @@
 import { Router } from "express";
 import towerController from "../controllers/tower.controller.js";
-import {
-  authMiddleware,
-  ownerResourceAccess,
-} from "../middleware/authMiddleware.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
+
 const router = Router();
 
-//Public Route
+// Protected routes
+router.post("/", 
+  requirePermission("towers", "create"),
+  towerController.register
+);
 
-router.post("/", authMiddleware([ROLES.ADMIN]), towerController.register);
-router.get(
-  "/",
-  authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]),
+router.get("/", 
+  requirePermission("towers", "read"),
   towerController.show
 );
-router.get(
-  "/:Tower_id",
-  authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]),
-  ownerResourceAccess("Tower_id"),
+
+router.get("/:Tower_id", 
+  requirePermission("towers", "read"),
   towerController.findByTower_id
 );
-router.put(
-  "/:Tower_id",
-  authMiddleware([ROLES.ADMIN, ROLES.STAFF]),
+
+router.put("/:Tower_id", 
+  requirePermission("towers", "update"),
   towerController.update
 );
-router.delete("/:Tower_id", authMiddleware([ROLES.ADMIN]), towerController.delete);
+
+router.delete("/:Tower_id", 
+  requirePermission("towers", "delete"),
+  towerController.delete
+);
 
 export default router;

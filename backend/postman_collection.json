@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "generated-collection-id",
 		"name": "Vallhalla API Modular Collection",
-		"description": "API collection structured by module and HTTP method for Vallhalla API.",
+		"description": "API collection structured by module and HTTP method for Vallhalla API with RBAC permissions.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -17,13 +17,13 @@
 					}
 				},
 				{
-					"name": "2. Login",
+					"name": "2. Login as Admin",
 					"request": { 
 						"method": "POST", 
 						"header": [{"key": "Content-Type", "value": "application/json"}], 
 						"body": { 
 							"mode": "raw", 
-							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"12345678\"\n}" 
+							"raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"12345678\"\n}" 
 						}, 
 						"url": "{{baseUrl}}/auth/login" 
 					},
@@ -35,6 +35,7 @@
 									"var jsonData = JSON.parse(responseBody);",
 									"if (jsonData && jsonData.token) {",
 									"    pm.collectionVariables.set('authToken', jsonData.token);",
+									"    console.log('Admin token saved');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -43,7 +44,61 @@
 					]
 				},
 				{
-					"name": "3. Validate Token",
+					"name": "3. Login as Owner",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testowner\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('ownerToken', jsonData.token);",
+									"    console.log('Owner token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "4. Login as Security",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testsecurity\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('securityToken', jsonData.token);",
+									"    console.log('Security token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "5. Validate Admin Token",
 					"request": { 
 						"method": "GET", 
 						"header": [
@@ -57,7 +112,22 @@
 					}
 				},
 				{
-					"name": "4. Get Apartments",
+					"name": "6. Admin - Get All Users",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/users" 
+					},
+					"description": "Admin has permission to view all users"
+				},
+				{
+					"name": "7. Admin - Get All Apartments",
 					"request": { 
 						"method": "GET", 
 						"header": [
@@ -68,49 +138,68 @@
 							}
 						],
 						"url": "{{baseUrl}}/apartments" 
-					}
+					},
+					"description": "Admin has permission to view all apartments"
 				},
 				{
-					"name": "5. Get Facilities",
+					"name": "8. Owner - Get My Profile",
 					"request": { 
 						"method": "GET", 
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{authToken}}",
-								"type": "text"
-							}
-						],
-						"url": "{{baseUrl}}/facilities" 
-					}
-				},
-				{
-					"name": "6. Get Reservations",
-					"request": { 
-						"method": "GET", 
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{authToken}}",
-								"type": "text"
-							}
-						],
-						"url": "{{baseUrl}}/reservations" 
-					}
-				},
-				{
-					"name": "7. Get My Profile",
-					"request": { 
-						"method": "GET", 
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{authToken}}",
+								"value": "Bearer {{ownerToken}}",
 								"type": "text"
 							}
 						],
 						"url": "{{baseUrl}}/profile/me" 
-					}
+					},
+					"description": "Owner can access their own profile"
+				},
+				{
+					"name": "9. Owner - Get Own Apartments",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/apartments" 
+					},
+					"description": "Owner can only view their own apartments"
+				},
+				{
+					"name": "10. Security - Get All Visitors",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{securityToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/visitors" 
+					},
+					"description": "Security has permission to view visitors"
+				},
+				{
+					"name": "11. Security - Try to Access Apartments (Should Fail)",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{securityToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/apartments" 
+					},
+					"description": "Security doesn't have permission to view apartments (should return 403)"
 				}
 			]
 		},
@@ -144,7 +233,7 @@
 						"header": [{"key": "Content-Type", "value": "application/json"}], 
 						"body": { 
 							"mode": "raw", 
-							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"12345678\"\n}" 
+							"raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"12345678\"\n}" 
 						}, 
 						"url": "{{baseUrl}}/auth/login" 
 					},
@@ -159,6 +248,76 @@
 									"    console.log('Token saved to variable: authToken');",
 									"    pm.test(\"Token saved successfully\", function() {",
 									"        pm.expect(pm.collectionVariables.get('authToken')).to.not.be.empty;",
+									"    });",
+									"} else {",
+									"    console.log('No token found in response');",
+									"    pm.test(\"No token found in response\", function() {",
+									"        pm.expect.fail('Authentication failed - no token received');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login as Owner",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testowner\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('ownerToken', jsonData.token);",
+									"    console.log('Token saved to variable: ownerToken');",
+									"    pm.test(\"Token saved successfully\", function() {",
+									"        pm.expect(pm.collectionVariables.get('ownerToken')).to.not.be.empty;",
+									"    });",
+									"} else {",
+									"    console.log('No token found in response');",
+									"    pm.test(\"No token found in response\", function() {",
+									"        pm.expect.fail('Authentication failed - no token received');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login as Security",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testsecurity\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('securityToken', jsonData.token);",
+									"    console.log('Token saved to variable: securityToken');",
+									"    pm.test(\"Token saved successfully\", function() {",
+									"        pm.expect(pm.collectionVariables.get('securityToken')).to.not.be.empty;",
 									"    });",
 									"} else {",
 									"    console.log('No token found in response');",
@@ -196,6 +355,137 @@
 								],
 								"type": "text/javascript"
 							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "00_Permission_Tests",
+			"item": [
+				{
+					"name": "Admin Tests",
+					"item": [
+						{
+							"name": "Get All Users (Admin Only)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/users"
+							},
+							"description": "Requires 'users:read' permission (Admin only)"
+						},
+						{
+							"name": "Create User (Admin Only)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"password123\",\n  \"user_status_id\": 1,\n  \"role_id\": 3\n}"
+								},
+								"url": "{{baseUrl}}/users"
+							},
+							"description": "Requires 'users:create' permission (Admin only)"
+						},
+						{
+							"name": "Get All Apartments (Admin Access)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/apartments"
+							},
+							"description": "Requires 'apartments:read' permission (Admin has access to all apartments)"
+						}
+					]
+				},
+				{
+					"name": "Owner Tests",
+					"item": [
+						{
+							"name": "Get Owner Profile",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/profile/me"
+							},
+							"description": "Owners can access their own profile"
+						},
+						{
+							"name": "Get Owner's Apartments",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/apartments"
+							},
+							"description": "Owners can only see their own apartments"
+						},
+						{
+							"name": "Create Reservation (Owner Permission)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reservation_date\": \"2023-07-15\",\n  \"reservation_start_time\": \"10:00:00\",\n  \"reservation_end_time\": \"12:00:00\",\n  \"reservation_type_id\": 1,\n  \"notes\": \"Meeting\"\n}"
+								},
+								"url": "{{baseUrl}}/reservations"
+							},
+							"description": "Requires 'reservations:create' permission (Owners can create)"
+						},
+						{
+							"name": "Get All Users (Should Fail)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/users"
+							},
+							"description": "Should return 403 Forbidden (Owners don't have 'users:read' permission)"
+						}
+					]
+				},
+				{
+					"name": "Security Tests",
+					"item": [
+						{
+							"name": "Get All Visitors (Security Permission)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{securityToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/visitors"
+							},
+							"description": "Requires 'visitors:read' permission (Security has access)"
+						},
+						{
+							"name": "Create Visitor (Security Permission)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{securityToken}}", "type": "text"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"visitor_name\": \"John Doe\",\n  \"visitor_document\": \"1234567890\",\n  \"visitor_host\": 1,\n  \"visitor_enter_date\": \"2023-07-15T10:00:00\"\n}"
+								},
+								"url": "{{baseUrl}}/visitors"
+							},
+							"description": "Requires 'visitors:create' permission (Security has access)"
+						},
+						{
+							"name": "Get All Apartments (Should Fail)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{securityToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/apartments"
+							},
+							"description": "Should return 403 Forbidden (Security doesn't have 'apartments:read' permission)"
 						}
 					]
 				}
@@ -384,7 +674,7 @@
 								"header": [{"key": "Content-Type", "value": "application/json"}], 
 								"body": { 
 									"mode": "raw", 
-									"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"12345678\"\n}" 
+									"raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"12345678\"\n}" 
 								}, 
 								"url": "{{baseUrl}}/auth/login" 
 							},
@@ -1255,7 +1545,9 @@
 	],
 	"variable": [
 		{ "key": "baseUrl", "value": "http://localhost:3000/api" },
-		{ "key": "authToken", "value": "", "type": "string" }
+		{ "key": "authToken", "value": "", "type": "string" },
+		{ "key": "ownerToken", "value": "", "type": "string" },
+		{ "key": "securityToken", "value": "", "type": "string" }
 	],
 	"auth": {
 		"type": "bearer",
