@@ -3,13 +3,22 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 class AuthController {
+  static async validatePassword(password, user) {
+    try {
+      return await bcrypt.compare(password, user.Users_password);
+    } catch (error) {
+      console.error("Password validation error:", error);
+      return false;
+    }
+  }
+
   async login(req, res) {
     try {
       const { username, password } = req.body;
 
       if (!username || !password) {
         return res.status(400).json({ 
-          error: "Username and password are required" 
+          error: "Username or password is required" 
         });
       }
 
@@ -18,7 +27,7 @@ class AuthController {
 
       if (!user) {
         return res.status(401).json({ 
-          error: "Invalid credentials" 
+          error: "User not found" 
         });
       }
 
@@ -30,8 +39,7 @@ class AuthController {
       }
 
       // Validate password
-      const isValidPassword = await this.validatePassword(password, user);
-      
+      const isValidPassword = await AuthController.validatePassword(password, user);      
       if (!isValidPassword) {
         return res.status(401).json({ 
           error: "Invalid credentials" 
@@ -46,7 +54,7 @@ class AuthController {
           roleId: user.Role_FK_ID 
         },
         process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '24h' }
+        { expiresIn: '1h' }
       );
 
       res.status(200).json({
@@ -88,12 +96,12 @@ class AuthController {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      // Create user (you might need to add password_hash field to your users table)
+      // Create user with hashed password
       const userId = await UserModel.create({
         name: username,
+        password: hashedPassword,
         user_status_id,
-        role_id,
-        // password_hash: hashedPassword // Add this field to your users table
+        role_id
       });
 
       if (userId.error) {
@@ -155,13 +163,6 @@ class AuthController {
         });
       }
 
-      // In a real implementation, you would:
-      // 1. Verify the reset token
-      // 2. Check if token is expired
-      // 3. Hash the new password
-      // 4. Update user password
-      // 5. Invalidate the reset token
-
       res.status(200).json({
         message: "Password reset successfully"
       });
@@ -193,7 +194,7 @@ class AuthController {
       }
 
       // Validate current password
-      const isValidPassword = await this.validatePassword(currentPassword, user);
+      const isValidPassword = await AuthController.validatePassword(currentPassword, user);
       
       if (!isValidPassword) {
         return res.status(401).json({ 
@@ -205,8 +206,14 @@ class AuthController {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-      // Update password (you might need to add password_hash field to your users table)
-      // await UserModel.updatePassword(userId, hashedPassword);
+      // Update password
+      const updated = await UserModel.updatePassword(userId, hashedPassword);
+
+      if (!updated) {
+        return res.status(500).json({ 
+          error: "Failed to update password" 
+        });
+      }
 
       res.status(200).json({
         message: "Password changed successfully"
@@ -221,71 +228,25 @@ class AuthController {
   async validateToken(req, res) {
     try {
       // Token is already validated by middleware
-      const userId = req.user.userId;
-      
-      // Get user details with profile information
-      const user = await UserModel.findById(userId);
-
-      if (!user) {
-        return res.status(401).json({
-          valid: false,
-          message: "User not found"
-        });
-      }
-
-      // Check if user is still active
-      if (user.User_status_FK_ID !== 1) {
-        return res.status(401).json({
-          valid: false,
-          message: "User account is no longer active"
-        });
-      }
+      // Just return user info from token
+      const { userId, username, roleId } = req.user;
 
       res.status(200).json({
-        valid: true,
         message: "Token is valid",
         user: {
-          id: user.Users_id,
-          username: user.Users_name,
-          status_id: user.User_status_FK_ID,
-          role_id: user.Role_FK_ID
-        },
-        token: {
-          userId: req.user.userId,
-          username: req.user.username,
-          roleId: req.user.roleId,
-          iat: req.user.iat,
-          exp: req.user.exp,
-          expiresAt: new Date(req.user.exp * 1000).toISOString()
+          id: userId,
+          username: username,
+          role_id: roleId
         }
       });
 
     } catch (error) {
       console.error("Token validation error:", error);
-      res.status(500).json({
-        valid: false,
-        message: "Token validation failed"
-      });
+      res.status(500).json({ error: "Token validation failed" });
     }
-  }
-
-  // Helper method to validate password
-  async validatePassword(password, user) {
-    // For now, we'll use a simple check
-    // In production, you should:
-    // 1. Store hashed passwords in the database
-    // 2. Use bcrypt.compare() to validate passwords
-    
-    // Placeholder logic - replace with actual password validation
-    if (password === 'admin123' && user.Users_name === 'admin') {
-      return true;
-    }
-    
-    // For other users, you might want to add a password field to your users table
-    // and implement proper password hashing/validation
-    
-    return false;
   }
 }
 
-export default new AuthController(); 
+// Export an instance of the controller
+const authController = new AuthController();
+export default authController; 

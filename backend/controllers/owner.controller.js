@@ -1,29 +1,66 @@
+import { ROLES } from "../middleware/rbacConfig.js";
 import OwnerModel from "../models/owner.model.js";
+import UserModel from "../models/user.model.js";
+import ProfileModel from "../models/profile.model.js";
 
 class OwnerController {
   async register(req, res) {
     try {
-      const { user_id, is_tenant, birth_date } = req.body;
+      const { 
+        username, 
+        password, 
+        user_status_id, 
+        role_id, 
+        is_tenant, 
+        birth_date,
+        // Profile fields as independent arguments
+        first_name,
+        last_name,
+        document_type,
+        document_number,
+        phone,
+        photo_url
+      } = req.body;
 
-      if (!user_id || is_tenant === undefined || !birth_date) {
+      // Validate required fields
+      if (!username || !password || !user_status_id || !role_id || is_tenant === undefined || !birth_date) {
         return res
           .status(400)
-          .json({ error: "user_id, is_tenant, and birth_date are required" });
+          .json({ error: "username, password, user_status_id, role_id, is_tenant, and birth_date are required" });
       }
 
-      const ownerId = await OwnerModel.create({
-        user_id,
+      // Validate profile data
+      if (!first_name || !last_name) {
+        return res
+          .status(400)
+          .json({ error: "first_name and last_name are required" });
+      }
+
+      const result = await OwnerModel.create({
+        username,
+        password,
+        user_status_id,
+        role_id,
         is_tenant,
         birth_date,
+        profile_data: {
+          first_name,
+          last_name,
+          document_type,
+          document_number,
+          phone,
+          photo_url
+        }
       });
 
-      if (ownerId.error) {
-        return res.status(400).json({ error: ownerId.error });
+      if (result.error) {
+        return res.status(400).json({ error: result.error });
       }
 
       res.status(201).json({
-        message: "Owner created successfully",
-        id: ownerId,
+        message: "Owner created successfully with user and profile",
+        owner_id: result.owner_id,
+        user_id: result.user_id
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -75,29 +112,60 @@ class OwnerController {
   async update(req, res) {
     try {
       const id = req.params.id;
-      const { user_id, is_tenant, birth_date } = req.body;
+      const { 
+        username, 
+        password, 
+        user_status_id, 
+        role_id, 
+        is_tenant, 
+        birth_date,
+        // Profile fields
+        first_name,
+        last_name,
+        document_type,
+        document_number,
+        phone,
+        photo_url
+      } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: "Owner ID is required" });
       }
 
-      if (!user_id || is_tenant === undefined || !birth_date) {
-        return res.status(400).json({ error: "user_id, is_tenant, and birth_date are required" });
+      // At least one field must be provided for update
+      if (!username && !password && !user_status_id && !role_id && 
+          is_tenant === undefined && !birth_date && !first_name && 
+          !last_name && !document_type && !document_number && !phone && !photo_url) {
+        return res.status(400).json({ error: "At least one field must be provided for update" });
+      }
+
+      // If first_name is provided, last_name must also be provided and vice versa
+      if ((first_name && !last_name) || (!first_name && last_name)) {
+        return res.status(400).json({ error: "Both first_name and last_name must be provided together" });
       }
 
       const updateResult = await OwnerModel.update(id, {
-        user_id,
+        username,
+        password,
+        user_status_id,
+        role_id,
         is_tenant,
         birth_date,
+        first_name,
+        last_name,
+        document_type,
+        document_number,
+        phone,
+        photo_url
       });
 
       if (updateResult.error) {
-        return res.status(404).json({ error: updateResult.error });
+        return res.status(400).json({ error: updateResult.error });
       }
 
       res.status(200).json({
-        message: "Owner updated successfully",
-        affectedRows: updateResult,
+        message: "Owner updated successfully with user and profile data",
+        success: true
       });
     } catch (error) {
       console.error("Error updating owner:", error);
@@ -137,6 +205,11 @@ class OwnerController {
         return res.status(400).json({ error: "Owner ID is required" });
       }
 
+      // If user is an owner, verify they're accessing their own data
+      if (req.user.roleId === ROLES.OWNER && parseInt(id) !== parseInt(req.ownerId)) {
+        return res.status(403).json({ error: "You don't have permission to access this owner data" });
+      }
+
       const owner = await OwnerModel.findById(id);
 
       if (!owner) {
@@ -161,6 +234,11 @@ class OwnerController {
         return res.status(400).json({ error: "Owner ID is required" });
       }
 
+      // If user is an owner, verify they're accessing their own data
+      if (req.user.roleId === ROLES.OWNER && parseInt(id) !== parseInt(req.ownerId)) {
+        return res.status(403).json({ error: "You don't have permission to access this owner data" });
+      }
+
       const owner = await OwnerModel.getOwnerWithDetails(id);
 
       if (!owner) {
@@ -180,12 +258,18 @@ class OwnerController {
   async findByUserId(req, res) {
     try {
       const { user_id } = req.query;
+      let userId = user_id;
 
-      if (!user_id) {
-        return res.status(400).json({ error: "user_id parameter is required" });
+      // If user is an owner, they can only see their own data
+      if (req.user.roleId === ROLES.OWNER) {
+        userId = req.user.userId;
       }
 
-      const owner = await OwnerModel.findByUserId(user_id);
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      const owner = await OwnerModel.findByUserId(userId);
 
       if (!owner) {
         return res.status(404).json({ error: "Owner not found" });
@@ -201,30 +285,40 @@ class OwnerController {
     }
   }
 
-  async getByTenantStatus(req, res) {
+  // New method to get the profile of the currently logged-in owner
+  async getMyProfile(req, res) {
     try {
-      const { is_tenant } = req.query;
-
-      if (is_tenant === undefined) {
-        return res.status(400).json({ error: "is_tenant parameter is required" });
+      // This endpoint should only be accessible by owners
+      if (req.user.roleId !== ROLES.OWNER) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const userId = req.user.userId;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID could not be determined" });
       }
 
-      const owners = await OwnerModel.getOwnersByTenantStatus(is_tenant);
-
-      if (owners.error) {
-        return res.status(400).json({ error: owners.error });
+      // First get the owner record
+      const owner = await OwnerModel.findByUserId(userId);
+      
+      if (!owner) {
+        return res.status(404).json({ error: "Owner profile not found" });
       }
+      
+      // Then get the detailed profile
+      const ownerWithDetails = await OwnerModel.getOwnerWithDetails(owner.Owner_id);
 
-      if (!owners || owners.length === 0) {
-        return res.status(404).json({ error: "No owners found with this tenant status" });
+      if (!ownerWithDetails) {
+        return res.status(404).json({ error: "Owner details not found" });
       }
 
       res.status(200).json({
-        message: "Owners by tenant status retrieved successfully",
-        owners: owners,
+        message: "Your profile retrieved successfully",
+        profile: ownerWithDetails,
       });
     } catch (error) {
-      console.error("Error getting owners by tenant status:", error);
+      console.error("Error finding owner's profile:", error);
       res.status(500).json({ error: error.message });
     }
   }

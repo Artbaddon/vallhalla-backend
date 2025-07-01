@@ -1,14 +1,32 @@
 import UserModel from "../models/user.model.js";
+import ProfileModel from "../models/profile.model.js";
+import { ROLES } from "../middleware/rbacConfig.js";
 
 class UserController {
   async register(req, res) {
     try {
       const { name, user_status_id, role_id } = req.body;
 
+      const { 
+        first_name, 
+        last_name, 
+        address, 
+        phone, 
+        document_type_id, 
+        document_number, 
+        birth_date 
+      } = req.body.profile || {};
+
       if (!name || !user_status_id || !role_id) {
         return res
           .status(400)
           .json({ error: "Name, user_status_id, and role_id are required" });
+      }
+
+      if (!req.body.profile || !first_name || !last_name) {
+        return res
+          .status(400)
+          .json({ error: "Profile data with at least first_name and last_name is required" });
       }
 
       const userId = await UserModel.create({
@@ -21,9 +39,29 @@ class UserController {
         return res.status(400).json({ error: userId.error });
       }
 
+      const profileId = await ProfileModel.create({
+        web_user_id: userId,
+        first_name,
+        last_name,
+        address: address || '',
+        phone: phone || '',
+        document_type_id: document_type_id || null,
+        document_number: document_number || '',
+        photo_url: null,
+        birth_date: birth_date || null
+      });
+
+      if (profileId.error) {
+        return res.status(400).json({ 
+          error: "User created but profile creation failed: " + profileId.error,
+          userId: userId
+        });
+      }
+
       res.status(201).json({
-        message: "User created successfully",
-        id: userId,
+        message: "User and profile created successfully",
+        userId: userId,
+        profileId: profileId
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -162,11 +200,17 @@ class UserController {
         return res.status(400).json({ error: "User ID is required" });
       }
 
+      if (req.user.roleId === ROLES.OWNER && parseInt(id) !== parseInt(req.user.userId)) {
+        return res.status(403).json({ error: "You don't have permission to access this user data" });
+      }
+
       const user = await UserModel.findById(id);
 
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
+
+      delete user.Users_password;
 
       res.status(200).json({
         message: "User found successfully",
@@ -198,6 +242,32 @@ class UserController {
       });
     } catch (error) {
       console.error("Error finding user by name:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getMyProfile(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID could not be determined" });
+      }
+
+      const user = await UserModel.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      delete user.Users_password;
+
+      res.status(200).json({
+        message: "Your profile retrieved successfully",
+        user: user,
+      });
+    } catch (error) {
+      console.error("Error retrieving user profile:", error);
       res.status(500).json({ error: error.message });
     }
   }

@@ -1,10 +1,10 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class UserModel {
-  static async create({ name, user_status_id, role_id }) {
+  static async create({ name, password, user_status_id, role_id }) {
     try {
-      let sqlQuery = `INSERT INTO users (Users_name, User_status_FK_ID, Role_FK_ID, Users_createdAt, Users_updatedAt) VALUES (?, ?, ?, NOW(), NOW())`;
-      const [result] = await connect.query(sqlQuery, [name, user_status_id, role_id]);
+      let sqlQuery = `INSERT INTO users (Users_name, Users_password, User_status_FK_ID, Role_FK_ID, Users_createdAt, Users_updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())`;
+      const [result] = await connect.query(sqlQuery, [name, password, user_status_id, role_id]);
       return result.insertId;
     } catch (error) {
       return { error: error.message };
@@ -102,6 +102,20 @@ class UserModel {
       }
     } catch (error) {
       return { error: error.message };
+    }
+  }
+
+  static async updatePassword(id, hashedPassword) {
+    try {
+      let sqlQuery = "UPDATE users SET Users_password = ?, Users_updatedAt = NOW() WHERE Users_id = ?";
+      const [result] = await connect.query(sqlQuery, [hashedPassword, id]);
+      if (result.affectedRows === 0) {
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("Update password error:", error);
+      return false;
     }
   }
 }

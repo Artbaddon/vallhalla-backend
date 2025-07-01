@@ -2,6 +2,7 @@ import ProfileModel from "../models/profile.model.js";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { ROLES } from "../middleware/rbacConfig.js";
 
 // Create profile upload function
 const createProfileUpload = () => {
@@ -94,7 +95,7 @@ class ProfileController {
       }
       
       try {
-        const { id } = req.params;
+        const id = req.params.id;
         const updateData = { ...req.body };
         
         // Only update photo_url if new file was uploaded
@@ -144,15 +145,51 @@ class ProfileController {
   async findById(req, res) {
     try {
       const id = req.params.id;
+
       if (!id) {
-        return res.status(400).json({ error: "ID is required" });
+        return res.status(400).json({ error: "Profile ID is required" });
       }
+
       const profile = await ProfileModel.findById(id);
+
       if (!profile) {
         return res.status(404).json({ error: "Profile not found" });
       }
-      res.status(200).json({ message: "Profile found successfully", profile });
+
+      // If user is an owner, verify they're accessing their own profile
+      if (req.user.roleId === ROLES.OWNER && profile.User_FK_ID !== req.user.userId) {
+        return res.status(403).json({ error: "You don't have permission to access this profile" });
+      }
+
+      res.status(200).json({
+        message: "Profile found successfully",
+        profile: profile,
+      });
     } catch (error) {
+      console.error("Error finding profile by ID:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+  async getMyProfile(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID could not be determined" });
+      }
+
+      const profile = await ProfileModel.findByUserId(userId);
+
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.status(200).json({
+        message: "Your profile retrieved successfully",
+        profile: profile,
+      });
+    } catch (error) {
+      console.error("Error retrieving profile:", error);
       res.status(500).json({ error: error.message });
     }
   }

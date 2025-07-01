@@ -1,3 +1,4 @@
+import { ROLES } from "../middleware/rbacConfig.js";
 import ApartmentModel from "../models/apartment.model.js";
 
 class ApartmentController {
@@ -33,7 +34,17 @@ class ApartmentController {
 
   async show(req, res) {
     try {
-      const apartments = await ApartmentModel.show();
+      let apartments;
+      
+      // If user is an owner, only show their apartments
+      if (req.user.roleId === ROLES.OWNER) {
+        // Get owner ID from user ID
+        const ownerId = req.ownerId;
+        apartments = await ApartmentModel.findByOwner(ownerId);
+      } else {
+        // Admin and staff see all apartments
+        apartments = await ApartmentModel.show();
+      }
 
       if (apartments.error) {
         return res.status(400).json({ error: apartments.error });
@@ -54,7 +65,29 @@ class ApartmentController {
 
   async showWithDetails(req, res) {
     try {
-      const apartments = await ApartmentModel.getApartmentsWithDetails();
+      let apartments;
+      
+      // If user is an owner, only show their apartments with details
+      if (req.user.roleId === ROLES.OWNER) {
+        // First get owner ID from user ID
+        const ownerId = req.ownerId;
+        // Then get all apartments for this owner
+        const ownerApartments = await ApartmentModel.findByOwner(ownerId);
+        
+        // For each apartment, get the details
+        if (ownerApartments && ownerApartments.length > 0) {
+          apartments = [];
+          for (const apt of ownerApartments) {
+            const details = await ApartmentModel.getApartmentWithDetails(apt.Apartment_id);
+            if (details) {
+              apartments.push(details);
+            }
+          }
+        }
+      } else {
+        // Admin and staff see all apartments with details
+        apartments = await ApartmentModel.getApartmentsWithDetails();
+      }
 
       if (apartments.error) {
         return res.status(400).json({ error: apartments.error });
@@ -231,12 +264,17 @@ class ApartmentController {
   async findByOwner(req, res) {
     try {
       const { owner_id } = req.query;
-
-      if (!owner_id) {
+      let ownerId = owner_id;
+      
+      // If user is an owner, they can only see their own apartments
+      if (req.user.roleId === ROLES.OWNER) {
+        // Ignore the query parameter and use their own ID
+        ownerId = req.ownerId;
+      } else if (!ownerId) {
         return res.status(400).json({ error: "owner_id parameter is required" });
       }
 
-      const apartments = await ApartmentModel.findByOwner(owner_id);
+      const apartments = await ApartmentModel.findByOwner(ownerId);
 
       if (apartments.error) {
         return res.status(400).json({ error: apartments.error });
@@ -247,7 +285,7 @@ class ApartmentController {
       }
 
       res.status(200).json({
-        message: "Apartments by owner retrieved successfully",
+        message: "Apartments found successfully",
         apartments: apartments,
       });
     } catch (error) {

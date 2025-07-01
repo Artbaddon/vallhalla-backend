@@ -1,8 +1,52 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class ApartmentModel {
+  static async validateForeignKeys({ status_id, tower_id, owner_id }) {
+    try {
+      // Check if status exists
+      if (status_id) {
+        const [statusResult] = await connect.query('SELECT Apartment_status_id FROM apartment_status WHERE Apartment_status_id = ?', [status_id]);
+        if (statusResult.length === 0) {
+          return { error: "Apartment status not found" };
+        }
+      }
+
+      // Check if tower exists
+      if (tower_id) {
+        const [towerResult] = await connect.query('SELECT Tower_id FROM tower WHERE Tower_id = ?', [tower_id]);
+        if (towerResult.length === 0) {
+          return { error: "Tower not found" };
+        }
+      }
+
+      // Check if owner exists
+      if (owner_id) {
+        const [ownerResult] = await connect.query('SELECT Owner_id FROM owner WHERE Owner_id = ?', [owner_id]);
+        if (ownerResult.length === 0) {
+          return { error: "Owner not found" };
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
   static async create({ apartment_number, status_id, tower_id, owner_id }) {
     try {
+      // Validate foreign keys first
+      const validation = await this.validateForeignKeys({ status_id, tower_id, owner_id });
+      if (validation.error) {
+        return { error: validation.error };
+      }
+
+      // Check if apartment number already exists
+      const [existingApt] = await connect.query('SELECT Apartment_id FROM apartment WHERE Apartment_number = ?', [apartment_number]);
+      if (existingApt.length > 0) {
+        return { error: "Apartment number already exists" };
+      }
+
       let sqlQuery = `INSERT INTO apartment (Apartment_number, Apartment_status_FK_ID, Tower_FK_ID, Owner_FK_ID) VALUES (?, ?, ?, ?)`;
       const [result] = await connect.query(sqlQuery, [apartment_number, status_id, tower_id, owner_id]);
       return result.insertId;
@@ -23,6 +67,18 @@ class ApartmentModel {
 
   static async update(id, { apartment_number, status_id, tower_id, owner_id }) {
     try {
+      // Validate foreign keys first
+      const validation = await this.validateForeignKeys({ status_id, tower_id, owner_id });
+      if (validation.error) {
+        return { error: validation.error };
+      }
+
+      // Check if apartment number already exists (excluding current apartment)
+      const [existingApt] = await connect.query('SELECT Apartment_id FROM apartment WHERE Apartment_number = ? AND Apartment_id != ?', [apartment_number, id]);
+      if (existingApt.length > 0) {
+        return { error: "Apartment number already exists" };
+      }
+
       let sqlQuery = "UPDATE apartment SET Apartment_number = ?, Apartment_status_FK_ID = ?, Tower_FK_ID = ?, Owner_FK_ID = ? WHERE Apartment_id = ?";
       const [result] = await connect.query(sqlQuery, [apartment_number, status_id, tower_id, owner_id, id]);
       if (result.affectedRows === 0) {
@@ -108,13 +164,12 @@ class ApartmentModel {
           ast.Apartment_status_name,
           t.Tower_name,
           o.Owner_id,
-          p.Profile_fullName as owner_name
+          u.Users_name as owner_name
         FROM apartment a
         LEFT JOIN apartment_status ast ON a.Apartment_status_FK_ID = ast.Apartment_status_id
         LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id
         LEFT JOIN owner o ON a.Owner_FK_ID = o.Owner_id
         LEFT JOIN users u ON o.User_FK_ID = u.Users_id
-        LEFT JOIN profile p ON u.Users_id = p.User_FK_ID
         ORDER BY a.Apartment_id
       `;
       const [result] = await connect.query(sqlQuery);
@@ -133,7 +188,10 @@ class ApartmentModel {
           ast.Apartment_status_name,
           t.Tower_name,
           o.Owner_id,
-          p.Profile_fullName as owner_name
+          p.Profile_fullName as owner_name,
+          p.Profile_phone as owner_phone,
+          p.Profile_email as owner_email,
+          p.Profile_address as owner_address
         FROM apartment a
         LEFT JOIN apartment_status ast ON a.Apartment_status_FK_ID = ast.Apartment_status_id
         LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id

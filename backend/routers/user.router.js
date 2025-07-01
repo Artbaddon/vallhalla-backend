@@ -1,17 +1,23 @@
-import { Router } from "express";
+import express from "express";
+import { authMiddleware, ownerResourceAccess } from "../middleware/authMiddleware.js";
+import { ROLES } from "../middleware/rbacConfig.js";
 import UserController from "../controllers/user.controller.js";
 
-const router = Router();
-const name = "/users";
+const router = express.Router();
 
-// Public Routes
-router.post(name, UserController.register);
-router.get(name + "/", UserController.show);
-router.get(name + "/details", UserController.showWithDetails);
-router.get(name + "/search", UserController.findByName);
-router.get(name + "/:id", UserController.findById);
-router.put(name + "/:id", UserController.update);
-router.patch(name + "/:id/status", UserController.updateStatus);
-router.delete(name + "/:id", UserController.delete);
+// Special routes (must come first)
+router.get("/me/profile", authMiddleware([]), UserController.getMyProfile);
+router.get("/details", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.showWithDetails);
+router.get("/search", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.findByName);
+router.patch("/:id/status", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.updateStatus);
+
+// Base routes
+router.get("/", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.show);
+router.post("/", authMiddleware([ROLES.ADMIN]), UserController.register);
+
+// Routes with ID parameter (must come last)
+router.get("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.OWNER]), ownerResourceAccess('id', 'userId'), UserController.findById);
+router.put("/:id", authMiddleware([ROLES.ADMIN, ROLES.STAFF]), UserController.update);
+router.delete("/:id", authMiddleware([ROLES.ADMIN]), UserController.delete);
 
 export default router; 
