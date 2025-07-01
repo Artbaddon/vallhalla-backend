@@ -23,13 +23,13 @@ router.post("/",
 
 router.get("/:id", 
   requirePermission("profiles", "read"),
-  requireOwnership("profile", "id", "userId"),
+  requireOwnership("profile", "id"),
   ProfileController.findById
 );
 
 router.put("/:id", 
   requirePermission("profiles", "update"),
-  requireOwnership("profile", "id", "userId"),
+  requireOwnership("profile", "id"),
   ProfileController.update
 );
 

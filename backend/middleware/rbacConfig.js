@@ -162,6 +162,13 @@ export async function ownsResource(connection, userId, resourceType, resourceId)
           WHERE o.User_FK_ID = ? AND t.Tenant_id = ?
         `;
         break;
+      case 'profile':
+        query = `
+          SELECT COUNT(*) as count
+          FROM profile p
+          WHERE p.User_FK_ID = ? AND p.Profile_id = ?
+        `;
+        break;
       default:
         return false;
     }

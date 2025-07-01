@@ -462,7 +462,24 @@ const sqlStatements = [
    ('reservations', 'Reservation management module'),
    ('payments', 'Payment management module'),
    ('visitors', 'Visitor management module'),
-   ('surveys', 'Survey management module')`,
+   ('surveys', 'Survey management module'),
+   ('profiles', 'Profile management module'),
+   ('notifications', 'Notification management module'),
+   ('apartment-status', 'Apartment status management module'),
+   ('towers', 'Towers management module'),
+   ('questions', 'Questions management module'),
+   ('answers', 'Answers management module'),
+   ('reservation-status', 'Reservation status management module'),
+   ('reservation-type', 'Reservation type management module'),
+   ('role-permissions', 'Role permissions management module'),
+   ('modules', 'Modules management module'),
+   ('user-status', 'User status management module'),
+   ('pqrs-categories', 'PQRS categories management module'),
+   ('guards', 'Guards management module'),
+   ('facilities', 'Facilities management module'),
+   ('permissions', 'Permissions management module'),
+   ('roles', 'Roles management module'),
+   ('vehicle-type', 'Vehicle type management module')`,
 
   // Insert basic permissions
   `INSERT INTO permissions (Permissions_name, Permissions_description) VALUES 
@@ -477,6 +494,16 @@ const sqlStatements = [
    FROM role r
    CROSS JOIN module m
    WHERE r.Role_name = 'Admin'`,
+   
+  // Ensure admin has access to all modules (explicit list for clarity)
+  `INSERT IGNORE INTO module_role (Role_FK_ID, Module_FK_ID)
+   SELECT r.Role_id, m.module_id
+   FROM role r
+   CROSS JOIN module m
+   WHERE r.Role_name = 'Admin'
+   AND m.module_name IN ('users', 'owners', 'apartments', 'parking', 'pets', 'pqrs', 'reservations', 'payments', 'visitors', 'surveys', 
+   'profiles', 'notifications', 'apartment-status', 'towers', 'questions', 'answers', 'reservation-status', 'reservation-type', 
+   'role-permissions', 'modules', 'user-status', 'pqrs-categories', 'guards', 'facilities', 'permissions', 'roles', 'vehicle-type')`,
 
   // Insert permissions for Admin (all permissions on all modules)
   `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
@@ -485,6 +512,18 @@ const sqlStatements = [
    CROSS JOIN permissions p
    JOIN role r ON mr.Role_FK_ID = r.Role_id
    WHERE r.Role_name = 'Admin'`,
+   
+  // Ensure admin has all permissions for each module (explicit)
+  `INSERT IGNORE INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
+   SELECT mr.Module_role_id, p.Permissions_id
+   FROM module_role mr
+   JOIN module m ON mr.Module_FK_ID = m.module_id
+   CROSS JOIN permissions p
+   JOIN role r ON mr.Role_FK_ID = r.Role_id
+   WHERE r.Role_name = 'Admin'
+   AND m.module_name IN ('users', 'owners', 'apartments', 'parking', 'pets', 'pqrs', 'reservations', 'payments', 'visitors', 'surveys', 
+   'profiles', 'notifications', 'apartment-status', 'towers', 'questions', 'answers', 'reservation-status', 'reservation-type', 
+   'role-permissions', 'modules', 'user-status', 'pqrs-categories', 'guards', 'facilities', 'permissions', 'roles', 'vehicle-type')`,
 
   // Insert module-role associations for Owner
   `INSERT INTO module_role (Role_FK_ID, Module_FK_ID)
@@ -492,7 +531,9 @@ const sqlStatements = [
    FROM role r
    CROSS JOIN module m
    WHERE r.Role_name = 'Owner'
-   AND m.module_name IN ('owners', 'apartments', 'parking', 'pets', 'pqrs', 'reservations', 'payments', 'surveys')`,
+   AND m.module_name IN ('owners', 'apartments', 'parking', 'pets', 'pqrs', 'reservations', 'payments', 'surveys', 'profiles', 
+   'notifications', 'apartment-status', 'towers', 'questions', 'answers', 'reservation-status', 'reservation-type', 'vehicle-type', 
+   'permissions', 'roles', 'role-permissions', 'modules', 'user-status', 'pqrs-categories', 'guards', 'facilities')`,
 
   // Insert permissions for Owner role
   `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
@@ -511,6 +552,23 @@ const sqlStatements = [
      OR (m.module_name = 'reservations' AND p.Permissions_name IN ('create', 'read', 'update', 'delete'))
      OR (m.module_name = 'payments' AND p.Permissions_name IN ('create', 'read'))
      OR (m.module_name = 'surveys' AND p.Permissions_name IN ('read', 'create'))
+     OR (m.module_name = 'profiles' AND p.Permissions_name IN ('read', 'update'))
+     OR (m.module_name = 'notifications' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'apartment-status' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'towers' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'questions' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'answers' AND p.Permissions_name IN ('read', 'create'))
+     OR (m.module_name = 'reservation-status' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'reservation-type' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'vehicle-type' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'permissions' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'roles' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'role-permissions' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'modules' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'user-status' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'pqrs-categories' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'guards' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'facilities' AND p.Permissions_name IN ('read'))
    )`,
 
   // Insert module-role associations for Security
@@ -519,7 +577,8 @@ const sqlStatements = [
    FROM role r
    CROSS JOIN module m
    WHERE r.Role_name = 'Security'
-   AND m.module_name IN ('visitors', 'parking')`,
+   AND m.module_name IN ('visitors', 'parking', 'vehicle-type', 'apartments', 'towers', 'owners', 'guards', 'profiles', 
+   'apartment-status', 'permissions', 'roles', 'user-status', 'facilities', 'role-permissions', 'modules')`,
 
   // Insert permissions for Security role
   `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID)
@@ -532,6 +591,19 @@ const sqlStatements = [
    AND (
      (m.module_name = 'visitors' AND p.Permissions_name IN ('create', 'read', 'update'))
      OR (m.module_name = 'parking' AND p.Permissions_name IN ('read', 'update'))
+     OR (m.module_name = 'vehicle-type' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'apartments' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'towers' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'owners' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'guards' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'profiles' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'apartment-status' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'permissions' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'roles' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'user-status' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'facilities' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'role-permissions' AND p.Permissions_name IN ('read'))
+     OR (m.module_name = 'modules' AND p.Permissions_name IN ('read'))
    )`,
 
   // Create test users
