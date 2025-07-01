@@ -129,8 +129,16 @@ const sqlStatements = [
 
   `CREATE TABLE pet (
     Pet_id int(11) NOT NULL AUTO_INCREMENT,
+    Pet_name varchar(30) NOT NULL,
+    Pet_species varchar(30) NOT NULL,
+    Pet_breed varchar(30) NOT NULL,
+    Pet_vaccination_card varchar(255) NOT NULL,
+    Pet_photo varchar(255) NULL,
+    Owner_id int(11),
+    Pet_createdAt timestamp DEFAULT current_timestamp(),
     Pet_updatedAt timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (Pet_id)
+    PRIMARY KEY (Pet_id),
+    FOREIGN KEY (Owner_id) REFERENCES owner(Owner_id) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
   `CREATE TABLE pqrs (
