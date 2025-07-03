@@ -33,7 +33,46 @@ class ReservationModel {
     }
   }
 
-  static async create({ owner_id, type_id, status_id, start_time, end_time, description }) {
+  static async checkOverlappingReservations(facility_id, start_date, end_date, exclude_id = null) {
+    try {
+      let sqlQuery = `
+        SELECT r.*, rs.Reservation_status_name, rt.Reservation_type_name
+        FROM reservation r
+        LEFT JOIN reservation_status rs ON r.Reservation_status_FK_ID = rs.Reservation_status_id
+        LEFT JOIN reservation_type rt ON r.Reservation_type_FK_ID = rt.Reservation_type_id
+        WHERE r.Facility_FK_ID = ?
+        AND r.Reservation_status_FK_ID != 4 -- Not cancelled
+        AND r.Reservation_status_FK_ID != 5 -- Not no-show
+        AND (
+          (r.Reservation_start_time <= ? AND r.Reservation_end_time > ?)
+          OR
+          (r.Reservation_start_time < ? AND r.Reservation_end_time >= ?)
+          OR
+          (r.Reservation_start_time >= ? AND r.Reservation_start_time < ?)
+        )
+      `;
+
+      const params = [
+        facility_id,
+        end_date, start_date,    // First condition
+        end_date, end_date,      // Second condition
+        start_date, end_date     // Third condition
+      ];
+
+      // If we're updating a reservation, exclude the current reservation from the check
+      if (exclude_id) {
+        sqlQuery += ' AND r.Reservation_id != ?';
+        params.push(exclude_id);
+      }
+
+      const [result] = await connect.query(sqlQuery, params);
+      return result;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+  static async create({ owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
     try {
       // Validate foreign keys first
       const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
@@ -41,8 +80,35 @@ class ReservationModel {
         return { error: validation.error };
       }
 
-      let sqlQuery = `INSERT INTO reservation (Owner_FK_ID, Reservation_type_FK_ID, Reservation_status_FK_ID, Reservation_start_time, Reservation_end_time, Reservation_description, Reservation_date) VALUES (?, ?, ?, ?, ?, ?, NOW())`;
-      const [result] = await connect.query(sqlQuery, [owner_id, type_id, status_id, start_time, end_time, description]);
+      // Check for overlapping reservations
+      const overlapping = await this.checkOverlappingReservations(facility_id, start_date, end_date);
+      if (overlapping.error) {
+        return { error: overlapping.error };
+      }
+      if (overlapping.length > 0) {
+        return { error: "This facility is already reserved for the selected time period" };
+      }
+
+      let sqlQuery = `INSERT INTO reservation (
+        Owner_FK_ID, 
+        Reservation_type_FK_ID, 
+        Reservation_status_FK_ID, 
+        Facility_FK_ID,
+        Reservation_start_time, 
+        Reservation_end_time, 
+        Reservation_description, 
+        Reservation_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+      
+      const [result] = await connect.query(sqlQuery, [
+        owner_id, 
+        type_id, 
+        status_id, 
+        facility_id,
+        start_date, 
+        end_date, 
+        description
+      ]);
       return result.insertId;
     } catch (error) {
       return { error: error.message };
@@ -68,7 +134,7 @@ class ReservationModel {
     }
   }
 
-  static async update(id, { owner_id, type_id, status_id, start_time, end_time, description }) {
+  static async update(id, { owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
     try {
       // Validate foreign keys first
       const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
@@ -76,8 +142,39 @@ class ReservationModel {
         return { error: validation.error };
       }
 
-      let sqlQuery = `UPDATE reservation SET Owner_FK_ID = ?, Reservation_type_FK_ID = ?, Reservation_status_FK_ID = ?, Reservation_start_time = ?, Reservation_end_time = ?, Reservation_description = ?, Reservation_date = NOW() WHERE Reservation_id = ?`;
-      const [result] = await connect.query(sqlQuery, [owner_id, type_id, status_id, start_time, end_time, description, id]);
+      // Check for overlapping reservations (excluding this reservation)
+      if (facility_id && start_date && end_date) {
+        const overlapping = await this.checkOverlappingReservations(facility_id, start_date, end_date, id);
+        if (overlapping.error) {
+          return { error: overlapping.error };
+        }
+        if (overlapping.length > 0) {
+          return { error: "This facility is already reserved for the selected time period" };
+        }
+      }
+
+      let sqlQuery = `UPDATE reservation SET 
+        Owner_FK_ID = ?, 
+        Reservation_type_FK_ID = ?, 
+        Reservation_status_FK_ID = ?, 
+        Facility_FK_ID = ?,
+        Reservation_start_time = ?, 
+        Reservation_end_time = ?, 
+        Reservation_description = ?, 
+        Reservation_date = NOW() 
+        WHERE Reservation_id = ?`;
+      
+      const [result] = await connect.query(sqlQuery, [
+        owner_id, 
+        type_id, 
+        status_id, 
+        facility_id,
+        start_date, 
+        end_date, 
+        description, 
+        id
+      ]);
+      
       if (result.affectedRows === 0) {
         return { error: "Reservation not found" };
       } else {

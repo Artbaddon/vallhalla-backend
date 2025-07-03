@@ -183,6 +183,109 @@ class SurveyModel {
       return null;
     }
   }
+
+  static async createWithQuestions({ title, status, question }) {
+    const connection = await connect.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Create the survey first
+      const [surveyResult] = await connection.query(
+        "INSERT INTO survey (title, status) VALUES (?, ?)",
+        [title, status]
+      );
+      const surveyId = surveyResult.insertId;
+
+      // Insert the initial question
+      await connection.query(
+        `INSERT INTO question 
+         (survey_id, title, question_type_id, options)
+         VALUES (?, ?, ?, ?)`,
+        [surveyId, question.title, question.question_type_id, 
+         question.options ? JSON.stringify(question.options) : null]
+      );
+
+      await connection.commit();
+      return surveyId;
+    } catch (error) {
+      await connection.rollback();
+      console.error("Error creating survey with question:", error.message);
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async addQuestions(surveyId, questions) {
+    const connection = await connect.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Insert additional questions
+      for (const question of questions) {
+        await connection.query(
+          `INSERT INTO question 
+           (survey_id, title, question_type_id, options)
+           VALUES (?, ?, ?, ?)`,
+          [surveyId, question.title, question.question_type_id, 
+           question.options ? JSON.stringify(question.options) : null]
+        );
+      }
+
+      await connection.commit();
+      return true;
+    } catch (error) {
+      await connection.rollback();
+      console.error("Error adding questions:", error.message);
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async updateWithQuestions(id, { title, status, questions }) {
+    const connection = await connect.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Update survey
+      await connection.query(
+        `UPDATE survey 
+         SET 
+           title = ?,
+           status = ?,
+           updatedAt = CURRENT_TIMESTAMP
+         WHERE survey_id = ?`,
+        [title, status, id]
+      );
+
+      // Delete existing questions
+      await connection.query(
+        "DELETE FROM question WHERE survey_id = ?",
+        [id]
+      );
+
+      // Insert updated questions
+      for (const question of questions) {
+        await connection.query(
+          `INSERT INTO question 
+           (survey_id, title, question_type_id, options)
+           VALUES (?, ?, ?, ?)`,
+          [id, question.title, question.question_type_id, 
+           question.options ? JSON.stringify(question.options) : null]
+        );
+      }
+
+      await connection.commit();
+      return true;
+    } catch (error) {
+      await connection.rollback();
+      console.error("Error updating survey with questions:", error.message);
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 export default SurveyModel;

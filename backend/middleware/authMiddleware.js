@@ -2,11 +2,12 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { ROLES } from "./rbacConfig.js";
 import PermissionsModel from "../models/permissions.model.js";
+import { connect } from "../config/db/connectMysql.js";
 
 dotenv.config();
 
 // Verify JWT token
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
@@ -17,6 +18,25 @@ export const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     req.user = decoded;
+
+    // Debug logging
+    console.log('Decoded token:', decoded);
+    console.log('User object after decode:', req.user);
+
+    // If user is an owner, fetch their owner_id
+    if (decoded.Role_name === 'OWNER') {
+      const [rows] = await connect.query(
+        'SELECT Owner_id FROM owner WHERE User_FK_ID = ?',
+        [decoded.userId]
+      );
+      if (rows && rows[0]) {
+        req.user.Owner_id = rows[0].Owner_id;
+      }
+    }
+
+    // More debug logging
+    console.log('Final user object:', req.user);
+
     next();
   } catch (error) {
     console.log('❌ Token verification failed:', error.message);

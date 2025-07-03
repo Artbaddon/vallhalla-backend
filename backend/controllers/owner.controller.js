@@ -163,9 +163,38 @@ class OwnerController {
         return res.status(400).json({ error: updateResult.error });
       }
 
+      // Get the updated owner details
+      const updatedOwner = await OwnerModel.getOwnerWithDetails(id);
+      if (updatedOwner.error) {
+        return res.status(400).json({ error: updatedOwner.error });
+      }
+
+      // Create a summary of what was updated
+      const updates = {
+        owner: is_tenant !== undefined || birth_date ? {
+          is_tenant: is_tenant,
+          birth_date: birth_date
+        } : undefined,
+        user: username || password || user_status_id || role_id ? {
+          username,
+          user_status_id,
+          role_id,
+          password: password ? "updated" : undefined
+        } : undefined,
+        profile: first_name || document_type || document_number || phone || photo_url ? {
+          full_name: first_name && last_name ? `${first_name} ${last_name}` : undefined,
+          document_type,
+          document_number,
+          phone,
+          photo_url
+        } : undefined
+      };
+
       res.status(200).json({
         message: "Owner updated successfully with user and profile data",
-        success: true
+        success: true,
+        updated_fields: updates,
+        current_data: updatedOwner
       });
     } catch (error) {
       console.error("Error updating owner:", error);
@@ -181,18 +210,27 @@ class OwnerController {
         return res.status(400).json({ error: "Owner ID is required" });
       }
 
-      const deleteResult = await OwnerModel.delete(id);
+      // Get the user ID associated with this owner
+      const owner = await OwnerModel.findById(id);
+      if (!owner) {
+        return res.status(404).json({ error: "Owner not found" });
+      }
 
-      if (deleteResult.error) {
-        return res.status(404).json({ error: deleteResult.error });
+      // Instead of deleting, update the user status to inactive
+      const updateResult = await OwnerModel.update(id, {
+        user_status_id: 2, // 2 is 'Inactive' in user_status table
+      });
+
+      if (updateResult.error) {
+        return res.status(400).json({ error: updateResult.error });
       }
 
       res.status(200).json({
-        message: "Owner deleted successfully",
-        affectedRows: deleteResult,
+        message: "Owner inactivated successfully. Their apartments and other data are preserved.",
+        owner_id: id
       });
     } catch (error) {
-      console.error("Error deleting owner:", error);
+      console.error("Error inactivating owner:", error);
       res.status(500).json({ error: error.message });
     }
   }

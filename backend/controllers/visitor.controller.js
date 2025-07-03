@@ -1,33 +1,27 @@
 import VisitorModel from "../models/visitor.model.js";
+import OwnerModel from "../models/owner.model.js";
 
 class VisitorController {
   async register(req, res) {
     try {
-      const {
-        host_id,
-        visitor_name,
-        document_number,
-        phone,
-        visit_date,
-        visit_purpose,
-        vehicle_plate,
-      } = req.body;
+      const { host_id, visitor_name, document_number } = req.body;
 
-      if (!host_id || !visitor_name || !document_number || !visit_date) {
+      //check if host exists
+      const host = await OwnerModel.findById(host_id);
+      if (!host) {
+        return res.status(404).json({ error: "Host not found" });
+      }
+
+      if (!host_id || !visitor_name || !document_number) {
         return res.status(400).json({
-          error:
-            "Host ID, visitor name, document number, and visit date are required",
+          error: "Host ID, visitor name, and document number are required"
         });
       }
 
       const visitorId = await VisitorModel.create({
         host_id,
         visitor_name,
-        document_number,
-        phone: phone || null,
-        visit_date,
-        visit_purpose: visit_purpose || null,
-        vehicle_plate: vehicle_plate || null,
+        document_number
       });
 
       if (visitorId.error) {
@@ -36,7 +30,7 @@ class VisitorController {
 
       res.status(201).json({
         message: "Visitor registered successfully",
-        id: visitorId,
+        id: visitorId
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -53,7 +47,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitors retrieved successfully",
-        visitors: visitors,
+        visitors: visitors
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -63,28 +57,21 @@ class VisitorController {
   async update(req, res) {
     try {
       const id = req.params.id;
-      const {
-        host_id,
-        visitor_name,
-        document_number,
-        phone,
-        visit_date,
-        visit_purpose,
-        vehicle_plate,
-      } = req.body;
+      const { visitor_name, document_number } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: "Visitor ID is required" });
       }
 
+      if (!visitor_name || !document_number) {
+        return res.status(400).json({
+          error: "Visitor name and document number are required"
+        });
+      }
+
       const updateResult = await VisitorModel.update(id, {
-        host_id,
         visitor_name,
-        document_number,
-        phone,
-        visit_date,
-        visit_purpose,
-        vehicle_plate,
+        document_number
       });
 
       if (updateResult.error) {
@@ -93,7 +80,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitor updated successfully",
-        id: id,
+        id: id
       });
     } catch (error) {
       console.error("Error updating visitor:", error);
@@ -117,7 +104,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitor deleted successfully",
-        id: id,
+        id: id
       });
     } catch (error) {
       console.error("Error deleting visitor:", error);
@@ -139,9 +126,13 @@ class VisitorController {
         return res.status(404).json({ error: "Visitor not found" });
       }
 
+      if (visitor.error) {
+        return res.status(500).json({ error: visitor.error });
+      }
+
       res.status(200).json({
         message: "Visitor found successfully",
-        visitor: visitor,
+        visitor: visitor
       });
     } catch (error) {
       console.error("Error finding visitor by ID:", error);
@@ -165,7 +156,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Host visitors retrieved successfully",
-        visitors: visitors,
+        visitors: visitors
       });
     } catch (error) {
       console.error("Error finding visitors by host:", error);
@@ -175,21 +166,41 @@ class VisitorController {
 
   async findByDate(req, res) {
     try {
-      const visit_date = req.params.visit_date;
+      const enter_date = req.params.enter_date;
 
-      if (!visit_date) {
-        return res.status(400).json({ error: "Visit date is required" });
+      if (!enter_date) {
+        return res.status(400).json({ error: "Enter date is required" });
       }
 
-      const visitors = await VisitorModel.findByDate(visit_date);
+      // Validate and format the date
+      let formattedDate;
+      try {
+        const date = new Date(enter_date);
+        if (isNaN(date.getTime())) {
+          return res.status(400).json({ 
+            error: "Invalid date format. Please use YYYY-MM-DD format" 
+          });
+        }
+        // Format date as YYYY-MM-DD
+        formattedDate = date.toISOString().split('T')[0];
+      } catch (error) {
+        return res.status(400).json({ 
+          error: "Invalid date format. Please use YYYY-MM-DD format" 
+        });
+      }
+
+      const visitors = await VisitorModel.findByDate(formattedDate);
 
       if (visitors.error) {
         return res.status(500).json({ error: visitors.error });
       }
 
+      // Don't return 404 if no visitors found, just return an empty array
       res.status(200).json({
-        message: "Visitors by date retrieved successfully",
-        visitors: visitors,
+        message: visitors.length > 0 
+          ? "Visitors by date retrieved successfully" 
+          : "No visitors found for this date",
+        visitors: visitors
       });
     } catch (error) {
       console.error("Error finding visitors by date:", error);

@@ -51,11 +51,20 @@ class AuthController {
         { 
           userId: user.Users_id, 
           username: user.Users_name,
-          roleId: user.Role_FK_ID 
+          roleId: user.Role_FK_ID,
+          Role_name: user.Role_name
         },
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '1h' }
       );
+
+      // Debug logging
+      console.log('User data for token:', {
+        userId: user.Users_id,
+        username: user.Users_name,
+        roleId: user.Role_FK_ID,
+        Role_name: user.Role_name
+      });
 
       res.status(200).json({
         message: "Login successful",
@@ -64,7 +73,8 @@ class AuthController {
           id: user.Users_id,
           username: user.Users_name,
           status_id: user.User_status_FK_ID,
-          role_id: user.Role_FK_ID
+          role_id: user.Role_FK_ID,
+          Role_name: user.Role_name
         }
       });
 

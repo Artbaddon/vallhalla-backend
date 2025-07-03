@@ -17,7 +17,7 @@ class towerController {
 
       res.status(201).json({
         message: "Tower created successfully",
-        Tower_id: towerModelTower_id,
+        data: towerModelTower_id,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -32,7 +32,7 @@ class towerController {
       }
       res.status(200).json({
         message: "Towers retrieved successfully",
-        documentTypes: showtowerModel,
+        data: showtowerModel,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -59,7 +59,7 @@ class towerController {
 
       res.status(201).json({
         message: "Tower updated successfully",
-        Tower_id: updatetowerModel,
+        data: updatetowerModel,
       });
     } catch (error) {
       console.error("Error updating document type:", error);
@@ -83,7 +83,7 @@ class towerController {
 
       res.status(200).json({
         message: "Tower deleted successfully",
-        Tower_id: deletetowerModel,
+        data: deletetowerModel,
       });
     } catch (error) {
       console.error("Error deleting document type:", error);
@@ -106,7 +106,7 @@ class towerController {
 
       res.status(200).json({
         message: "Tower found successfully",
-        userStatus: existingtowerModel,
+        data: existingtowerModel,
       });
     } catch (error) {
       console.error("Error finding document type by Tower_id:", error);

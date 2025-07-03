@@ -34,6 +34,11 @@ class PermissionsModel {
 
   static async checkPermission(roleId, moduleName, permissionName) {
     try {
+      // Admin role (roleId = 1) has all permissions
+      if (roleId === 1) {
+        return true;
+      }
+
       const query = `
         SELECT 1
         FROM module_role mr
@@ -88,6 +93,53 @@ class PermissionsModel {
       return [];
     }
   }
+
+  static async getPermissions() {
+    try {
+      let sqlQuery = `SELECT * FROM permissions`;
+      const [result] = await connect.query(sqlQuery);
+      return result;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+  static async create(permission) {
+    try {
+      let sqlQuery = `INSERT INTO permissions (Permissions_name) VALUES (?)`;
+      const [result] = await connect.query(sqlQuery, [permission]);
+      return result.insertId;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+  static async update(id, { name }) {
+    try {
+      let sqlQuery = `UPDATE permissions SET Permissions_name = ? WHERE Permissions_id = ?`;
+      const [result] = await connect.query(sqlQuery, [name, id]);
+      return result.affectedRows;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+  static async delete(id) {
+    try {
+      let sqlQuery = `DELETE FROM permissions WHERE Permissions_id = ?`;
+      const [result] = await connect.query(sqlQuery, [id]);
+      return result.affectedRows;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+  static async findById(id) {
+    try {
+      let sqlQuery = `SELECT * FROM permissions WHERE Permissions_id = ?`;
+      const [result] = await connect.query(sqlQuery, [id]); 
+      return result[0];
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+  
 }
 
 export default PermissionsModel;

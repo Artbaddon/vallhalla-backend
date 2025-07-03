@@ -1,32 +1,92 @@
 import ReservationModel from "../models/reservation.model.js";
-import { ROLES } from "../middleware/rbacConfig.js";
+import OwnerModel from "../models/owner.model.js";
 
 class ReservationController {
-  async register(req, res) {
+  static async create(req, res) {
     try {
-      const { owner_id, type_id, status_id, facility_id, start_date, end_date, description } = req.body;
-
-      // If the user is an owner, they can only create reservations for themselves
-      let ownerId = owner_id;
-      if (req.user.roleId === ROLES.OWNER) {
-        // Get the owner ID from the user ID
-        ownerId = req.ownerId;
-      }
-
-      if (!ownerId || !type_id || !status_id || !start_date || !end_date) {
-        return res.status(400).json({ 
-          error: "Owner ID, type ID, status ID, start date, and end date are required" 
-        });
-      }
-
-      const reservationId = await ReservationModel.create({
-        owner_id: ownerId,
+      const {
         type_id,
-        status_id,
         facility_id,
         start_date,
         end_date,
-        description: description || null
+        description,
+        owner_id, // Optional: Allow admin to specify owner_id
+      } = req.body;
+
+      // Validate required fields
+      if (!type_id || !start_date || !end_date || !facility_id) {
+        return res.status(400).json({
+          error: "Type ID, facility ID, start date, and end date are required",
+        });
+      }
+
+      // Validate date format and range
+      const startDateTime = new Date(start_date);
+      const endDateTime = new Date(end_date);
+      const now = new Date();
+
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        return res.status(400).json({
+          error: "Invalid date format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)",
+        });
+      }
+
+      if (startDateTime < now) {
+        return res.status(400).json({
+          error: "Start date cannot be in the past",
+        });
+      }
+
+      if (endDateTime <= startDateTime) {
+        return res.status(400).json({
+          error: "End date must be after start date",
+        });
+      }
+
+      let reservationOwnerId;
+
+      // If user is admin, they can create reservation for any owner
+      if (req.user.roleId === 1) { // Admin role
+        if (owner_id) {
+          // Admin specified an owner_id
+          const ownerExists = await OwnerModel.findById(owner_id);
+          if (!ownerExists) {
+            return res.status(404).json({
+              error: "Specified owner not found"
+            });
+          }
+          reservationOwnerId = owner_id;
+        } else {
+          return res.status(400).json({
+            error: "Admin must specify owner_id when creating a reservation"
+          });
+        }
+      } else if (req.user.roleId === 3) { // Owner role
+        // Get owner ID from the authenticated user
+        const owner = await OwnerModel.findByUserId(req.user.id);
+        if (!owner) {
+          return res.status(403).json({
+            error: "Owner record not found for this user"
+          });
+        }
+        reservationOwnerId = owner.Owner_id;
+      } else {
+        return res.status(403).json({
+          error: "Only administrators and owners can make reservations"
+        });
+      }
+
+      // Default status is 1 (Pending)
+      const initialStatusId = 1;
+
+      const reservationId = await ReservationModel.create({
+        owner_id: reservationOwnerId,
+        type_id,
+        status_id: initialStatusId,
+        facility_id,
+        start_date: startDateTime.toISOString(),
+        end_date: endDateTime.toISOString(),
+        description: description || null,
       });
 
       if (reservationId.error) {
@@ -35,55 +95,122 @@ class ReservationController {
 
       res.status(201).json({
         message: "Reservation created successfully",
-        id: reservationId,
+        data: {
+          id: reservationId,
+          owner_id: reservationOwnerId,
+          type_id,
+          status_id: initialStatusId,
+          facility_id,
+          start_date: startDateTime.toISOString(),
+          end_date: endDateTime.toISOString(),
+          description,
+        },
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error creating reservation:", error);
+      res
+        .status(500)
+        .json({ error: "Internal server error while creating reservation" });
     }
   }
 
-  async show(req, res) {
+  static async show(req, res) {
     try {
       const reservations = await ReservationModel.show();
 
       if (reservations.error) {
         return res.status(500).json({ error: reservations.error });
       }
+      if (reservations.length === 0) {
+        return res.status(404).json({ error: "No reservations found" });
+      }
 
       res.status(200).json({
         message: "Reservations retrieved successfully",
-        reservations: reservations,
+        data: reservations,
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error fetching reservations:", error);
+      res
+        .status(500)
+        .json({ error: "Internal server error while fetching reservations" });
     }
   }
 
-  async update(req, res) {
+  static async findById(req, res) {
     try {
       const id = req.params.id;
-      const { owner_id, type_id, status_id, facility_id, start_date, end_date, description } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: "Reservation ID is required" });
       }
 
-      // If user is an owner, verify they own this reservation
-      if (req.user.roleId === ROLES.OWNER) {
-        const reservation = await ReservationModel.findById(id);
-        if (!reservation || reservation.Owner_FK_ID !== req.ownerId) {
-          return res.status(403).json({ error: "You don't have permission to update this reservation" });
-        }
+      const reservation = await ReservationModel.findById(id);
+
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservation not found" });
       }
 
-      const updateResult = await ReservationModel.update(id, {
-        owner_id,
+      res.status(200).json({
+        message: "Reservation found successfully",
+        data: reservation,
+      });
+    } catch (error) {
+      console.error("Error finding reservation:", error);
+      res
+        .status(500)
+        .json({ error: "Internal server error while finding reservation" });
+    }
+  }
+
+  static async update(req, res) {
+    try {
+      const id = req.params.id;
+      const {
         type_id,
         status_id,
         facility_id,
         start_date,
         end_date,
-        description
+        description,
+      } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: "Reservation ID is required" });
+      }
+
+      // Validate date format and range if dates are being updated
+      if (start_date || end_date) {
+        const startDateTime = new Date(start_date);
+        const endDateTime = new Date(end_date);
+        const now = new Date();
+
+        if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+          return res.status(400).json({
+            error: "Invalid date format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)",
+          });
+        }
+
+        if (startDateTime < now) {
+          return res.status(400).json({
+            error: "Start date cannot be in the past",
+          });
+        }
+
+        if (endDateTime <= startDateTime) {
+          return res.status(400).json({
+            error: "End date must be after start date",
+          });
+        }
+      }
+
+      const updateResult = await ReservationModel.update(id, {
+        type_id,
+        status_id,
+        facility_id,
+        start_date: start_date ? new Date(start_date).toISOString() : undefined,
+        end_date: end_date ? new Date(end_date).toISOString() : undefined,
+        description,
       });
 
       if (updateResult.error) {
@@ -92,15 +219,25 @@ class ReservationController {
 
       res.status(200).json({
         message: "Reservation updated successfully",
-        id: id,
+        data: {
+          id,
+          type_id,
+          status_id,
+          facility_id,
+          start_date: start_date ? new Date(start_date).toISOString() : undefined,
+          end_date: end_date ? new Date(end_date).toISOString() : undefined,
+          description,
+        },
       });
     } catch (error) {
       console.error("Error updating reservation:", error);
-      res.status(500).json({ error: error.message });
+      res
+        .status(500)
+        .json({ error: "Internal server error while updating reservation" });
     }
   }
 
-  async delete(req, res) {
+  static async delete(req, res) {
     try {
       const id = req.params.id;
 
@@ -116,149 +253,107 @@ class ReservationController {
 
       res.status(200).json({
         message: "Reservation deleted successfully",
-        id: id,
+        data: { id },
       });
     } catch (error) {
       console.error("Error deleting reservation:", error);
-      res.status(500).json({ error: error.message });
+      res
+        .status(500)
+        .json({ error: "Internal server error while deleting reservation" });
     }
   }
 
-  async findById(req, res) {
-    try {
-      const id = req.params.id;
-
-      if (!id) {
-        return res.status(400).json({ error: "Reservation ID is required" });
-      }
-
-      const reservation = await ReservationModel.findById(id);
-
-      if (!reservation) {
-        return res.status(404).json({ error: "Reservation not found" });
-      }
-
-      // If user is an owner, verify they own this reservation
-      if (req.user.roleId === ROLES.OWNER && reservation.Owner_FK_ID !== req.ownerId) {
-        return res.status(403).json({ error: "You don't have permission to view this reservation" });
-      }
-
-      res.status(200).json({
-        message: "Reservation found successfully",
-        reservation: reservation,
-      });
-    } catch (error) {
-      console.error("Error finding reservation by ID:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async findByOwner(req, res) {
-    try {
-      let owner_id = req.params.owner_id;
-
-      // If user is an owner, they can only see their own reservations
-      if (req.user.roleId === ROLES.OWNER) {
-        owner_id = req.ownerId;
-      }
-
-      if (!owner_id) {
-        return res.status(400).json({ error: "Owner ID is required" });
-      }
-
-      const reservations = await ReservationModel.findByOwner(owner_id);
-
-      if (reservations.error) {
-        return res.status(500).json({ error: reservations.error });
-      }
-
-      res.status(200).json({
-        message: "Owner reservations retrieved successfully",
-        reservations: reservations,
-      });
-    } catch (error) {
-      console.error("Error finding reservations by owner:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async findByDateRange(req, res) {
+  static async findByDateRange(req, res) {
     try {
       const { start_date, end_date } = req.query;
 
       if (!start_date || !end_date) {
-        return res.status(400).json({ error: "Start date and end date are required" });
+        return res
+          .status(400)
+          .json({ error: "Start date and end date are required" });
       }
 
-      let reservations;
-      
-      // If user is an owner, only show their reservations in the date range
-      if (req.user.roleId === ROLES.OWNER) {
-        const ownerReservations = await ReservationModel.findByOwner(req.ownerId);
-        
-        if (ownerReservations.error) {
-          return res.status(500).json({ error: ownerReservations.error });
-        }
-        
-        // Filter by date range manually
-        reservations = ownerReservations.filter(res => {
-          const resStartDate = new Date(res.Reservation_startDate);
-          const resEndDate = new Date(res.Reservation_endDate);
-          const queryStartDate = new Date(start_date);
-          const queryEndDate = new Date(end_date);
-          
-          return (resStartDate >= queryStartDate && resStartDate <= queryEndDate) || 
-                 (resEndDate >= queryStartDate && resEndDate <= queryEndDate) ||
-                 (resStartDate <= queryStartDate && resEndDate >= queryEndDate);
-        });
-      } else {
-        // Admin and staff see all reservations in the date range
-        reservations = await ReservationModel.findByDateRange(start_date, end_date);
-        
-        if (reservations.error) {
-          return res.status(500).json({ error: reservations.error });
-        }
-      }
-
-      res.status(200).json({
-        message: "Reservations by date range retrieved successfully",
-        reservations: reservations,
-      });
-    } catch (error) {
-      console.error("Error finding reservations by date range:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  // New method to find reservations for the currently logged-in owner
-  async findMyReservations(req, res) {
-    try {
-      // This endpoint should only be accessible by owners
-      if (req.user.roleId !== ROLES.OWNER) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-      
-      const owner_id = req.ownerId;
-      
-      if (!owner_id) {
-        return res.status(400).json({ error: "Owner ID could not be determined" });
-      }
-
-      const reservations = await ReservationModel.findByOwner(owner_id);
+      const reservations = await ReservationModel.findByDateRange(
+        start_date,
+        end_date
+      );
 
       if (reservations.error) {
         return res.status(500).json({ error: reservations.error });
       }
 
       res.status(200).json({
-        message: "Your reservations retrieved successfully",
-        reservations: reservations,
+        message: "Reservations found successfully",
+        data: reservations,
       });
     } catch (error) {
-      console.error("Error finding owner's reservations:", error);
-      res.status(500).json({ error: error.message });
+      console.error("Error finding reservations by date range:", error);
+      res
+        .status(500)
+        .json({ error: "Internal server error while finding reservations" });
+    }
+  }
+
+  static async findMyReservations(req, res) {
+    try {
+      let reservations;
+
+      if (req.user.roleId === 1) { // Admin role
+        // Admins can see all reservations
+        reservations = await ReservationModel.show();
+      } else if (req.user.roleId === 3) { // Owner role
+        // Get owner ID from the authenticated user
+        const owner = await OwnerModel.findByUserId(req.user.id);
+        if (!owner) {
+          return res.status(403).json({
+            error: "Owner record not found for this user"
+          });
+        }
+        reservations = await ReservationModel.findByOwner(owner.Owner_id);
+      } else {
+        return res.status(403).json({
+          error: "Only administrators and owners can view reservations"
+        });
+      }
+
+      if (reservations.error) {
+        return res.status(500).json({ error: reservations.error });
+      }
+
+      res.status(200).json({
+        message: "Reservations retrieved successfully",
+        data: reservations,
+      });
+    } catch (error) {
+      console.error("Error finding reservations:", error);
+      res
+        .status(500)
+        .json({
+          error: "Internal server error while finding reservations",
+        });
+    }
+  }
+
+  static async findByOwner(req, res) {
+    try {
+      const ownerId = req.params.owner_id;
+      const reservations = await ReservationModel.findByOwner(ownerId);
+
+      if (reservations.error) {
+        return res.status(500).json({ error: reservations.error });
+      }
+
+      res.status(200).json({
+        message: "Reservations found successfully",
+        data: reservations,
+      });
+    } catch (error) {
+      console.error("Error finding reservations by owner:", error);
+      res
+        .status(500)
+        .json({ error: "Internal server error while finding reservations by owner" });
     }
   }
 }
 
-export default new ReservationController();
+export default ReservationController;

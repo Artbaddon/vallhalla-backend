@@ -5,31 +5,21 @@ class NotificationController {
     try {
       const {
         type_id,
-        title,
-        message,
-        recipient_id,
-        recipient_type,
-        priority,
-        scheduled_date,
-        attachments,
+        description,
+        user_id
       } = req.body;
 
-      if (!type_id || !title || !message || !recipient_id || !recipient_type) {
+      if (!type_id || !description) {
         return res.status(400).json({
-          error:
-            "Type ID, title, message, recipient ID, and recipient type are required",
+          error: "Type ID and description are required"
         });
       }
 
+      // user_id can be null/0 for all users, or a specific user ID
       const notificationId = await NotificationModel.create({
         type_id,
-        title,
-        message,
-        recipient_id,
-        recipient_type,
-        priority: priority || "NORMAL",
-        scheduled_date: scheduled_date || null,
-        attachments,
+        description,
+        user_id: user_id || 0 // Convert null/undefined to 0 for all users
       });
 
       if (notificationId.error) {
@@ -53,9 +43,15 @@ class NotificationController {
         return res.status(500).json({ error: notifications.error });
       }
 
+      // Add a flag to indicate if notification is for all users
+      const formattedNotifications = notifications.map(n => ({
+        ...n,
+        is_for_all_users: n.Notification_User_FK_ID === null
+      }));
+
       res.status(200).json({
         message: "Notifications retrieved successfully",
-        notifications: notifications,
+        notifications: formattedNotifications,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -67,14 +63,8 @@ class NotificationController {
       const id = req.params.id;
       const {
         type_id,
-        title,
-        message,
-        recipient_id,
-        recipient_type,
-        priority,
-        scheduled_date,
-        attachments,
-        is_read,
+        description,
+        user_id
       } = req.body;
 
       if (!id) {
@@ -83,14 +73,8 @@ class NotificationController {
 
       const updateResult = await NotificationModel.update(id, {
         type_id,
-        title,
-        message,
-        recipient_id,
-        recipient_type,
-        priority,
-        scheduled_date,
-        attachments,
-        is_read,
+        description,
+        user_id: user_id || 0 // Convert null/undefined to 0 for all users
       });
 
       if (updateResult.error) {
@@ -103,30 +87,6 @@ class NotificationController {
       });
     } catch (error) {
       console.error("Error updating notification:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async markAsRead(req, res) {
-    try {
-      const id = req.params.id;
-
-      if (!id) {
-        return res.status(400).json({ error: "Notification ID is required" });
-      }
-
-      const updateResult = await NotificationModel.markAsRead(id);
-
-      if (updateResult.error) {
-        return res.status(404).json({ error: updateResult.error });
-      }
-
-      res.status(200).json({
-        message: "Notification marked as read successfully",
-        id: id,
-      });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -169,9 +129,15 @@ class NotificationController {
         return res.status(404).json({ error: "Notification not found" });
       }
 
+      // Add a flag to indicate if notification is for all users
+      const formattedNotification = {
+        ...notification,
+        is_for_all_users: notification.Notification_User_FK_ID === null
+      };
+
       res.status(200).json({
         message: "Notification found successfully",
-        notification: notification,
+        notification: formattedNotification,
       });
     } catch (error) {
       console.error("Error finding notification by ID:", error);
@@ -179,67 +145,39 @@ class NotificationController {
     }
   }
 
-  async findByRecipient(req, res) {
+  async findByUser(req, res) {
     try {
       const { recipient_id, recipient_type } = req.params;
 
-      if (!recipient_id || !recipient_type) {
-        return res
-          .status(400)
-          .json({ error: "Recipient ID and type are required" });
+      if (!recipient_id) {
+        return res.status(400).json({ error: "Recipient ID is required" });
       }
 
-      const notifications = await NotificationModel.findByRecipient(
-        recipient_id,
-        recipient_type
-      );
+      const notifications = await NotificationModel.findByUser(recipient_id);
 
       if (notifications.error) {
         return res.status(500).json({ error: notifications.error });
       }
 
-      res.status(200).json({
-        message: "Recipient notifications retrieved successfully",
-        notifications: notifications,
-      });
-    } catch (error) {
-      console.error("Error finding notifications by recipient:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async findUnread(req, res) {
-    try {
-      const { recipient_id, recipient_type } = req.params;
-
-      if (!recipient_id || !recipient_type) {
-        return res
-          .status(400)
-          .json({ error: "Recipient ID and type are required" });
-      }
-
-      const notifications = await NotificationModel.findUnread(
-        recipient_id,
-        recipient_type
-      );
-
-      if (notifications.error) {
-        return res.status(500).json({ error: notifications.error });
-      }
+      // Add a flag to indicate if notification is for all users
+      const formattedNotifications = notifications.map(n => ({
+        ...n,
+        is_for_all_users: n.Notification_User_FK_ID === null
+      }));
 
       res.status(200).json({
-        message: "Unread notifications retrieved successfully",
-        notifications: notifications,
+        message: "Notifications retrieved successfully",
+        notifications: formattedNotifications,
       });
     } catch (error) {
-      console.error("Error finding unread notifications:", error);
+      console.error("Error finding notifications by user:", error);
       res.status(500).json({ error: error.message });
     }
   }
 
   async findByType(req, res) {
     try {
-      const type_id = req.params.type_id;
+      const { type_id } = req.params;
 
       if (!type_id) {
         return res.status(400).json({ error: "Type ID is required" });
@@ -251,12 +189,49 @@ class NotificationController {
         return res.status(500).json({ error: notifications.error });
       }
 
+      // Add a flag to indicate if notification is for all users
+      const formattedNotifications = notifications.map(n => ({
+        ...n,
+        is_for_all_users: n.Notification_User_FK_ID === null
+      }));
+
       res.status(200).json({
-        message: "Notifications by type retrieved successfully",
-        notifications: notifications,
+        message: "Notifications retrieved successfully",
+        notifications: formattedNotifications,
       });
     } catch (error) {
       console.error("Error finding notifications by type:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async findUnread(req, res) {
+    try {
+      const { recipient_id, recipient_type } = req.params;
+
+      if (!recipient_id) {
+        return res.status(400).json({ error: "Recipient ID is required" });
+      }
+
+      // Since we don't track read status, just return all notifications
+      const notifications = await NotificationModel.findByUser(recipient_id);
+
+      if (notifications.error) {
+        return res.status(500).json({ error: notifications.error });
+      }
+
+      // Add a flag to indicate if notification is for all users
+      const formattedNotifications = notifications.map(n => ({
+        ...n,
+        is_for_all_users: n.Notification_User_FK_ID === null
+      }));
+
+      res.status(200).json({
+        message: "Notifications retrieved successfully",
+        notifications: formattedNotifications,
+      });
+    } catch (error) {
+      console.error("Error finding notifications:", error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -280,4 +255,4 @@ class NotificationController {
   }
 }
 
-export default new NotificationController();
+export default NotificationController;

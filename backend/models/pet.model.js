@@ -4,18 +4,18 @@ class PetModel {
   static async create({ name, species, breed, vaccination_card, photo, owner_id }) {
     try {
       const [result] = await connect.query(
-        "INSERT INTO pet (Pet_name, Pet_species, Pet_breed, Pet_vaccination_card, Pet_photo, Owner_id) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO pet (Pet_name, Pet_species, Pet_Breed, Pet_vaccination_card, Pet_Photo, Owner_FK_ID) VALUES (?, ?, ?, ?, ?, ?)",
         [name, species, breed, vaccination_card, photo, owner_id]
       );
-      return result.insertId; // Retorna solo el ID insertado
+      return result.insertId;
     } catch (error) {
       console.error("Error creating pet:", error.message);
-      return null;
+      throw error;
     }
   }
 
   static async show() {
-      const [rows] = await connect.query(
+    const [rows] = await connect.query(
       'SELECT * FROM pet ORDER BY Pet_id'
     );
     return rows;
@@ -26,9 +26,12 @@ class PetModel {
       const [result] = await connect.query(
         `UPDATE pet 
              SET 
-                Pet_name = ?, Pet_species = ?, Pet_breed = ?, Pet_vaccination_card = ?, Pet_photo = ?, Owner_id = ?,
-                Pet_createdAt = CURRENT_TIMESTAMP,
-                Pet_updatedAt = CURRENT_TIMESTAMP
+                Pet_name = ?, 
+                Pet_species = ?, 
+                Pet_Breed = ?, 
+                Pet_vaccination_card = ?, 
+                Pet_Photo = ?, 
+                Owner_FK_ID = ?
              WHERE Pet_id = ?`,
         [name, species, breed, vaccination_card, photo, owner_id, id]
       );
@@ -36,7 +39,7 @@ class PetModel {
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating pet:", error.message);
-      return false;
+      throw error;
     }
   }
 
@@ -50,7 +53,7 @@ class PetModel {
         return result.affectedRows;
       }
     } catch (error) {
-      return [0];
+      throw error;
     }
   }
 
@@ -59,15 +62,15 @@ class PetModel {
       const [rows] = await connect.query(
         "SELECT * FROM pet WHERE Pet_id = ?", 
         [id]
-    );
+      );
       return rows[0];
     } catch (error) {
       console.error("Error finding pet by ID:", error.message);
-      return null;
+      throw error;
     }
   }
 
-  // New method to find owner by user ID
+  // Find owner by user ID
   static async findOwnerByUserId(userId) {
     try {
       const [rows] = await connect.query(
@@ -79,23 +82,23 @@ class PetModel {
       return rows[0];
     } catch (error) {
       console.error("Error finding owner by user ID:", error.message);
-      return null;
+      throw error;
     }
   }
 
-  // New method to find pets by owner ID
+  // Find pets by owner ID
   static async findByOwner(ownerId) {
     try {
       const [rows] = await connect.query(
         `SELECT p.*
          FROM pet p
-         WHERE p.Owner_id = ?`,
+         WHERE p.Owner_FK_ID = ?`,
         [ownerId]
       );
       return rows;
     } catch (error) {
       console.error("Error finding pets by owner:", error.message);
-      return [];
+      throw error;
     }
   }
 }

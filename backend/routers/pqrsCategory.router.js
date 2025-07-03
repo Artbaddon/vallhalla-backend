@@ -6,27 +6,27 @@ const router = Router();
 
 // Admin-only routes
 router.post("/", 
-  requirePermission("pqrsCategories", "create"), 
+  requirePermission("pqrs-categories", "create"), 
   PQRSCategoryController.register
 );
 
 router.get("/", 
-  requirePermission("pqrsCategories", "read"), 
+  requirePermission("pqrs-categories", "read"), 
   PQRSCategoryController.show
 );
 
 router.get("/:id", 
-  requirePermission("pqrsCategories", "read"), 
+  requirePermission("pqrs-categories", "read"), 
   PQRSCategoryController.findById
 );
 
 router.put("/:id", 
-  requirePermission("pqrsCategories", "update"), 
+  requirePermission("pqrs-categories", "update"), 
   PQRSCategoryController.update
 );
 
 router.delete("/:id", 
-  requirePermission("pqrsCategories", "delete"), 
+  requirePermission("pqrs-categories", "delete"), 
   PQRSCategoryController.delete
 );
 

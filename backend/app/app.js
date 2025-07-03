@@ -78,7 +78,7 @@ app.use(name + "/apartment-status", apartmentStatusRouter);
 app.use(name + "/facilities", facilityRouter);
 
 // Payment System
-app.use(name + "/payments", paymentRouter);
+app.use(name + "/payment", paymentRouter);
 
 // Security & Access
 app.use(name + "/guards", guardRouter);

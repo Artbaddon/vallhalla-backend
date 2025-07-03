@@ -6,12 +6,12 @@ const router = Router();
 
 // Protected routes
 router.route("/")
-  .post(requirePermission("vehicleTypes", "create"), VehicleTypeController.register)
-  .get(requirePermission("vehicleTypes", "read"), VehicleTypeController.show);
+  .post(requirePermission("vehicle-type", "create"), VehicleTypeController.register)
+  .get(requirePermission("vehicle-type", "read"), VehicleTypeController.show);
 
 router.route(`/:id`)
-  .get(requirePermission("vehicleTypes", "read"), VehicleTypeController.findById)
-  .put(requirePermission("vehicleTypes", "update"), VehicleTypeController.update)
-  .delete(requirePermission("vehicleTypes", "delete"), VehicleTypeController.delete);
+  .get(requirePermission("vehicle-type", "read"), VehicleTypeController.findById)
+  .put(requirePermission("vehicle-type", "update"), VehicleTypeController.update)
+  .delete(requirePermission("vehicle-type", "delete"), VehicleTypeController.delete);
 
 export default router;

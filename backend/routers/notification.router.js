@@ -3,66 +3,61 @@ import NotificationController from "../controllers/notification.controller.js";
 import { requirePermission } from '../middleware/permissionMiddleware.js';
 
 const router = Router();
+const controller = new NotificationController();
 
 // Protected routes
 // Admin can see all notifications
 router.get("/", 
   requirePermission("notifications", "read"),
-  NotificationController.show
+  controller.show
 );
 
 // Get notification stats (admin only)
 router.get("/stats",
   requirePermission("notifications", "read"),
-  NotificationController.getStats
+  controller.getStats
 );
 
-// View specific notification
-router.get("/:id",
-  requirePermission("notifications", "read"),
-  NotificationController.findById
-);
-
-// Create notification (admin only)
-router.post("/",
-  requirePermission("notifications", "create"),
-  NotificationController.register
-);
-
-// Update notification (admin only)
-router.put("/:id",
-  requirePermission("notifications", "update"),
-  NotificationController.update
-);
-
-// Delete notification (admin only)
-router.delete("/:id",
-  requirePermission("notifications", "delete"),
-  NotificationController.delete
-);
-
-// Find notifications by recipient
+// Find notifications by user
 router.get("/recipient/:recipient_id/:recipient_type",
   requirePermission("notifications", "read"),
-  NotificationController.findByRecipient
+  controller.findByUser
 );
 
 // Find unread notifications
 router.get("/unread/:recipient_id/:recipient_type",
   requirePermission("notifications", "read"),
-  NotificationController.findUnread
+  controller.findUnread
 );
 
 // Find notifications by type
 router.get("/type/:type_id",
   requirePermission("notifications", "read"),
-  NotificationController.findByType
+  controller.findByType
 );
 
-// Mark notification as read
-router.put("/:id/read",
+// View specific notification
+router.get("/:id",
+  requirePermission("notifications", "read"),
+  controller.findById
+);
+
+// Create notification (admin only)
+router.post("/",
+  requirePermission("notifications", "create"),
+  controller.register
+);
+
+// Update notification (admin only)
+router.put("/:id",
   requirePermission("notifications", "update"),
-  NotificationController.markAsRead
+  controller.update
+);
+
+// Delete notification (admin only)
+router.delete("/:id",
+  requirePermission("notifications", "delete"),
+  controller.delete
 );
 
 export default router;

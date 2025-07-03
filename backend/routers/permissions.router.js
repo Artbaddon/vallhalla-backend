@@ -30,4 +30,25 @@ router.delete("/:id",
   PermissionsController.delete
 );
 
+// Permission management endpoints
+router.get("/role/:roleId/permissions",
+  requirePermission("permissions", "read"),
+  PermissionsController.getUserPermissions
+);
+
+router.post("/role/:roleId/check",
+  requirePermission("permissions", "read"),
+  PermissionsController.checkPermission
+);
+
+router.get("/module/:moduleId/permissions",
+  requirePermission("permissions", "read"),
+  PermissionsController.getModulePermissions
+);
+
+router.get("/role/:roleId/modules",
+  requirePermission("permissions", "read"),
+  PermissionsController.getRoleModules
+);
+
 export default router;

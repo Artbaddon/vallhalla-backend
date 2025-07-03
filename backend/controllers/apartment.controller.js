@@ -248,12 +248,12 @@ class ApartmentController {
       const apartment = await ApartmentModel.findByNumber(apartment_number);
 
       if (!apartment) {
-        return res.status(404).json({ error: "Apartment not found" });
+        return res.status(404).json({ error: "No se encontró el apartamento con ese número" });
       }
 
       res.status(200).json({
-        message: "Apartment found successfully",
-        apartment: apartment,
+        message: "Apartamento encontrado exitosamente",
+        apartment: apartment
       });
     } catch (error) {
       console.error("Error finding apartment by number:", error);

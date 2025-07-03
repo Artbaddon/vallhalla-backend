@@ -12,24 +12,30 @@ class AnswerController {
         });
       }
 
-      const answerId = await AnswerModel.create({
+      const result = await AnswerModel.create({
         survey_id,
         question_id,
         user_id,
         value,
       });
 
-      if (!answerId) {
+      if (result.error) {
+        if (result.error === "User already answered this question") {
+          return res.status(409).json({
+            success: false,
+            error: "Ya has respondido esta pregunta anteriormente"
+          });
+        }
         return res.status(500).json({
           success: false,
-          error: "Error al guardar la respuesta",
+          error: "Error al guardar la respuesta"
         });
       }
 
       res.status(201).json({
         success: true,
         message: "Respuesta guardada exitosamente",
-        data: { id: answerId },
+        data: { id: result.id },
       });
     } catch (error) {
       console.error("Error en AnswerController.register:", error.message);
@@ -49,7 +55,9 @@ class AnswerController {
       }
 
       const answers = await AnswerModel.findBySurvey(survey_id);
-
+      if (answers.length === 0) {
+        return res.status(404).json({ error: "Answers not found" });
+      }
       res.status(200).json({
         success: true,
         data: answers,
@@ -73,7 +81,9 @@ class AnswerController {
       }
 
       const answers = await AnswerModel.findByUser(user_id);
-
+      if (answers.length === 0) {
+        return res.status(404).json({ error: "Answers not found" });
+      }
       res.status(200).json({
         success: true,
         data: answers,

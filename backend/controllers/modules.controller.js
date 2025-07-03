@@ -15,7 +15,13 @@ class ModulesController {
         name,
         description,
       });
-
+      if(ModuleId.error ){
+        return res.status(409).json({ error: ModuleId.error });
+      }
+      if(ModuleId.length === 0){
+        return res.status(404).json({ error: "Module not found" });
+      }
+      
       res.status(201).json({
         message: "Modele created successfully",
         id: ModuleId,

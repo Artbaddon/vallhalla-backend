@@ -97,6 +97,10 @@ class PQRSController {
         return res.status(500).json({ error: pqrsList.error });
       }
 
+      if (pqrsList.length === 0) {
+        return res.status(404).json({ error: "PQRS not found" });
+      }
+
       res.status(200).json({
         message: "PQRS list retrieved successfully",
         pqrs: pqrsList,
@@ -156,7 +160,7 @@ class PQRSController {
         return res.status(400).json({ error: "PQRS ID and status ID are required" });
       }
 
-      const updateResult = await PQRSModel.updateStatus(id, status_id, admin_response);
+      const updateResult = await PQRSModel.updateStatus(id, { status_id, admin_response });
 
       if (updateResult.error) {
         return res.status(404).json({ error: updateResult.error });
@@ -254,6 +258,10 @@ class PQRSController {
 
       const pqrsList = await PQRSModel.findByStatus(status_id);
 
+      if (pqrsList.length === 0) {
+        return res.status(404).json({ error: "PQRS not found" });
+      }
+
       if (pqrsList.error) {
         return res.status(500).json({ error: pqrsList.error });
       }
@@ -309,31 +317,10 @@ class PQRSController {
       res.status(500).json({ error: error.message });
     }
   }
+  
 
-  async search(req, res) {
-    try {
-      const { q } = req.query;
-
-      if (!q) {
-        return res.status(400).json({ error: "Search term is required" });
-      }
-
-      const pqrsList = await PQRSModel.searchPQRS(q);
-
-      if (pqrsList.error) {
-        return res.status(500).json({ error: pqrsList.error });
-      }
-
-      res.status(200).json({
-        message: "PQRS search completed successfully",
-        pqrs: pqrsList,
-        searchTerm: q
-      });
-    } catch (error) {
-      console.error("Error searching PQRS:", error);
-      res.status(500).json({ error: error.message });
-    }
-  }
+  
+  
 }
 
 export default new PQRSController();

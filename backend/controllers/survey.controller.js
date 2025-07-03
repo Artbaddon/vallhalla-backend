@@ -3,83 +3,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 class SurveyController {
-  async register(req, res) {
-    try {
-      const { title, status } = req.body;
-
-      if (!title) {
-        return res.status(400).json({
-          success: false,
-          error: "El título de la encuesta es requerido",
-        });
-      }
-
-      const surveyId = await SurveyModel.create({ title, status });
-
-      if (!surveyId) {
-        return res.status(500).json({
-          success: false,
-          error: "Error al crear la encuesta",
-        });
-      }
-
-      res.status(201).json({
-        success: true,
-        message: "Encuesta creada exitosamente",
-        data: { id: surveyId },
-      });
-    } catch (error) {
-      console.error("Error en register survey:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Error interno del servidor",
-      });
-    }
-  }
-
-  async update(req, res) {
-    try {
-      const { id } = req.params;
-      const { title, status } = req.body;
-
-      if (!title && !status) {
-        return res.status(400).json({
-          success: false,
-          error: "Debe proporcionar al menos un campo para actualizar",
-        });
-      }
-
-      const existingSurvey = await SurveyModel.findById(id);
-      if (!existingSurvey) {
-        return res.status(404).json({
-          success: false,
-          error: "Encuesta no encontrada",
-        });
-      }
-
-      const updateResult = await SurveyModel.update(id, { title, status });
-
-      if (!updateResult) {
-        return res.status(400).json({
-          success: false,
-          error: "No se realizaron cambios en la encuesta",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Encuesta actualizada exitosamente",
-        data: { id },
-      });
-    } catch (error) {
-      console.error("Error en update survey:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error interno del servidor al actualizar encuesta",
-      });
-    }
-  }
-
   async show(req, res) {
     try {
       const surveys = await SurveyModel.show();
@@ -155,25 +78,24 @@ class SurveyController {
     }
   }
 
-  // New method to get questions for a specific survey
+  // Get questions for a specific survey
   async getQuestions(req, res) {
     try {
       const { id } = req.params;
 
       if (!id) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          error: "Survey ID is required" 
+          error: "Survey ID is required",
         });
       }
 
-      // You may need to add this method to your model
       const questions = await SurveyModel.getQuestions(id);
 
       if (!questions) {
         return res.status(404).json({
           success: false,
-          error: "No questions found for this survey"
+          error: "No questions found for this survey",
         });
       }
 
@@ -181,61 +103,75 @@ class SurveyController {
         success: true,
         message: "Survey questions retrieved successfully",
         data: questions,
-        count: questions.length
+        count: questions.length,
       });
     } catch (error) {
       console.error("Error in getQuestions:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
-        error: "Internal server error while retrieving survey questions" 
+        error: "Internal server error while retrieving survey questions",
       });
     }
   }
 
-  // New method to submit an answer to a survey question
+  // Submit answers to survey questions
   async submitAnswer(req, res) {
     try {
       const { id } = req.params;
-      const { question_id, answer_value } = req.body;
+      const { answers } = req.body;
       const userId = req.user.userId;
 
-      if (!id || !question_id || !answer_value) {
+      if (!id || !answers || !Array.isArray(answers) || answers.length === 0) {
         return res.status(400).json({
           success: false,
-          error: "Survey ID, question ID, and answer value are required"
+          error: "Survey ID and answers array are required",
         });
       }
 
-      // You may need to add this method to your model
-      const answerResult = await SurveyModel.submitAnswer({
-        survey_id: id,
-        question_id,
-        user_id: userId,
-        value: answer_value
-      });
+      // Validate each answer
+      for (const answer of answers) {
+        if (!answer.question_id || answer.value === undefined) {
+          return res.status(400).json({
+            success: false,
+            error: "Each answer must have question_id and value",
+          });
+        }
+      }
 
-      if (!answerResult) {
+      // Submit all answers in a transaction
+      const results = await Promise.all(
+        answers.map((answer) =>
+          SurveyModel.submitAnswer({
+            survey_id: id,
+            question_id: answer.question_id,
+            user_id: userId,
+            value: answer.value,
+          })
+        )
+      );
+
+      if (results.some((result) => !result)) {
         return res.status(500).json({
           success: false,
-          error: "Failed to submit answer"
+          error: "Failed to submit some answers",
         });
       }
 
       res.status(201).json({
         success: true,
-        message: "Answer submitted successfully",
-        data: answerResult
+        message: "Answers submitted successfully",
+        data: { answersSubmitted: results.length },
       });
     } catch (error) {
       console.error("Error in submitAnswer:", error);
       res.status(500).json({
         success: false,
-        error: "Internal server error while submitting answer"
+        error: "Internal server error while submitting answers",
       });
     }
   }
 
-  // New method to get surveys the user has already answered
+  // Get surveys the user has already answered
   async getMyAnsweredSurveys(req, res) {
     try {
       const userId = req.user.userId;
@@ -243,17 +179,16 @@ class SurveyController {
       if (!userId) {
         return res.status(400).json({
           success: false,
-          error: "User ID is required"
+          error: "User ID is required",
         });
       }
 
-      // You may need to add this method to your model
       const answeredSurveys = await SurveyModel.getAnsweredSurveys(userId);
 
       if (!answeredSurveys) {
         return res.status(404).json({
           success: false,
-          error: "No answered surveys found"
+          error: "No answered surveys found",
         });
       }
 
@@ -261,18 +196,18 @@ class SurveyController {
         success: true,
         message: "Answered surveys retrieved successfully",
         data: answeredSurveys,
-        count: answeredSurveys.length
+        count: answeredSurveys.length,
       });
     } catch (error) {
       console.error("Error in getMyAnsweredSurveys:", error);
       res.status(500).json({
         success: false,
-        error: "Internal server error while retrieving answered surveys"
+        error: "Internal server error while retrieving answered surveys",
       });
     }
   }
 
-  // New method to get surveys the user hasn't answered yet
+  // Get surveys the user hasn't answered yet
   async getMyPendingSurveys(req, res) {
     try {
       const userId = req.user.userId;
@@ -280,17 +215,16 @@ class SurveyController {
       if (!userId) {
         return res.status(400).json({
           success: false,
-          error: "User ID is required"
+          error: "User ID is required",
         });
       }
 
-      // You may need to add this method to your model
       const pendingSurveys = await SurveyModel.getPendingSurveys(userId);
 
       if (!pendingSurveys) {
         return res.status(404).json({
           success: false,
-          error: "No pending surveys found"
+          error: "No pending surveys found",
         });
       }
 
@@ -298,40 +232,130 @@ class SurveyController {
         success: true,
         message: "Pending surveys retrieved successfully",
         data: pendingSurveys,
-        count: pendingSurveys.length
+        count: pendingSurveys.length,
       });
     } catch (error) {
       console.error("Error in getMyPendingSurveys:", error);
       res.status(500).json({
         success: false,
-        error: "Internal server error while retrieving pending surveys"
+        error: "Internal server error while retrieving pending surveys",
       });
     }
   }
 
-  // New method to get survey statistics
+  // Get survey statistics
   async getStats(req, res) {
     try {
-      // You may need to add this method to your model
       const stats = await SurveyModel.getStats();
 
       if (!stats) {
         return res.status(500).json({
           success: false,
-          error: "Failed to retrieve survey statistics"
+          error: "Failed to retrieve survey statistics",
         });
       }
 
       res.status(200).json({
         success: true,
         message: "Survey statistics retrieved successfully",
-        data: stats
+        data: stats,
       });
     } catch (error) {
       console.error("Error in getStats:", error);
       res.status(500).json({
         success: false,
-        error: "Internal server error while retrieving survey statistics"
+        error: "Internal server error while retrieving survey statistics",
+      });
+    }
+  }
+
+  // Create a new survey with initial question
+  async createWithQuestions(req, res) {
+    try {
+      const { title, status, question } = req.body;
+
+      // Validate required fields
+      if (!title) {
+        return res.status(400).json({
+          success: false,
+          error: "El título de la encuesta es requerido",
+        });
+      }
+
+      if (!question || !question.title || !question.question_type_id) {
+        return res.status(400).json({
+          success: false,
+          error: "Se requiere una pregunta inicial con título y tipo",
+        });
+      }
+
+      const surveyId = await SurveyModel.createWithQuestions({
+        title,
+        status: status || "active",
+        question,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Encuesta creada exitosamente con pregunta inicial",
+        data: { surveyId, title, status, question },
+      });
+    } catch (error) {
+      console.error("Error en createWithQuestions survey:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error interno del servidor",
+      });
+    }
+  }
+
+  // Update survey details (title and status only)
+  async update(req, res) {
+    try {
+      const { id } = req.params;
+      const { title, status } = req.body;
+
+      if (!title && !status) {
+        return res.status(400).json({
+          success: false,
+          error: "Debe proporcionar al menos un campo para actualizar",
+        });
+      }
+
+      const existingSurvey = await SurveyModel.findById(id);
+      if (!existingSurvey) {
+        return res.status(404).json({
+          success: false,
+          error: "Encuesta no encontrada",
+        });
+      }
+
+      const updateResult = await SurveyModel.update(id, { 
+        title: title || existingSurvey.title,
+        status: status || existingSurvey.status,
+      });
+
+      if (!updateResult) {
+        return res.status(400).json({
+          success: false,
+          error: "No se realizaron cambios en la encuesta",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Encuesta actualizada exitosamente",
+        data: { 
+          id,
+          title: title || existingSurvey.title,
+          status: status || existingSurvey.status,
+        },
+      });
+    } catch (error) {
+      console.error("Error en update survey:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor al actualizar encuesta",
       });
     }
   }

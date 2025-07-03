@@ -1,16 +1,39 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class AnswerModel {
+  static async hasExistingAnswer(survey_id, question_id, user_id) {
+    try {
+      const [rows] = await connect.query(
+        `SELECT COUNT(*) as count 
+         FROM answer 
+         WHERE survey_id = ? AND question_id = ? AND user_id = ?`,
+        [survey_id, question_id, user_id]
+      );
+      return rows[0].count > 0;
+    } catch (error) {
+      console.error("Error checking existing answer:", error.message);
+      return false;
+    }
+  }
+
   static async create({ survey_id, question_id, user_id = null, value }) {
     try {
+      // Check for existing answer if user_id is provided
+      if (user_id) {
+        const hasExisting = await this.hasExistingAnswer(survey_id, question_id, user_id);
+        if (hasExisting) {
+          return { error: "User already answered this question" };
+        }
+      }
+
       const [result] = await connect.query(
         `INSERT INTO answer (survey_id, question_id, user_id, value) VALUES (?, ?, ?, ?)`,
         [survey_id, question_id, user_id, value]
       );
-      return result.insertId;
+      return { id: result.insertId };
     } catch (error) {
       console.error("Error creating answer:", error.message);
-      return null;
+      return { error: error.message };
     }
   }
 

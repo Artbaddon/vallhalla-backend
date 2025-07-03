@@ -1,9 +1,9 @@
-import FacilityModel from '../models/facility.model.js';
+import FacilityModel from "../models/facility.model.js";
 
 export const register = async (req, res) => {
   try {
     const { name, description, capacity, status } = req.body;
-    
+
     // Validate required fields
     if (!name || !capacity) {
       return res.status(400).json({ error: "Name and capacity are required" });
@@ -13,14 +13,17 @@ export const register = async (req, res) => {
       name,
       description,
       capacity,
-      status: status || 'available'
+      status: status || "available",
     });
 
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
 
-    res.status(201).json({ id: result });
+    res.status(201).json({
+      message: "Facility created successfully",
+      id: result,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -32,7 +35,10 @@ export const show = async (req, res) => {
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(200).json(result);
+    res.status(200).json({
+      message: "Facility retrieved successfully",
+      data: result,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -47,7 +53,10 @@ export const findById = async (req, res) => {
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(200).json(result);
+    res.status(200).json({
+      message: "Facility retrieved successfully",
+      data: result,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -56,17 +65,19 @@ export const findById = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { name, description, capacity, status } = req.body;
-    
+
     // Validate at least one field to update
     if (!name && !description && !capacity && !status) {
-      return res.status(400).json({ error: "At least one field to update is required" });
+      return res
+        .status(400)
+        .json({ error: "At least one field to update is required" });
     }
 
     const result = await FacilityModel.update(req.params.id, {
       name,
       description,
       capacity,
-      status
+      status,
     });
 
     if (result.error) {
@@ -85,7 +96,10 @@ export const remove = async (req, res) => {
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(204).send();
+    res.status(200).json({
+      message: "Facility deleted successfully",
+      id: req.params.id,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -102,7 +116,10 @@ export const findByStatus = async (req, res) => {
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(200).json(result);
+    res.status(200).json({
+      message: "Facility status retrieved successfully",
+      data: result,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -119,7 +136,12 @@ export const updateStatus = async (req, res) => {
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(200).json({ message: "Facility status updated successfully" });
+    res
+      .status(200)
+      .json({
+        message: "Facility status updated successfully",
+        id: req.params.id,
+      });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -129,7 +151,9 @@ export const getAvailability = async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
     if (!start_date || !end_date) {
-      return res.status(400).json({ error: "Start date and end date are required" });
+      return res
+        .status(400)
+        .json({ error: "Start date and end date are required" });
     }
 
     const result = await FacilityModel.checkAvailability(start_date, end_date);
@@ -140,4 +164,4 @@ export const getAvailability = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}; 
+};

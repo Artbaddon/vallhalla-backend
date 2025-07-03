@@ -4,25 +4,30 @@ class ParkingModel {
   static async create({ number, status_id, type_id }) {
     try {
       const [result] = await connect.query(
-        "INSERT INTO parking (Parking_number, Parking_status_id, Parking_type_id) VALUES (?, ?, ?)",
+        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK) VALUES (?, ?, ?)",
         [number, status_id, type_id]
       );
-      return result.insertId; // Retorna solo el ID insertado
+      return result.insertId;
     } catch (error) {
       console.error("Error creating parking:", error.message);
-      return null;
+      throw error;
     }
   }
 
   static async show() {
     try {
       const [parkings] = await connect.query(
-        "CALL sp_list_parkings_with_details()"
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+         FROM parking p
+         LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
+         LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
+         LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         ORDER BY p.Parking_id`
       );
-      return parkings[0];
+      return parkings;
     } catch (error) {
       console.error("Error en ParkingModel.show:", error.message);
-      return []; // Retornar array vacío en lugar de [0] para consistencia
+      throw error;
     }
   }
 
@@ -32,9 +37,8 @@ class ParkingModel {
         `UPDATE parking 
              SET 
                 Parking_number = ?,
-                Parking_type_id = ?,
-                Parking_status_id = ?,
-                Parking_updatedAt = CURRENT_TIMESTAMP
+                Parking_type_ID_FK = ?,
+                Parking_status_ID_FK = ?
              WHERE Parking_id = ?`,
         [number, type_id, status_id, id]
       );
@@ -42,7 +46,7 @@ class ParkingModel {
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating parking:", error.message);
-      return false;
+      throw error;
     }
   }
 
@@ -50,25 +54,27 @@ class ParkingModel {
     try {
       let sqlQuery = "DELETE FROM parking WHERE Parking_id=?";
       const [result] = await connect.query(sqlQuery, id);
-      if (result.affectedRows === 0) {
-        return [0];
-      } else {
-        return result.affectedRows;
-      }
+      return result.affectedRows;
     } catch (error) {
-      return [0];
+      throw error;
     }
   }
 
   static async findById(id) {
     try {
-      const [result] = await connect.query("CALL sp_get_parking_by_id(?)", [
-        id,
-      ]);
-      return result[0][0] || null;
+      const [rows] = await connect.query(
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+         FROM parking p
+         LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
+         LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
+         LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         WHERE p.Parking_id = ?`, 
+        [id]
+      );
+      return rows[0] || null;
     } catch (error) {
       console.error("Error finding parking by ID:", error.message);
-      return null;
+      throw error;
     }
   }
 
@@ -76,33 +82,50 @@ class ParkingModel {
     try {
       const [result] = await connect.query(
         `UPDATE parking 
-         SET Vehicle_type_id = ?, 
-             Parking_updatedAt = CURRENT_TIMESTAMP 
+         SET Vehicle_type_ID_FK = ?
          WHERE Parking_id = ?`,
         [vehicleTypeId, parkingId]
       );
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error asignando vehículo al parqueadero:", error.message);
-      return false;
+      throw error;
     }
   }
 
-  // New method to find parking spots by status
   static async findByStatus(statusId) {
     try {
       const [result] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, vt.Vehicle_type_name
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
          FROM parking p
-         LEFT JOIN parking_status ps ON p.Parking_status_id = ps.Parking_status_id
-         LEFT JOIN vehicle_type vt ON p.Vehicle_type_id = vt.Vehicle_type_id
-         WHERE p.Parking_status_id = ?`,
+         LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
+         LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
+         LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         WHERE p.Parking_status_ID_FK = ?`,
         [statusId]
       );
       return result;
     } catch (error) {
       console.error("Error finding parking by status:", error.message);
-      return [];
+      throw error;
+    }
+  }
+
+  static async findByUser(userId) {
+    try {
+      const [result] = await connect.query(
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+         FROM parking p
+         LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
+         LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
+         LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         WHERE p.User_ID_FK = ?`,
+        [userId]
+      );
+      return result;
+    } catch (error) {
+      console.error("Error finding parking by user:", error.message);
+      throw error;
     }
   }
 
@@ -112,9 +135,9 @@ class ParkingModel {
       // First update the parking status to reserved (assuming status_id 2 is 'reserved')
       const [updateResult] = await connect.query(
         `UPDATE parking 
-         SET Parking_status_id = 2,
-             Vehicle_type_id = ?,
-             User_FK_ID = ?,
+         SET Parking_status_ID_FK = 2,
+             Vehicle_type_ID_FK = ?,
+             User_ID_FK = ?,
              Parking_updatedAt = CURRENT_TIMESTAMP
          WHERE Parking_id = ?`,
         [vehicle_type_id, user_id, parking_id]
@@ -147,24 +170,6 @@ class ParkingModel {
     }
   }
 
-  // New method to find parking spots by user
-  static async findByUser(userId) {
-    try {
-      const [result] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, vt.Vehicle_type_name
-         FROM parking p
-         LEFT JOIN parking_status ps ON p.Parking_status_id = ps.Parking_status_id
-         LEFT JOIN vehicle_type vt ON p.Vehicle_type_id = vt.Vehicle_type_id
-         WHERE p.User_FK_ID = ?`,
-        [userId]
-      );
-      return result;
-    } catch (error) {
-      console.error("Error finding parking by user:", error.message);
-      return [];
-    }
-  }
-
   // New method to process a payment for parking
   static async processPayment({ parking_id, user_id, payment_method, amount, reference_number, payment_date }) {
     try {
@@ -180,7 +185,7 @@ class ParkingModel {
         // Optionally update the parking status to 'paid' or similar
         await connect.query(
           `UPDATE parking 
-           SET Parking_status_id = 3, 
+           SET Parking_status_ID_FK = 3, 
                Parking_updatedAt = CURRENT_TIMESTAMP
            WHERE Parking_id = ?`,
           [parking_id]

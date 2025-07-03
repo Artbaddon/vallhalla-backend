@@ -17,12 +17,6 @@ router.post("/",
   PQRSController.register
 );
 
-// Search PQRS
-router.get("/search",
-  requirePermission("pqrs", "read"),
-  PQRSController.search
-);
-
 // Get PQRS statistics (admin only)
 router.get("/stats",
   requirePermission("pqrs", "read"),

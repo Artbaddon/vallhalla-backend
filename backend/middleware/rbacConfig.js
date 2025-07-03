@@ -3,6 +3,8 @@
  * This file defines the core permission checking logic based on the database schema
  */
 
+import { connect } from "../config/db/connectMysql.js";
+
 // Define role constants for easier reference
 export const ROLES = {
   ADMIN: 1,
@@ -14,12 +16,22 @@ export const ROLES = {
 export async function hasPermission(connection, userId, moduleName, permissionName) {
   try {
     // First check if user is admin - admins have all permissions
-    const isUserAdmin = await isAdmin(connection, userId);
-    if (isUserAdmin) {
+    const adminQuery = `
+      SELECT COUNT(*) as count
+      FROM users u
+      JOIN role r ON u.Role_FK_ID = r.Role_id
+      WHERE u.Users_id = ?
+        AND r.Role_id = ?
+        AND u.User_status_FK_ID = 1  -- Active status
+    `;
+
+    const [adminRows] = await connect.query(adminQuery, [userId, ROLES.ADMIN]);
+    if (adminRows[0].count > 0) {
       return true;
     }
 
-    const query = `
+    // If not admin, check specific permissions
+    const permQuery = `
       SELECT COUNT(*) as count
       FROM users u
       JOIN role r ON u.Role_FK_ID = r.Role_id
@@ -33,8 +45,8 @@ export async function hasPermission(connection, userId, moduleName, permissionNa
         AND u.User_status_FK_ID = 1  
     `;
 
-    const [rows] = await connection.query(query, [userId, moduleName, permissionName]);
-    return rows[0].count > 0;
+    const [permRows] = await connect.query(permQuery, [userId, moduleName, permissionName]);
+    return permRows[0].count > 0;
   } catch (error) {
     console.error('Permission check error:', error);
     return false;
@@ -95,7 +107,7 @@ export async function isAdmin(connection, userId) {
         AND u.User_status_FK_ID = 1  -- Active status
     `;
 
-    const [rows] = await connection.query(query, [userId, ROLES.ADMIN]);
+    const [rows] = await connect.query(query, [userId, ROLES.ADMIN]);
     return rows[0].count > 0;
   } catch (error) {
     console.error('Admin check error:', error);

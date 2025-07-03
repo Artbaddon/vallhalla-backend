@@ -3,38 +3,22 @@ import { connect } from "../config/db/connectMysql.js";
 class NotificationModel {
   static async create({ 
     type_id, 
-    title, 
-    message, 
-    recipient_id, 
-    recipient_type, 
-    priority = 'NORMAL',
-    scheduled_date = null,
-    attachments 
+    description,
+    user_id // null or 0 for all users
   }) {
     try {
       let sqlQuery = `INSERT INTO notification (
         Notification_type_FK_ID, 
-        Notification_title, 
-        Notification_message, 
-        Notification_recipient_id, 
-        Notification_recipient_type, 
-        Notification_priority,
-        Notification_scheduled_date,
-        Notification_attachments,
-        Notification_is_read,
+        Notification_description, 
+        Notification_User_FK_ID,
         Notification_createdAt, 
         Notification_updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`;
+      ) VALUES (?, ?, ?, NOW(), NOW())`;
       
       const [result] = await connect.query(sqlQuery, [
         type_id, 
-        title, 
-        message, 
-        recipient_id, 
-        recipient_type, 
-        priority,
-        scheduled_date,
-        attachments ? JSON.stringify(attachments) : null
+        description,
+        user_id === 0 ? null : user_id // Convert 0 to null for database
       ]);
       return result.insertId;
     } catch (error) {
@@ -59,60 +43,23 @@ class NotificationModel {
 
   static async update(id, { 
     type_id, 
-    title, 
-    message, 
-    recipient_id, 
-    recipient_type, 
-    priority,
-    scheduled_date,
-    attachments,
-    is_read 
+    description,
+    user_id
   }) {
     try {
       let sqlQuery = `UPDATE notification SET 
         Notification_type_FK_ID = ?, 
-        Notification_title = ?, 
-        Notification_message = ?, 
-        Notification_recipient_id = ?, 
-        Notification_recipient_type = ?, 
-        Notification_priority = ?,
-        Notification_scheduled_date = ?,
-        Notification_attachments = ?,
-        Notification_is_read = ?,
+        Notification_description = ?, 
+        Notification_User_FK_ID = ?,
         Notification_updatedAt = NOW() 
         WHERE Notification_id = ?`;
       
       const [result] = await connect.query(sqlQuery, [
         type_id, 
-        title, 
-        message, 
-        recipient_id, 
-        recipient_type, 
-        priority,
-        scheduled_date,
-        attachments ? JSON.stringify(attachments) : null,
-        is_read ? 1 : 0,
+        description,
+        user_id === 0 ? null : user_id, // Convert 0 to null for database
         id
       ]);
-      
-      if (result.affectedRows === 0) {
-        return { error: "Notification not found" };
-      } else {
-        return result.affectedRows;
-      }
-    } catch (error) {
-      return { error: error.message };
-    }
-  }
-
-  static async markAsRead(id) {
-    try {
-      let sqlQuery = `UPDATE notification SET 
-        Notification_is_read = 1, 
-        Notification_updatedAt = NOW() 
-        WHERE Notification_id = ?`;
-      
-      const [result] = await connect.query(sqlQuery, [id]);
       
       if (result.affectedRows === 0) {
         return { error: "Notification not found" };
@@ -158,32 +105,16 @@ class NotificationModel {
     }
   }
 
-  static async findByRecipient(recipient_id, recipient_type) {
+  static async findByUser(user_id) {
     try {
       let sqlQuery = `
         SELECT n.*, nt.Notification_type_name
         FROM notification n
         LEFT JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
-        WHERE n.Notification_recipient_id = ? AND n.Notification_recipient_type = ?
+        WHERE n.Notification_User_FK_ID = ? OR n.Notification_User_FK_ID IS NULL
         ORDER BY n.Notification_createdAt DESC
       `;
-      const [result] = await connect.query(sqlQuery, [recipient_id, recipient_type]);
-      return result;
-    } catch (error) {
-      return { error: error.message };
-    }
-  }
-
-  static async findUnread(recipient_id, recipient_type) {
-    try {
-      let sqlQuery = `
-        SELECT n.*, nt.Notification_type_name
-        FROM notification n
-        LEFT JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
-        WHERE n.Notification_recipient_id = ? AND n.Notification_recipient_type = ? AND n.Notification_is_read = 0
-        ORDER BY n.Notification_createdAt DESC
-      `;
-      const [result] = await connect.query(sqlQuery, [recipient_id, recipient_type]);
+      const [result] = await connect.query(sqlQuery, [user_id]);
       return result;
     } catch (error) {
       return { error: error.message };
@@ -212,8 +143,8 @@ class NotificationModel {
         SELECT 
           nt.Notification_type_name,
           COUNT(*) as total_count,
-          SUM(CASE WHEN n.Notification_is_read = 1 THEN 1 ELSE 0 END) as read_count,
-          SUM(CASE WHEN n.Notification_is_read = 0 THEN 1 ELSE 0 END) as unread_count
+          SUM(CASE WHEN n.Notification_User_FK_ID IS NULL THEN 1 ELSE 0 END) as all_users_count,
+          SUM(CASE WHEN n.Notification_User_FK_ID IS NOT NULL THEN 1 ELSE 0 END) as specific_users_count
         FROM notification n
         LEFT JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
         GROUP BY nt.Notification_type_id, nt.Notification_type_name

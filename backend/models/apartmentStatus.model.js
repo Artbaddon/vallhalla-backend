@@ -23,15 +23,15 @@ class AparmentStatusModel {
   static async update(id, { name }) {
     try {
       let sqlQuery =
-        "UPDATE apartment_status SET Apartment_status_name = ?, updated_at = CURRENT_TIMESTAMP WHERE Apartment_status_id =?;";
+        "UPDATE apartment_status SET Apartment_status_name = ? WHERE Apartment_status_id = ?";
       const [result] = await connect.query(sqlQuery, [name, id]);
       if (result.affectedRows === 0) {
-        return { error: "Aparment status not found" };
+        return { error: "Apartment status not found" };
       } else {
         return result.affectedRows;
       }
     } catch (error) {
-      return { error: error.message};
+      return { error: error.message };
     }
   }
 

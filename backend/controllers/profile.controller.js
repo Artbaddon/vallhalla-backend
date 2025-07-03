@@ -45,17 +45,30 @@ class ProfileController {
       
       try {
         const {
-          web_user_id, first_name, last_name, address, phone,
-          document_type_id, document_number, birth_date
+          Profile_fullName,
+          Profile_document_type,
+          Profile_document_number,
+          Profile_telephone_number
         } = req.body;
         
+        // Get user ID from the authenticated user
+        const User_FK_ID = req.user.userId;
+        
         // Only set photo_url if user actually uploaded a file
-        const photo_url = req.file ? `/uploads/profiles/${req.file.filename}` : null;
+        const Profile_photo = req.file ? `/uploads/profiles/${req.file.filename}` : null;
         
         const profileId = await ProfileModel.create({
-          web_user_id, first_name, last_name, address, phone,
-          document_type_id, document_number, photo_url, birth_date
+          User_FK_ID,
+          Profile_fullName,
+          Profile_document_type,
+          Profile_document_number,
+          Profile_telephone_number,
+          Profile_photo
         });
+        
+        if (profileId.error) {
+          return res.status(400).json({ error: profileId.error });
+        }
         
         const response = { 
           message: "Profile created successfully", 
@@ -63,12 +76,13 @@ class ProfileController {
         };
         
         // Only include photo_url in response if file was uploaded
-        if (photo_url) {
-          response.photo_url = photo_url;
+        if (Profile_photo) {
+          response.photo_url = Profile_photo;
         }
         
         res.status(201).json(response);
       } catch (error) {
+        console.error('Error creating profile:', error);
         res.status(500).json({ error: error.message });
       }
     });

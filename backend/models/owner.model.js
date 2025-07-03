@@ -59,9 +59,15 @@ class OwnerModel {
     }
   }
 
-  static async show() {
+  static async show(includeInactive = false) {
     try {
-      let sqlQuery = "SELECT * FROM owner ORDER BY Owner_id";
+      let sqlQuery = `
+        SELECT o.* 
+        FROM owner o
+        JOIN users u ON o.User_FK_ID = u.Users_id
+        ${!includeInactive ? 'WHERE u.User_status_FK_ID = 1' : ''}
+        ORDER BY o.Owner_id
+      `;
       const [result] = await connect.query(sqlQuery);
       return result;
     } catch (error) {
@@ -256,22 +262,23 @@ class OwnerModel {
     }
   }
 
-  static async getOwnersWithDetails() {
+  static async getOwnersWithDetails(includeInactive = false) {
     try {
       let sqlQuery = `
         SELECT 
-          o.Owner_id,
+          o.*,
           u.Users_name,
+          u.User_status_FK_ID,
+          us.User_status_name,
           p.Profile_fullName,
+          p.Profile_document_type,
           p.Profile_document_number,
-          p.Profile_telephone_number,
-          o.Owner_is_tenant,
-          o.Owner_birth_date,
-          o.Owner_createdAt,
-          o.Owner_updatedAt
+          p.Profile_telephone_number
         FROM owner o
-        LEFT JOIN users u ON o.User_FK_ID = u.Users_id
+        JOIN users u ON o.User_FK_ID = u.Users_id
+        JOIN user_status us ON u.User_status_FK_ID = us.User_status_id
         LEFT JOIN profile p ON u.Users_id = p.User_FK_ID
+        ${!includeInactive ? 'WHERE u.User_status_FK_ID = 1' : ''}
         ORDER BY o.Owner_id
       `;
       const [result] = await connect.query(sqlQuery);

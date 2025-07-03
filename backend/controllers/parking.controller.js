@@ -8,40 +8,43 @@ class ParkingistratorController {
       const { number, type_id, status_id } = req.body;
 
       // Validación básica
-      if (!number) {
+      if (!number || !type_id) {
         return res.status(400).json({
           success: false,
-          error: "El número de parking es requerido",
+          error: "El número de parking y tipo son requeridos",
         });
       }
 
       // Crear el parking
       const parkingId = await ParkingModel.create({
         number,
-        type_id: type_id,
-        status_id: status_id || 2,
+        type_id,
+        status_id: status_id || 1, // 1 = Available by default
       });
-
-      if (!parkingId) {
-        return res.status(500).json({
-          success: false,
-          error: "Error al crear el parking",
-        });
-      }
 
       res.status(201).json({
         success: true,
         message: "Parking creado exitosamente",
         data: {
           id: parkingId,
+          number,
+          type_id,
+          status_id: status_id || 1
         },
       });
     } catch (error) {
       console.error("Error en register parking:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Error interno del servidor",
-      });
+      if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+        res.status(400).json({
+          success: false,
+          error: "El tipo de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: error.message || "Error interno del servidor",
+        });
+      }
     }
   }
 
@@ -49,14 +52,6 @@ class ParkingistratorController {
     try {
       const { id } = req.params;
       const { number, type_id, status_id } = req.body;
-
-      // Validación básica
-      if (!number && !type_id && !status_id) {
-        return res.status(400).json({
-          success: false,
-          error: "Debe proporcionar al menos un campo para actualizar",
-        });
-      }
 
       // Verificar si el parking existe
       const existingParking = await ParkingModel.findById(id);
@@ -67,12 +62,15 @@ class ParkingistratorController {
         });
       }
 
+      // Usar valores existentes si no se proporcionan nuevos
+      const updateData = {
+        number: number || existingParking.Parking_number,
+        type_id: type_id || existingParking.Parking_type_ID_FK,
+        status_id: status_id || existingParking.Parking_status_ID_FK
+      };
+
       // Actualizar
-      const updateResult = await ParkingModel.update(id, {
-        number,
-        type_id,
-        status_id,
-      });
+      const updateResult = await ParkingModel.update(id, updateData);
 
       if (!updateResult) {
         return res.status(400).json({
@@ -84,14 +82,24 @@ class ParkingistratorController {
       res.status(200).json({
         success: true,
         message: "Parking actualizado exitosamente",
-        data: updateResult.parking || { id },
+        data: {
+          id,
+          ...updateData
+        },
       });
     } catch (error) {
       console.error("Error en update parking:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error interno del servidor al actualizar parking",
-      });
+      if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+        res.status(400).json({
+          success: false,
+          error: "El tipo o estado de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: "Error interno del servidor al actualizar parking",
+        });
+      }
     }
   }
 
@@ -117,41 +125,60 @@ class ParkingistratorController {
   async delete(req, res) {
     try {
       const id = req.params.id;
-      // Basic validate
-      if (!id) {
-        return res.status(400).json({ error: "Required fields are missing" });
+      
+      // Verificar si el parking existe
+      const existingParking = await ParkingModel.findById(id);
+      if (!existingParking) {
+        return res.status(404).json({
+          success: false,
+          error: "Parking no encontrado"
+        });
       }
-      // Verify if the parking already exists
-      const deleteParkingModel = await ParkingModel.delete(id);
-      res.status(201).json({
-        message: "User delete successfully",
-        data: deleteParkingModel,
+
+      await ParkingModel.delete(id);
+      res.status(200).json({
+        success: true,
+        message: "Parking eliminado exitosamente",
+        data: { id }
       });
     } catch (error) {
-      console.error("Error in registration:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      console.error("Error al eliminar parking:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor al eliminar parking"
+      });
     }
   }
 
   async findById(req, res) {
     try {
       const id = req.params.id;
-      // Basic validate
       if (!id) {
-        return res.status(400).json({ error: "Required fields are missing" });
+        return res.status(400).json({
+          success: false,
+          error: "ID de parking requerido"
+        });
       }
-      // Verify if the parkingg already exists
-      const existingParkingModel = await ParkingModel.findById(id);
-      if (!existingParkingModel) {
-        return res.status(409).json({ error: "The Parking No already exists" });
+
+      const parking = await ParkingModel.findById(id);
+      if (!parking) {
+        return res.status(404).json({
+          success: false,
+          error: "Parking no encontrado"
+        });
       }
-      res.status(201).json({
-        message: "Parking successfully",
-        data: existingParkingModel,
+
+      res.status(200).json({
+        success: true,
+        message: "Parking encontrado exitosamente",
+        data: parking
       });
     } catch (error) {
-      console.error("Error in registration:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      console.error("Error al buscar parking:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor al buscar parking"
+      });
     }
   }
 
@@ -166,28 +193,38 @@ class ParkingistratorController {
         });
       }
 
-      const success = await ParkingModel.assignVehicle(
-        parkingId,
-        vehicleTypeId
-      );
-
-      if (!success) {
-        return res.status(400).json({
+      // Verificar si el parking existe
+      const existingParking = await ParkingModel.findById(parkingId);
+      if (!existingParking) {
+        return res.status(404).json({
           success: false,
-          error: "No se pudo asignar el vehículo al parqueadero",
+          error: "Parking no encontrado"
         });
       }
+
+      const success = await ParkingModel.assignVehicle(parkingId, vehicleTypeId);
 
       res.status(200).json({
         success: true,
         message: "Vehículo asignado exitosamente al parqueadero",
+        data: {
+          parkingId,
+          vehicleTypeId
+        }
       });
     } catch (error) {
       console.error("Error en assignVehicle:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error interno del servidor al asignar vehículo",
-      });
+      if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+        res.status(400).json({
+          success: false,
+          error: "El tipo de vehículo especificado no existe"
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: "Error interno del servidor al asignar vehículo"
+        });
+      }
     }
   }
 

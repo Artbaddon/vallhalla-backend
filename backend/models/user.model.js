@@ -11,9 +11,18 @@ class UserModel {
     }
   }
 
-  static async show() {
+  static async show(includeInactive = false) {
     try {
-      let sqlQuery = "SELECT * FROM users ORDER BY Users_id";
+      let sqlQuery = `
+        SELECT u.*, 
+               us.User_status_name,
+               r.Role_name
+        FROM users u
+        LEFT JOIN user_status us ON u.User_status_FK_ID = us.User_status_id
+        LEFT JOIN role r ON u.Role_FK_ID = r.Role_id
+        ${!includeInactive ? 'WHERE u.User_status_FK_ID = 1' : ''}
+        ORDER BY u.Users_id
+      `;
       const [result] = await connect.query(sqlQuery);
       return result;
     } catch (error) {
@@ -51,7 +60,14 @@ class UserModel {
 
   static async findById(id) {
     try {
-      let sqlQuery = `SELECT * FROM users WHERE Users_id = ?`;
+      let sqlQuery = `
+        SELECT 
+          u.*,
+          r.Role_name
+        FROM users u
+        LEFT JOIN role r ON u.Role_FK_ID = r.Role_id
+        WHERE u.Users_id = ?
+      `;
       const [result] = await connect.query(sqlQuery, [id]);
       return result[0] || null;
     } catch (error) {
@@ -61,7 +77,14 @@ class UserModel {
 
   static async findByName(name) {
     try {
-      let sqlQuery = `SELECT * FROM users WHERE Users_name = ?`;
+      let sqlQuery = `
+        SELECT 
+          u.*,
+          r.Role_name
+        FROM users u
+        LEFT JOIN role r ON u.Role_FK_ID = r.Role_id
+        WHERE u.Users_name = ?
+      `;
       const [result] = await connect.query(sqlQuery, [name]);
       return result[0] || null;
     } catch (error) {
@@ -116,6 +139,22 @@ class UserModel {
     } catch (error) {
       console.error("Update password error:", error);
       return false;
+    }
+  }
+
+  static async findByUsername(username) {
+    try {
+      const [rows] = await connect.query(
+        `SELECT u.*, r.Role_name 
+         FROM users u 
+         LEFT JOIN role r ON u.Role_FK_ID = r.Role_id 
+         WHERE u.Users_name = ?`,
+        [username]
+      );
+      return rows[0];
+    } catch (error) {
+      console.error('Error in findByUsername:', error);
+      throw error;
     }
   }
 }
