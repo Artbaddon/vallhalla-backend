@@ -57,7 +57,20 @@ class ApartmentModel {
 
   static async show() {
     try {
-      let sqlQuery = "SELECT * FROM apartment ORDER BY Apartment_id";
+      let sqlQuery = `
+        SELECT 
+          a.*,
+          ast.Apartment_status_name,
+          t.Tower_name,
+          o.Owner_id,
+          p.Profile_fullName as owner_name
+        FROM apartment a
+        LEFT JOIN apartment_status ast ON a.Apartment_status_FK_ID = ast.Apartment_status_id
+        LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id
+        LEFT JOIN owner o ON a.Owner_FK_ID = o.Owner_id
+        LEFT JOIN users u ON o.User_FK_ID = u.Users_id
+        LEFT JOIN profile p ON u.Users_id = p.User_FK_ID
+        ORDER BY a.Apartment_id`;
       const [result] = await connect.query(sqlQuery);
       return result;
     } catch (error) {

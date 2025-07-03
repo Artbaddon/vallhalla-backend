@@ -365,7 +365,7 @@ Get payments (Admin: all, Owner: own only).
       "reference_number": "PAY-001",
       "status": {
         "id": 1,
-        "name": "Paid"
+        "name": "Pending"
       },
       "owner": {
         "id": 1,
@@ -386,22 +386,74 @@ Get specific payment by ID.
 ### Create Payment
 **POST** `/payments`
 
-Create new payment (Admin, Owner).
+Create new payment (Admin, Owner). Creates a payment with status "Pending".
 
 **Request Body:**
 ```json
 {
   "amount": 1000.00,
   "owner_id": 1,
-  "payment_date": "2024-01-01",
   "reference_number": "PAY-001"
 }
 ```
 
-### Update Payment
+### Process Payment
+**POST** `/payments/:id/process`
+
+Process a pending payment (Admin, Owner).
+
+**Request Body:**
+```json
+{
+  "method": "Credit Card",
+  "payment_date": "2024-01-01"
+}
+```
+
+### Update Payment Status
 **PUT** `/payments/:id`
 
-Update payment information (Admin only).
+Update payment status (Admin only). Valid status transitions:
+- From Pending (1) → Completed (2) or Failed (3)
+- From Failed (3) → Pending (1)
+- From Completed (2) → No changes allowed
+
+**Request Body:**
+```json
+{
+  "status_id": 2
+}
+```
+
+### Get Owner Payments
+**GET** `/payments/owner/:owner_id`
+
+Get all payments for a specific owner.
+
+### Get Pending Payments
+**GET** `/payments/owner/:owner_id/pending`
+
+Get all pending payments for a specific owner.
+
+### Get Payment Statistics
+**GET** `/payments/stats`
+
+Get payment statistics (Admin only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total_payments": 10,
+    "pending_count": 3,
+    "completed_count": 6,
+    "failed_count": 1,
+    "total_amount": 10000.00,
+    "collected_amount": 6000.00
+  }
+}
+```
 
 ### Delete Payment
 **DELETE** `/payments/:id`
@@ -793,6 +845,69 @@ Update parking information (Admin, Security).
 **DELETE** `/parking/:id`
 
 Delete parking space (Admin only).
+
+## Notification Management
+
+### Get All Notifications
+**GET** `/notifications`
+
+Get all notifications (Admin only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "type_id": 2,
+      "type_name": "Payment",
+      "description": "Payment status updated: PAY-001 is now COMPLETED",
+      "user_id": 5,
+      "created_at": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+### Get My Notifications
+**GET** `/notifications/me`
+
+Get notifications for the current user.
+
+### Get Notification by ID
+**GET** `/notifications/:id`
+
+Get specific notification by ID.
+
+### Create Notification
+**POST** `/notifications`
+
+Create new notification (Admin only).
+
+**Request Body:**
+```json
+{
+  "type_id": 2,
+  "description": "New payment reminder",
+  "user_id": 5  // Set to 0 for system-wide notification
+}
+```
+
+### Update Notification
+**PUT** `/notifications/:id`
+
+Update notification (Admin only).
+
+### Delete Notification
+**DELETE** `/notifications/:id`
+
+Delete notification (Admin only).
+
+### Get Notification Statistics
+**GET** `/notifications/stats`
+
+Get notification statistics by type (Admin only).
 
 ## Survey Management
 
