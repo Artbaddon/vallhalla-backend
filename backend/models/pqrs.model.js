@@ -32,24 +32,65 @@ class PQRSModel {
     description,
     priority,
   }) {
+    let connection;
     try {
+      // Get a connection from the pool
+      connection = await connect.getConnection();
+
       // Validate foreign keys first
       const validation = await this.validateForeignKeys({ owner_id, category_id });
       if (validation.error) {
         return { error: validation.error };
       }
 
-      let sqlQuery = `INSERT INTO pqrs (Owner_FK_ID, PQRS_category_FK_ID, PQRS_subject, PQRS_description, PQRS_priority, PQRS_createdAt, PQRS_updatedAt) VALUES (?, ?, ?, ?, ?, NOW(), NOW())`;
-      const [result] = await connect.query(sqlQuery, [
-        owner_id,
-        category_id,
-        subject,
-        description,
-        priority,
-      ]);
-      return result.insertId;
+      // Start transaction
+      await connection.beginTransaction();
+
+      try {
+        // Create PQRS
+        let sqlQuery = `INSERT INTO pqrs (
+          Owner_FK_ID, 
+          PQRS_category_FK_ID, 
+          PQRS_subject, 
+          PQRS_description, 
+          PQRS_priority, 
+          PQRS_createdAt, 
+          PQRS_updatedAt
+        ) VALUES (?, ?, ?, ?, ?, NOW(), NOW())`;
+
+        const [result] = await connection.query(sqlQuery, [
+          owner_id,
+          category_id,
+          subject,
+          description,
+          priority,
+        ]);
+
+        const pqrsId = result.insertId;
+
+        // Create initial tracking record with status 1 (assuming 1 is "Open" or initial status)
+        let trackingQuery = `INSERT INTO pqrs_tracking (
+          PQRS_tracking_PQRS_FK_ID,
+          PQRS_tracking_status_FK_ID,
+          PQRS_tracking_user_FK_ID,
+          PQRS_tracking_date_update
+        ) VALUES (?, 1, ?, NOW())`;
+
+        await connection.query(trackingQuery, [pqrsId, owner_id]);
+
+        // Commit transaction
+        await connection.commit();
+        return pqrsId;
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      }
     } catch (error) {
       return { error: error.message };
+    } finally {
+      if (connection) {
+        connection.release(); // Release the connection back to the pool
+      }
     }
   }
 

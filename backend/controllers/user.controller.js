@@ -1,6 +1,7 @@
 import UserModel from "../models/user.model.js";
 import ProfileModel from "../models/profile.model.js";
 import { ROLES } from "../middleware/rbacConfig.js";
+import { getUserPermissions } from "../middleware/rbacConfig.js";
 
 class UserController {
   async register(req, res) {
@@ -339,6 +340,21 @@ class UserController {
     } catch (error) {
       console.error("Error retrieving user profile:", error);
       res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getMyPermissions(req, res) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const perms = await getUserPermissions(null, userId); // null uses default pool
+      res.status(200).json({
+        message: "Permissions retrieved successfully",
+        permissions: perms
+      });
+    } catch (e) {
+      console.error('Error retrieving user permissions:', e);
+      res.status(500).json({ error: 'Failed to retrieve permissions' });
     }
   }
 }

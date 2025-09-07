@@ -1,13 +1,21 @@
 import express from "express";
 import UserController from "../controllers/user.controller.js";
-import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireOwnership, requireAccess } from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 // Special routes (must come first)
-router.get("/me/profile", 
-  requirePermission("users", "read"), 
+router.get(
+  "/me/profile",
+  requirePermission("users", "read"),
   UserController.getMyProfile
+);
+
+// List current user's effective permissions (debug/helper)
+router.get(
+  "/me/permissions",
+  requirePermission("users", "read"),
+  UserController.getMyPermissions // implement in controller: calls getUserPermissions()
 );
 
 router.get("/details", 
@@ -37,9 +45,13 @@ router.post("/",
 );
 
 // Routes with ID parameter (must come last)
-router.get("/:id", 
-  requirePermission("users", "read"),
-  requireOwnership("user", "id", "userId"),
+router.get(
+  "/:id",
+  requireAccess({
+    module: "users",
+    permission: "read",
+    ownership: { resourceType: "user", idParam: "id", options: { allowSelfForUser: true } }
+  }),
   UserController.findById
 );
 

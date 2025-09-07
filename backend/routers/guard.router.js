@@ -4,34 +4,35 @@ import { requirePermission } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
 
-// Create a new guard (requires guards create permission)
-router.post("/", 
-  requirePermission("guards", "create"),
-  GuardController.create
-);
+// NOTE: Ensure 'guards' module exists in module table (seed if missing)
 
-// Get all guards (requires guards read permission)
-router.get("/", 
-  requirePermission("guards", "read"),
-  GuardController.show
-);
-
-// Get guard by ID (requires guards read permission)
-router.get("/:id", 
-  requirePermission("guards", "read"),
-  GuardController.findById
-);
-
-// Get guards by shift (requires guards read permission)
-router.get("/shift/:shift", 
+// Specific filtered queries first (avoid shadowing by /:id)
+router.get("/shift/:shift",
   requirePermission("guards", "read"),
   GuardController.findByShift
 );
 
-// Get guard by document number (requires guards read permission)
-router.get("/document/:documentNumber", 
+router.get("/document/:documentNumber",
   requirePermission("guards", "read"),
   GuardController.findByDocument
+);
+
+// Create a new guard
+router.post("/",
+  requirePermission("guards", "create"),
+  GuardController.create
+);
+
+// List all guards
+router.get("/",
+  requirePermission("guards", "read"),
+  GuardController.show
+);
+
+// Get guard by ID
+router.get(":id",
+  requirePermission("guards", "read"),
+  GuardController.findById
 );
 
 // Update a guard (requires guards update permission)

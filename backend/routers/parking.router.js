@@ -1,6 +1,6 @@
 import { Router } from "express";
 import ParkingController from "../controllers/parking.controller.js";
-import { requirePermission } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireAdmin } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.get('/:id',
 
 // Only admin can create new parking spots
 router.post('/',
-  requirePermission('parking', 'create'),
+  requireAdmin,
   ParkingController.register
 );
 

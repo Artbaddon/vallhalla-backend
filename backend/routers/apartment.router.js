@@ -1,10 +1,7 @@
 import express from "express";
 
 import ApartmentController from "../controllers/apartment.controller.js";
-import {
-  requirePermission,
-  requireOwnership,
-} from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireOwnership, requireAccess } from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
@@ -26,7 +23,6 @@ router.get(
 router.get(
   "/details",
   requirePermission("apartments", "read"),
-  requireOwnership("apartment"),
   ApartmentController.showWithDetails
 );
 
@@ -57,7 +53,6 @@ router.get(
 router.get(
   "/",
   requirePermission("apartments", "read"),
-  requireOwnership("apartment"),
   ApartmentController.show
 );
 
@@ -70,7 +65,7 @@ router.get(
 
 router.get(
   "/:id",
-  requirePermission("apartments", "read"),
+  requireAccess({ module: "apartments", permission: "read", ownership: { resourceType: "apartment", idParam: "id" } }),
   ApartmentController.findById
 );
 

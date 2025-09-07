@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { ROLES } from "./rbacConfig.js";
-import PermissionsModel from "../models/permissions.model.js";
+import { ROLES, hasPermission, getUserPermissions } from "./rbacConfig.js";
 import { connect } from "../config/db/connectMysql.js";
 
 dotenv.config();
@@ -65,9 +64,8 @@ export const authMiddleware = (allowedRoles = []) => {
           });
         }
 
-        // Get user's permissions from the database
-        const userPermissions = await PermissionsModel.getUserPermissions(userRole);
-        req.userPermissions = userPermissions;
+      // Prefetch user permissions (by userId not role) for downstream use
+      req.userPermissions = await getUserPermissions(connect, req.user.userId);
 
         next();
       } catch (error) {
@@ -83,33 +81,21 @@ export const apiAccessMiddleware = (req, res, next) => {
   // First verify the token
   verifyToken(req, res, async () => {
     try {
-      const userRole = req.user.roleId;
-      const endpoint = req.originalUrl;
+      const endpoint = req.originalUrl.split('?')[0];
       const method = req.method;
-      
-      // Extract module name from endpoint (e.g., /api/users -> users)
-      const moduleName = endpoint.split('/')[2];
-      
-      // Map HTTP methods to permission names
-      const methodPermissionMap = {
-        'GET': 'read',
-        'POST': 'create',
-        'PUT': 'update',
-        'DELETE': 'delete'
-      };
-      
+      // Expect /api/<module>/...
+      const parts = endpoint.split('/').filter(Boolean);
+      const moduleName = (parts[1] || '').toLowerCase(); // parts[0] == 'api'
+      const methodPermissionMap = { GET: 'read', POST: 'create', PUT: 'update', PATCH: 'update', DELETE: 'delete' };
       const permissionName = methodPermissionMap[method];
-      
-      // Check if user has the required permission for this module
-      const hasPermission = await PermissionsModel.checkPermission(userRole, moduleName, permissionName);
-      
-      if (!hasPermission) {
-        console.log(`❌ API access denied. User role ${userRole} cannot ${method} ${endpoint}`);
-        return res.status(403).json({ 
-          message: "Access denied. You don't have permission to access this resource." 
-        });
+      if (!moduleName || !permissionName) {
+        return res.status(400).json({ message: 'Cannot derive module/permission from request' });
       }
-      
+      const ok = await hasPermission(connect, req.user.userId, moduleName, permissionName);
+      if (!ok) {
+        console.log(`❌ API access denied. userId ${req.user.userId} lacks ${permissionName}:${moduleName}`);
+        return res.status(403).json({ message: `Access denied. Need ${permissionName} on ${moduleName}` });
+      }
       next();
     } catch (error) {
       console.error('Error in API access middleware:', error);
@@ -124,18 +110,11 @@ export const checkPermission = (moduleName, permissionName) => {
     // First verify the token
     verifyToken(req, res, async () => {
       try {
-        const userRole = req.user.roleId;
-        
-        // Check the permission in the database
-        const hasPermission = await PermissionsModel.checkPermission(userRole, moduleName, permissionName);
-        
-        if (!hasPermission) {
-          console.log(`❌ Missing permission: ${moduleName}:${permissionName}`);
-          return res.status(403).json({ 
-            message: "Access denied. Missing required permission." 
-          });
+        const ok = await hasPermission(connect, req.user.userId, moduleName.toLowerCase(), permissionName.toLowerCase());
+        if (!ok) {
+          console.log(`❌ Missing permission: ${moduleName}:${permissionName} for user ${req.user.userId}`);
+          return res.status(403).json({ message: "Access denied. Missing required permission." });
         }
-
         next();
       } catch (error) {
         console.error('Permission check error:', error);
