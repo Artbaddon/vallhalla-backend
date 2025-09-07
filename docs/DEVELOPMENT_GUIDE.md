@@ -795,6 +795,52 @@ export const seedDatabase = async () => {
 };
 ```
 
+## RBAC Migration & Seeding (New)
+
+The RBAC system relies on tables: `role`, `user_status`, `users`, `module`, `permissions`, `module_role`, `permissions_module_role` plus ownership links (`owner.User_FK_ID`).
+
+### 1. Run Incremental RBAC Migration
+This adds missing columns/FKs without dropping data.
+
+```bash
+# From backend directory
+node ./migrations/migration_v2_rbac.js
+```
+
+### 2. Seed RBAC Data
+Populates roles, modules, permissions, role-module links and permissions assignments. Updates the placeholder admin password hash if still present.
+
+Set an admin password first (optional but recommended):
+
+```bash
+$Env:ADMIN_PASSWORD='Str0ngAdminPass!'
+node ./scripts/seed_rbac.js
+```
+
+### 3. Verify
+```sql
+SELECT Role_name FROM role;
+SELECT module_name FROM module LIMIT 5;
+SELECT p.Permissions_name, m.module_name, r.Role_name
+FROM permissions_module_role pmr
+JOIN permissions p ON p.Permissions_id = pmr.Permissions_FK_ID
+JOIN module_role mr ON mr.Module_role_id = pmr.Module_role_FK_ID
+JOIN module m ON m.Module_id = mr.Module_FK_ID
+JOIN role r ON r.Role_id = mr.Role_FK_ID
+WHERE r.Role_name='Admin' LIMIT 10;
+```
+
+### 4. Login As Admin
+Use username: `admin` and the password you set in `ADMIN_PASSWORD` (or the default `ChangeMe123!` if not set—change it!).
+
+### 5. Troubleshooting
+- If permission checks always return false, confirm `module_role` and `permissions_module_role` have rows.
+- Ensure `users.Users_name='admin'` row has a non-placeholder bcrypt hash.
+- Confirm `owner.User_FK_ID` is populated for ownership dependent endpoints; create an owner referencing the desired user if necessary.
+
+### 6. Re-running
+Both migration and seed scripts are idempotent; you can safely re-run to reconcile drift.
+
 ## Testing
 
 ### Unit Testing
@@ -1300,4 +1346,4 @@ git push origin feature/new-feature
 // See: https://owasp.org/www-community/OWASP_Validation_Regex_Repository
 ```
 
-This development guide provides comprehensive information for developers working on the Vallhalla Property Management System, covering all aspects from initial setup to advanced debugging techniques. 
+This development guide provides comprehensive information for developers working on the Vallhalla Property Management System, covering all aspects from initial setup to advanced debugging techniques.
