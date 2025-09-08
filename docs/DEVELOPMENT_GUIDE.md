@@ -841,6 +841,86 @@ Use username: `admin` and the password you set in `ADMIN_PASSWORD` (or the defau
 ### 6. Re-running
 Both migration and seed scripts are idempotent; you can safely re-run to reconcile drift.
 
+## Email & Password Reset Migration (v3)
+
+Adds secure email-based password reset capability without creating new tables. Migration `migration_v3_add_user_email.js` performs:
+
+- Adds `Users_email` (VARCHAR 191, nullable initially) with a unique index `uq_users_email`.
+- Adds `Password_reset_token` (CHAR(64) SHA-256 hash of the raw token) and `Password_reset_expires` (DATETIME UTC).
+- Backfills `Users_email` by copying `Users_name` where that value is unique and not already used as an email by another user.
+
+### 1. Run Migration v3
+From the `backend` directory:
+
+```bash
+npm run migrate:v3
+```
+
+Idempotent: safe to rerun; it only creates missing columns / index.
+
+### 2. (Optional) Seed Dummy Users With Emails
+Provides quick accounts for manual testing (`demo_admin`, `demo_owner`, `demo_security`).
+
+```bash
+npm run seed:dummy
+```
+
+Each seeded user receives a role and an email of the form `<username>@example.com` if not present already.
+
+### 3. Password Reset Flow Overview
+
+1. User initiates reset:
+  - `POST /auth/forgot-password` with `{ "email": "user@example.com" }` (preferred) OR `{ "username": "demo_admin" }`.
+  - Server looks up user (email first, else username) and enforces presence of an email (username-only users without email are rejected so you can add one first).
+  - A 32-byte random token is generated, hashed with SHA-256, stored in `Password_reset_token`, and an expiry (e.g. +1 hour) is stored in `Password_reset_expires`.
+  - Raw token is returned in JSON ONLY because no email service is configured yet. (When integrating email, send the token link and return a generic success message.)
+
+2. User completes reset:
+  - `POST /auth/reset-password` with `{ "token": "<rawTokenFromPreviousStep>", "password": "NewPass123" }`.
+  - Server hashes provided token, finds matching user with non-expired `Password_reset_expires`.
+  - On success: updates `Users_password` (bcrypt), nulls out both reset columns to prevent reuse, returns success.
+
+### 4. Validation Rules
+- Password must be at least 8 characters and contain at least one letter and one number (see controller logic).
+- Tokens expire automatically at `Password_reset_expires`; expired or reused tokens return a 400/invalid response.
+
+### 5. Manual Verification SQL
+```sql
+-- Inspect new columns
+DESC users;
+
+-- Check emails were backfilled / uniqueness
+SELECT Users_id, Users_name, Users_email FROM users LIMIT 10;
+
+-- After a forgot-password request (before reset)
+SELECT Users_name, LENGTH(Password_reset_token) AS token_len, Password_reset_expires
+FROM users WHERE Users_name='demo_admin';
+```
+
+### 6. Common Issues
+- Forgot endpoint returns generic success even if user not found (avoid user enumeration) — check logs during development.
+- If you initiated with username and receive an error about missing email, set one:
+  ```sql
+  UPDATE users SET Users_email='desired_unique@example.com' WHERE Users_name='legacy_user';
+  ```
+- Collisions during backfill: any username that was duplicated results in NULL `Users_email`; manually assign unique emails then optionally add additional constraints.
+
+### 7. Hardening Next Steps (Not yet implemented)
+- Integrate email service (e.g. SES, SendGrid) and stop returning raw token.
+- Rate-limit password reset requests per IP + per account.
+- Add audit logging for password reset and email change events.
+- Add unit/integration tests covering: valid flow, expired token, reused token, invalid token format.
+
+### 8. Commit Guidance
+When committing the migration + controller/model changes use (already applied if you followed earlier steps):
+```
+feat(auth): add email field and DB-backed password reset
+
+Includes migration v3 adding Users_email + reset token columns,
+model helpers for token lifecycle, controller updates for email-first
+lookup, and dummy seed script for test accounts.
+```
+
 ## Testing
 
 ### Unit Testing

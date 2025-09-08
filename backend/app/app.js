@@ -27,6 +27,9 @@ import paymentRouter from "../routers/payment.router.js";
 import guardRouter from "../routers/guard.router.js";
 import visitorRouter from "../routers/visitor.router.js";
 
+// Package Delivery System (MongoDB)
+import packageDeliveryRouter from "../routers/packageDelivery.router.js";
+
 // Business Operations
 import reservationRouter from "../routers/reservation.router.js";
 import reservationStatusRouter from "../routers/reservationStatus.router.js";
@@ -83,6 +86,9 @@ app.use(name + "/payment", paymentRouter);
 // Security & Access
 app.use(name + "/guards", guardRouter);
 app.use(name + "/visitors", visitorRouter);
+
+// Package Delivery System (MongoDB-based)
+app.use(name + "/packages", packageDeliveryRouter);
 
 // Business Operations
 app.use(name + "/reservations", reservationRouter);

@@ -1,6 +1,12 @@
 import UserModel from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto"; // crypto for secure token generation & hashing
+
+// NOTE: Password reset tokens now stored in DB columns (no new table) to persist across restarts.
+// Added columns (via migration_v3_password_reset.js):
+//   Password_reset_token VARCHAR(64) NULL (sha256 hex digest)
+//   Password_reset_expires DATETIME NULL
 
 class AuthController {
   static async validatePassword(password, user) {
@@ -86,7 +92,7 @@ class AuthController {
 
   async register(req, res) {
     try {
-      const { username, password, user_status_id, role_id } = req.body;
+      const { username, email, password, user_status_id, role_id } = req.body;
 
       if (!username || !password || !user_status_id || !role_id) {
         return res.status(400).json({ 
@@ -102,6 +108,13 @@ class AuthController {
         });
       }
 
+      if (email) {
+        const existingEmail = await UserModel.findByEmail(email);
+        if (existingEmail) {
+          return res.status(400).json({ error: "Email already exists" });
+        }
+      }
+
       // Hash password
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -109,6 +122,7 @@ class AuthController {
       // Create user with hashed password
       const userId = await UserModel.create({
         name: username,
+        email,
         password: hashedPassword,
         user_status_id,
         role_id
@@ -131,52 +145,76 @@ class AuthController {
 
   async forgotPassword(req, res) {
     try {
-      const { username } = req.body;
-
-      if (!username) {
-        return res.status(400).json({ 
-          error: "Username is required" 
-        });
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "email is required" });
       }
 
-      // Find user by username
-      const user = await UserModel.findByName(username);
+      // Try locate by email first, then fallback to username for backward compatibility
+      let user = await UserModel.findByEmail(email);
+      if (!user) {
+        user = await UserModel.findByName(email);
+      }
+
+      // Generic response to avoid user enumeration
+      const generic = { message: "If the account exists, password reset instructions were generated." };
 
       if (!user) {
-        return res.status(404).json({ 
-          error: "User not found" 
-        });
+        return res.status(200).json(generic);
       }
 
-      // In a real implementation, you would:
-      // 1. Generate a password reset token
-      // 2. Send email with reset link
-      // 3. Store reset token in database with expiration
+      // Generate raw token & expiry (1 hour)
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1h
 
-      res.status(200).json({
-        message: "Password reset instructions sent to your email",
+      // Persist hashed token & expiry in users table (overwrites any previous one)
+      await UserModel.setResetToken(user.Users_id, tokenHash, expiresAt);
+
+      // Since no email service, return token ONLY when not production
+      const includeToken = process.env.NODE_ENV !== 'production';
+
+      return res.status(200).json({
+        ...generic,
+        ...(includeToken ? { resetToken: rawToken, expiresAt: expiresAt.toISOString() } : {})
       });
-
     } catch (error) {
       console.error("Forgot password error:", error);
-      res.status(500).json({ error: "Password reset failed" });
+      res.status(500).json({ error: "Password reset request failed" });
     }
   }
 
   async resetPassword(req, res) {
     try {
       const { token, newPassword } = req.body;
-
       if (!token || !newPassword) {
-        return res.status(400).json({ 
-          error: "Token and new password are required" 
-        });
+        return res.status(400).json({ error: "token and newPassword are required" });
       }
 
-      res.status(200).json({
-        message: "Password reset successfully"
-      });
+      // Policy: >=8 chars, at least one number & one letter
+      if (newPassword.length < 8 || !/[0-9]/.test(newPassword) || !/[A-Za-z]/.test(newPassword)) {
+        return res.status(400).json({ error: "Password must be >=8 chars and include letters & numbers" });
+      }
 
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const record = await UserModel.findByResetToken(tokenHash);
+      if (!record) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+      if (new Date(record.Password_reset_expires) < new Date()) {
+        await UserModel.clearResetToken(record.Users_id); // cleanup expired
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      const updated = await UserModel.updatePassword(record.Users_id, hashedPassword);
+      if (!updated) {
+        return res.status(500).json({ error: "Failed to update password" });
+      }
+
+      await UserModel.clearResetToken(record.Users_id);
+      return res.status(200).json({ message: "Password reset successfully" });
     } catch (error) {
       console.error("Reset password error:", error);
       res.status(500).json({ error: "Password reset failed" });
@@ -259,4 +297,4 @@ class AuthController {
 
 // Export an instance of the controller
 const authController = new AuthController();
-export default authController; 
+export default authController;
