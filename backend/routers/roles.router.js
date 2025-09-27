@@ -1,14 +1,33 @@
 import { Router } from "express";
 import RolesController from "../controllers/roles.controller.js";
+import { requirePermission } from "../middleware/permissionMiddleware.js";
+
 const router = Router();
-const name = "/roles";
 
-//Public Route
+// Admin-only routes
+router.post("/", 
+  requirePermission("roles", "create"), 
+  RolesController.register
+);
 
-router.post(name, RolesController.register);
-router.get(name + "/", RolesController.show);
-router.get(name + "/:id", RolesController.findById);
-router.put(name + "/:id", RolesController.update);
-router.delete(name + "/:id", RolesController.delete);
+router.get("/", 
+  requirePermission("roles", "read"), 
+  RolesController.show
+);
+
+router.get("/:id", 
+  requirePermission("roles", "read"), 
+  RolesController.findById
+);
+
+router.put("/:id", 
+  requirePermission("roles", "update"), 
+  RolesController.update
+);
+
+router.delete("/:id", 
+  requirePermission("roles", "delete"), 
+  RolesController.delete
+);
 
 export default router;

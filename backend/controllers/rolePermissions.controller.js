@@ -1,29 +1,66 @@
 import RolePermission from "../models/rolePermissions.model.js";
 import RoleModel from "../models/roles.model.js";
 import Permissions from "../models/permissions.model.js";
+import ModulesModel from "../models/modules.model.js";
+
 class RolePermissionsController {
   async register(req, res) {
     try {
-      const { roleId, permissionId } = req.body;
+      const { roleId, permissionId, moduleId } = req.body;
 
       if (!roleId || !permissionId) {
         return res
           .status(400)
-          .json({ error: "roleId, permissionId are required" });
+          .json({ error: "roleId and permissionId are required" });
       }
-      const existingRole = await RoleModel.findById(roleId);
-      const existingPermission = await Permissions.findById(permissionId);
 
+      // Validate role exists
+      const existingRole = await RoleModel.findById(roleId);
       if (!existingRole) {
         return res.status(404).json({ error: "Role not found" });
       }
+
+      // Validate permission exists
+      const existingPermission = await Permissions.findById(permissionId);
       if (!existingPermission) {
         return res.status(404).json({ error: "Permission not found" });
       }
+
+      // If moduleId is not provided, get or create a default module
+      let targetModuleId = moduleId;
+      if (!targetModuleId) {
+        // Try to get the first module
+        const modules = await ModulesModel.show();
+        if (!modules || modules.length === 0) {
+          // Create a default module if none exists
+          const defaultModuleId = await ModulesModel.create({
+            name: "Default",
+            description: "Default module for system permissions"
+          });
+          if (defaultModuleId.error) {
+            return res.status(500).json({ error: "Failed to create default module" });
+          }
+          targetModuleId = defaultModuleId;
+        } else {
+          targetModuleId = modules[0].module_id;
+        }
+      } else {
+        // Validate the specified module exists
+        const existingModule = await ModulesModel.findById(targetModuleId);
+        if (!existingModule || existingModule.length === 0) {
+          return res.status(404).json({ error: "Module not found" });
+        }
+      }
+
       const RolePermissionId = await RolePermission.create({
         roleId,
         permissionId,
+        moduleId: targetModuleId
       });
+
+      if (RolePermissionId.error) {
+        return res.status(400).json({ error: RolePermissionId.error });
+      }
 
       res.status(201).json({
         message: "Role-Permission created successfully",
@@ -38,9 +75,10 @@ class RolePermissionsController {
     try {
       const showRolePermission = await RolePermission.show();
 
-      if (!showRolePermission) {
-        return res.status(409).json({ error: "No RolePermissions found" });
+      if (showRolePermission.error) {
+        return res.status(500).json({ error: showRolePermission.error });
       }
+
       res.status(200).json({
         message: "RolePermissions retrieved successfully",
         RolePermissions: showRolePermission,
@@ -53,28 +91,47 @@ class RolePermissionsController {
   async update(req, res) {
     try {
       const id = req.params.id;
-      const { roleId, permissionId } = req.body;
+      const { roleId, permissionId, moduleId } = req.body;
 
       if (!roleId || !permissionId || !id) {
         return res
-          .status(409)
+          .status(400)
           .json({ error: "roleId, permissionId and ID are required" });
+      }
+
+      // Validate role exists
+      const existingRole = await RoleModel.findById(roleId);
+      if (!existingRole) {
+        return res.status(404).json({ error: "Role not found" });
+      }
+
+      // Validate permission exists
+      const existingPermission = await Permissions.findById(permissionId);
+      if (!existingPermission) {
+        return res.status(404).json({ error: "Permission not found" });
+      }
+
+      // If moduleId is provided, validate it exists
+      if (moduleId) {
+        const existingModule = await ModulesModel.findById(moduleId);
+        if (!existingModule || existingModule.length === 0) {
+          return res.status(404).json({ error: "Module not found" });
+        }
       }
 
       const updateRolePermission = await RolePermission.update(id, {
         roleId,
         permissionId,
+        moduleId
       });
 
-      if (!updateRolePermission || updateRolePermission.error) {
-        return res.status(409).json({
-          error: updateRolePermission?.error || "RolePermission not found",
-        });
+      if (updateRolePermission.error) {
+        return res.status(400).json({ error: updateRolePermission.error });
       }
 
-      res.status(201).json({
+      res.status(200).json({
         message: "RolePermission updated successfully",
-        id: updateRolePermission,
+        id: id,
       });
     } catch (error) {
       console.error("Error updating RolePermission:", error);
@@ -92,15 +149,13 @@ class RolePermissionsController {
 
       const deleteRolePermission = await RolePermission.delete(id);
 
-      if (!deleteRolePermission || deleteRolePermission.error) {
-        return res.status(404).json({
-          error: deleteRolePermission?.error || "RolePermission not found",
-        });
+      if (deleteRolePermission.error) {
+        return res.status(404).json({ error: deleteRolePermission.error });
       }
 
       res.status(200).json({
         message: "RolePermission deleted successfully",
-        id: deleteRolePermission,
+        id: id,
       });
     } catch (error) {
       console.error("Error deleting RolePermission:", error);
@@ -124,7 +179,7 @@ class RolePermissionsController {
 
       res.status(200).json({
         message: "RolePermission found successfully",
-        documentType: existingRolePermission,
+        rolePermission: existingRolePermission,
       });
     } catch (error) {
       console.error("Error finding RolePermission by ID:", error);

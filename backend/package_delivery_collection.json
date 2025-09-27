@@ -1,0 +1,894 @@
+{
+	"info": {
+		"_postman_id": "package-delivery-collection-id",
+		"name": "Package Delivery API - Vallhalla",
+		"description": "Package Delivery module testing collection for MongoDB + MySQL integration with complete CRUD operations and aggregations.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "00_Authentication",
+			"item": [
+				{
+					"name": "Login as Guard",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testguard\",\n  \"password\": \"12345678\"\n}"
+						},
+						"url": "{{baseUrl}}/auth/login"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('guardToken', jsonData.token);",
+									"    console.log('Guard token saved');",
+									"    pm.test('Login successful', function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"} else {",
+									"    pm.test('Login failed', function () {",
+									"        pm.response.to.not.have.status(200);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login as Owner",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testowner\",\n  \"password\": \"12345678\"\n}"
+						},
+						"url": "{{baseUrl}}/auth/login"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('ownerToken', jsonData.token);",
+									"    console.log('Owner token saved');",
+									"    pm.test('Login successful', function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"} else {",
+									"    pm.test('Login failed', function () {",
+									"        pm.response.to.not.have.status(200);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "01_Package_CRUD",
+			"item": [
+				{
+					"name": "Register Package (Guard Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_owner_id\": 1,\n  \"recipient_apartment\": \"502\",\n  \"recipient_tower\": \"A\",\n  \"sender_name\": \"Amazon\",\n  \"sender_company\": \"Amazon Logistics\",\n  \"description\": \"Electronics package - MacBook Pro\",\n  \"package_type\": \"package\",\n  \"size\": \"medium\",\n  \"weight\": 2.5,\n  \"guard_notes\": \"Package left at main entrance desk\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.data && jsonData.data._id) {",
+									"    pm.collectionVariables.set('packageId', jsonData.data._id);",
+									"    console.log('Package ID saved: ' + jsonData.data._id);",
+									"    pm.test('Package registered successfully', function () {",
+									"        pm.response.to.have.status(201);",
+									"    });",
+									"} else {",
+									"    pm.test('Package registration failed', function () {",
+									"        console.log('Response:', responseBody);",
+									"        pm.response.to.not.have.status(201);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Register Bill Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_owner_id\": 1,\n  \"recipient_apartment\": \"502\",\n  \"recipient_tower\": \"A\",\n  \"sender_name\": \"Energia EPM\",\n  \"sender_company\": \"EPM\",\n  \"description\": \"Monthly electricity bill\",\n  \"package_type\": \"bill\",\n  \"size\": \"small\",\n  \"weight\": 0.1,\n  \"guard_notes\": \"Utility bill delivered\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Bill registered successfully', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.data && jsonData.data._id) {",
+									"    pm.collectionVariables.set('billId', jsonData.data._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get All Packages (Guard View)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/packages?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["packages"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get packages successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Response has pagination', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('pagination');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Package by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/packages/{{packageId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get package by ID successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Package has owner info', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('owner_info');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Packages with Filters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/packages?status=pending&package_type=package&page=1&limit=5",
+							"host": ["{{baseUrl}}"],
+							"path": ["packages"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								},
+								{
+									"key": "package_type",
+									"value": "package"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Filtered packages retrieved', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Package Status to Notified",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"notified\",\n  \"delivery_notes\": \"Owner has been notified via WhatsApp\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/{{packageId}}/status"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Package status updated successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Status is notified', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.delivery_status).to.eql('notified');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Package Status to Delivered",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"delivered\",\n  \"delivery_notes\": \"Delivered to owner personally at apartment 502\",\n  \"recipient_signature\": \"John Doe\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/{{packageId}}/status"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Package marked as delivered', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Has delivery info', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('delivered_to_owner');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "02_Owner_Access",
+			"item": [
+				{
+					"name": "Get My Packages (Owner)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/packages/my-packages"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Owner can view their packages', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Response has owner info', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('owner_info');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get All Packages (Owner - Filtered)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/packages"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Owner sees only their packages', function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    // Should only see packages for this owner",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Mark Package as Received (Owner)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"delivered\",\n  \"recipient_signature\": \"Package received by owner\",\n  \"delivery_notes\": \"Confirmed receipt\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/{{billId}}/status"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Owner can mark package as received', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Try to Register Package (Owner - Should Fail)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_owner_id\": 1,\n  \"recipient_apartment\": \"502\",\n  \"recipient_tower\": \"A\",\n  \"sender_name\": \"Test\",\n  \"description\": \"Should fail\",\n  \"package_type\": \"package\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Owner cannot register packages', function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "03_MongoDB_Aggregations",
+			"item": [
+				{
+					"name": "Package Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/packages/stats"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Statistics retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Has status and type stats', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status_stats');",
+									"    pm.expect(jsonData).to.have.property('type_stats');",
+									"    pm.expect(jsonData).to.have.property('monthly_stats');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Monthly Report",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/packages/monthly-report?year=2024",
+							"host": ["{{baseUrl}}"],
+							"path": ["packages", "monthly-report"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2024"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Monthly report generated', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Report has data structure', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Owner Package Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/packages/owner-summary"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Owner summary retrieved', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Summary has aggregated data', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "04_Error_Handling",
+			"item": [
+				{
+					"name": "Register Package - Missing Fields",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_apartment\": \"502\",\n  \"sender_name\": \"Test\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Validation error for missing fields', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test('Error response has details', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('missing_fields');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Register Package - Invalid Package Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_owner_id\": 1,\n  \"recipient_apartment\": \"502\",\n  \"recipient_tower\": \"A\",\n  \"sender_name\": \"Test\",\n  \"description\": \"Test package\",\n  \"package_type\": \"invalid_type\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Validation error for invalid type', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Package - Not Found",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/packages/507f1f77bcf86cd799439011"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Package not found error', function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Access Without Token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/packages"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Authentication required', function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "05_Edge_Cases",
+			"item": [
+				{
+					"name": "Register Large Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_owner_id\": 1,\n  \"recipient_apartment\": \"502\",\n  \"recipient_tower\": \"A\",\n  \"sender_name\": \"Furniture Store\",\n  \"sender_company\": \"IKEA\",\n  \"description\": \"Large furniture package - requires special handling\",\n  \"package_type\": \"package\",\n  \"size\": \"extra_large\",\n  \"weight\": 45.5,\n  \"guard_notes\": \"Requires 2 people to move - coordinate with owner\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Large package registered', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.data && jsonData.data._id) {",
+									"    pm.collectionVariables.set('largePackageId', jsonData.data._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Register Food Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_owner_id\": 1,\n  \"recipient_apartment\": \"502\",\n  \"recipient_tower\": \"A\",\n  \"sender_name\": \"Uber Eats\",\n  \"sender_company\": \"Uber\",\n  \"description\": \"Food delivery from McDonald's\",\n  \"package_type\": \"food_delivery\",\n  \"size\": \"small\",\n  \"weight\": 1.2,\n  \"guard_notes\": \"Perishable - deliver immediately\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/register"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Food delivery registered', function () {",
+									"    pm.response.to.have.status(201);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Package to Returned",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{guardToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"returned\",\n  \"delivery_notes\": \"Owner not available after 3 attempts - package returned to sender\"\n}"
+						},
+						"url": "{{baseUrl}}/packages/{{largePackageId}}/status"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Package marked as returned', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000/api",
+			"type": "string"
+		},
+		{
+			"key": "guardToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ownerToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "packageId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "billId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "largePackageId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{guardToken}}",
+				"type": "string"
+			}
+		]
+	}
+}

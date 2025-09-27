@@ -1,1065 +1,1071 @@
 {
 	"info": {
-		"_postman_id": "688a5488-f39b-4f92-9972-2b8d8d425232",
-		"name": "NodeJS User Management API - Complete",
-		"description": "Complete API collection for the refactored Node.js user management system with proper authentication and permission structure",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "45070968"
+		"_postman_id": "generated-collection-id",
+		"name": "Vallhalla API Modular Collection",
+		"description": "API collection structured by module and HTTP method for Vallhalla API with RBAC permissions.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "auth",
+			"name": "00_Collection_Runner",
 			"item": [
 				{
-					"name": "POST",
-					"item": [
+					"name": "1. Check Server Status",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}"
+					}
+				},
+				{
+					"name": "2. Login as Admin",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
 						{
-							"name": "register web user",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('authToken', jsonData.token);",
+									"    console.log('Admin token saved');",
+									"}"
 								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"testuser\",\n    \"email\": \"test@example.com\",\n    \"password\": \"12345678\",\n    \"first_name\": \"Test\",\n    \"last_name\": \"User\",\n    \"document_type_id\": 1,\n    \"document_number\": \"12345678\",\n    \"status_id\": 1\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/register",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"register"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "register api user",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"api_user\",\n    \"email\": \"api@example.com\",\n    \"password\": \"12345678\",\n    \"description\": \"API User for testing\",\n    \"status_id\": 1\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/register",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"register"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "login web user",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"// Post-response script for login endpoint",
-											"pm.test(\"Login successful\", function () {",
-											"    var jsonData = pm.response.json();",
-											"    ",
-											"    if (jsonData.token) {",
-											"        // Set the auth token as collection variable",
-											"        pm.collectionVariables.set(\"authToken\", jsonData.token);",
-											"        ",
-											"        // Save user info if available",
-											"        if (jsonData.user) {",
-											"            pm.collectionVariables.set(\"currentUser\", JSON.stringify(jsonData.user));",
-											"            pm.collectionVariables.set(\"userId\", jsonData.user.id);",
-											"        }",
-											"        ",
-											"        console.log(\"✅ Login successful - Token saved\");",
-											"        console.log(\"User ID:\", jsonData.user?.id);",
-											"        console.log(\"Username:\", jsonData.user?.username);",
-											"    } else {",
-											"        console.log(\"❌ Login failed\");",
-											"        // Clear any existing token on failed login",
-											"        pm.collectionVariables.unset(\"authToken\");",
-											"    }",
-											"});"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"12345678\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/login",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"login"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "login api user",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"// Post-response script for login endpoint",
-											"pm.test(\"Login successful\", function () {",
-											"    var jsonData = pm.response.json();",
-											"    ",
-											"    if (jsonData.token) {",
-											"        // Set the auth token as collection variable",
-											"        pm.collectionVariables.set(\"authToken\", jsonData.token);",
-											"        ",
-											"        // Save user info if available",
-											"        if (jsonData.user) {",
-											"            pm.collectionVariables.set(\"currentUser\", JSON.stringify(jsonData.user));",
-											"            pm.collectionVariables.set(\"userId\", jsonData.user.id);",
-											"        }",
-											"        ",
-											"        console.log(\"✅ Login successful - Token saved\");",
-											"        console.log(\"User ID:\", jsonData.user?.id);",
-											"        console.log(\"Username:\", jsonData.user?.username);",
-											"    } else {",
-											"        console.log(\"❌ Login failed\");",
-											"        // Clear any existing token on failed login",
-											"        pm.collectionVariables.unset(\"authToken\");",
-											"    }",
-											"});"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"api_user\",\n    \"password\": \"12345678\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/login",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"login"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "forgot password web user",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"test@example.com\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/forgot-password",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"forgot-password"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "forgot password api user",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"api@example.com\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/forgot-password",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"forgot-password"
-									]
-								}
-							},
-							"response": []
+								"type": "text/javascript"
+							}
 						}
 					]
+				},
+				{
+					"name": "3. Login as Owner",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testowner\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('ownerToken', jsonData.token);",
+									"    console.log('Owner token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "4. Login as Security",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testsecurity\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('securityToken', jsonData.token);",
+									"    console.log('Security token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "5. Validate Admin Token",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/auth/validate-token" 
+					}
+				},
+				{
+					"name": "6. Admin - Get All Users",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/users" 
+					},
+					"description": "Admin has permission to view all users"
+				},
+				{
+					"name": "7. Admin - Get All Apartments",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/apartments" 
+					},
+					"description": "Admin has permission to view all apartments"
+				},
+				{
+					"name": "8. Owner - Get My Profile",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/profile/me" 
+					},
+					"description": "Owner can access their own profile"
+				},
+				{
+					"name": "9. Owner - Get Own Apartments",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/apartments" 
+					},
+					"description": "Owner can only view their own apartments"
+				},
+				{
+					"name": "10. Security - Get All Visitors",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{securityToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/visitors" 
+					},
+					"description": "Security has permission to view visitors"
+				},
+				{
+					"name": "11. Security - Try to Access Apartments (Should Fail)",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{securityToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/apartments" 
+					},
+					"description": "Security doesn't have permission to view apartments (should return 403)"
 				}
 			]
-		},		{
-			"name": "webUser",
+		},
+		{
+			"name": "00_Authentication",
 			"item": [
 				{
-					"name": "GET",
-					"item": [
+					"name": "Check Server Status",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}"
+					},
+					"event": [
 						{
-							"name": "show",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"// Test script for protected endpoints",
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Response has data\", function () {",
-											"    pm.expect(pm.response.json()).to.not.be.empty;",
-											"});",
-											"",
-											"pm.test(\"Not unauthorized\", function () {",
-											"    pm.response.to.not.have.status(401);",
-											"    pm.response.to.not.have.status(403);",
-											"});",
-											"",
-											"pm.test(\"Auth token is being used\", function () {",
-											"    const authToken = pm.collectionVariables.get(\"authToken\");",
-											"    pm.expect(authToken).to.not.be.empty;",
-											"    console.log(\"Using token:\", authToken ? authToken.substring(0, 20) + \"...\" : \"No token\");",
-											"});"
-										]
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"1"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "get my info",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/me",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"me"
-									]
-								}
-							},
-							"response": []
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Server is running\", function() {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
 						}
 					]
 				},
 				{
-					"name": "POST",
-					"item": [
+					"name": "Login (Get Token)",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
 						{
-							"name": "create admin",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"admin_created_user\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"12345678\",\n    \"first_name\": \"Admin\",\n    \"last_name\": \"Created\",\n    \"status_id\": 1,\n    \"role_id\": 2\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/admin/create",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"admin",
-										"create"
-									]
-								}
-							},
-							"response": []
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('authToken', jsonData.token);",
+									"    console.log('Token saved to variable: authToken');",
+									"    pm.test(\"Token saved successfully\", function() {",
+									"        pm.expect(pm.collectionVariables.get('authToken')).to.not.be.empty;",
+									"    });",
+									"} else {",
+									"    console.log('No token found in response');",
+									"    pm.test(\"No token found in response\", function() {",
+									"        pm.expect.fail('Authentication failed - no token received');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
 						}
 					]
 				},
 				{
-					"name": "UPDATE",
-					"item": [
+					"name": "Login as Owner",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testowner\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
 						{
-							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"updated_username\",\n    \"email\": \"updated@example.com\",\n    \"status_id\": 1\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"1"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "update my info",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"updated_user\",\n    \"email\": \"updated@example.com\",\n    \"first_name\": \"Updated\",\n    \"last_name\": \"User\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"123 Main St\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/me",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"me"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "update my password",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"currentPassword\": \"12345678\",\n    \"newPassword\": \"newpassword123\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/me/password",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"me",
-										"password"
-									]
-								}
-							},
-							"response": []
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('ownerToken', jsonData.token);",
+									"    console.log('Token saved to variable: ownerToken');",
+									"    pm.test(\"Token saved successfully\", function() {",
+									"        pm.expect(pm.collectionVariables.get('ownerToken')).to.not.be.empty;",
+									"    });",
+									"} else {",
+									"    console.log('No token found in response');",
+									"    pm.test(\"No token found in response\", function() {",
+									"        pm.expect.fail('Authentication failed - no token received');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
 						}
 					]
 				},
 				{
-					"name": "DELETE",
-					"item": [
+					"name": "Login as Security",
+					"request": { 
+						"method": "POST", 
+						"header": [{"key": "Content-Type", "value": "application/json"}], 
+						"body": { 
+							"mode": "raw", 
+							"raw": "{\n  \"username\": \"testsecurity\",\n  \"password\": \"12345678\"\n}" 
+						}, 
+						"url": "{{baseUrl}}/auth/login" 
+					},
+					"event": [
 						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"1"
-									]
-								}
-							},
-							"response": []
-						},
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set('securityToken', jsonData.token);",
+									"    console.log('Token saved to variable: securityToken');",
+									"    pm.test(\"Token saved successfully\", function() {",
+									"        pm.expect(pm.collectionVariables.get('securityToken')).to.not.be.empty;",
+									"    });",
+									"} else {",
+									"    console.log('No token found in response');",
+									"    pm.test(\"No token found in response\", function() {",
+									"        pm.expect.fail('Authentication failed - no token received');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Validate Token",
+					"request": { 
+						"method": "GET", 
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": "{{baseUrl}}/auth/validate-token" 
+					},
+					"event": [
 						{
-							"name": "delete my account",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"password\": \"12345678\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/web-users/me",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"web-users",
-										"me"
-									]
-								}
-							},
-							"response": []
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Token is valid\", function() {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
 						}
 					]
 				}
 			]
 		},
 		{
-			"name": "apiUser",
+			"name": "00_Permission_Tests",
 			"item": [
 				{
-					"name": "GET",
+					"name": "Admin Tests",
 					"item": [
 						{
-							"name": "show",
+							"name": "Get All Users (Admin Only)",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										""
-									]
-								}
+								"header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/users"
 							},
-							"response": []
+							"description": "Requires 'users:read' permission (Admin only)"
 						},
 						{
-							"name": "showById",
+							"name": "Create User (Admin Only)",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"1"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "get my info",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/me",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"me"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "POST",
-					"item": [
-						{
-							"name": "create admin",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
-								"header": [],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}
+								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"username\": \"admin_api_user\",\n    \"email\": \"admin_api@example.com\",\n    \"password\": \"12345678\",\n    \"description\": \"Admin created API user\",\n    \"status_id\": 1,\n    \"role_id\": 2\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
+									"raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"password123\",\n  \"user_status_id\": 1,\n  \"role_id\": 3\n}"
 								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/admin/create",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"admin",
-										"create"
-									]
-								}
+								"url": "{{baseUrl}}/users"
 							},
-							"response": []
+							"description": "Requires 'users:create' permission (Admin only)"
+						},
+						{
+							"name": "Get All Apartments (Admin Access)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/apartments"
+							},
+							"description": "Requires 'apartments:read' permission (Admin has access to all apartments)"
 						}
 					]
 				},
 				{
-					"name": "UPDATE",
+					"name": "Owner Tests",
 					"item": [
+						{
+							"name": "Get Owner Profile",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/profile/me"
+							},
+							"description": "Owners can access their own profile"
+						},
+						{
+							"name": "Get Owner's Apartments",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/apartments"
+							},
+							"description": "Owners can only see their own apartments"
+						},
+						{
+							"name": "Create Reservation (Owner Permission)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reservation_date\": \"2023-07-15\",\n  \"reservation_start_time\": \"10:00:00\",\n  \"reservation_end_time\": \"12:00:00\",\n  \"reservation_type_id\": 1,\n  \"notes\": \"Meeting\"\n}"
+								},
+								"url": "{{baseUrl}}/reservations"
+							},
+							"description": "Requires 'reservations:create' permission (Owners can create)"
+						},
+						{
+							"name": "Get All Users (Should Fail)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{ownerToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/users"
+							},
+							"description": "Should return 403 Forbidden (Owners don't have 'users:read' permission)"
+						}
+					]
+				},
+				{
+					"name": "Security Tests",
+					"item": [
+						{
+							"name": "Get All Visitors (Security Permission)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{securityToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/visitors"
+							},
+							"description": "Requires 'visitors:read' permission (Security has access)"
+						},
+						{
+							"name": "Create Visitor (Security Permission)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{securityToken}}", "type": "text"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"visitor_name\": \"John Doe\",\n  \"visitor_document\": \"1234567890\",\n  \"visitor_host\": 1,\n  \"visitor_enter_date\": \"2023-07-15T10:00:00\"\n}"
+								},
+								"url": "{{baseUrl}}/visitors"
+							},
+							"description": "Requires 'visitors:create' permission (Security has access)"
+						},
+						{
+							"name": "Get All Apartments (Should Fail)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Authorization", "value": "Bearer {{securityToken}}", "type": "text"}],
+								"url": "{{baseUrl}}/apartments"
+							},
+							"description": "Should return 403 Forbidden (Security doesn't have 'apartments:read' permission)"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "apartments",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Apartments", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/" } },
+						{ "name": "Show Apartment Details", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/details" } },
+						{ "name": "Find By Number", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/search/number?apartment_number=1" } },
+						{ "name": "Find By Owner", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/search/owner?owner_id=1" } },
+						{ "name": "Find By Status", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/search/status?status_id=1" } },
+						{ "name": "Find By Tower", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/search/tower?tower_id=1" } },
+						{ "name": "Occupancy Report", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/report/occupancy" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/1" } },
+						{ "name": "Find With Details", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/1/details" } }
+					]
+				},
+				{
+					"name": "post",
+			"item": [
+						{ "name": "Register Apartment", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"apartment_number\": \"101\",\n  \"status_id\": 1,\n  \"tower_id\": 1,\n  \"owner_id\": 1\n}" }, "url": "{{baseUrl}}/apartments" } }
+					]
+				},
 						{
 							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"updated_api_username\",\n    \"email\": \"updated_api@example.com\",\n    \"description\": \"Updated API description\",\n    \"status_id\": 1\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"1"
-									]
-								}
-							},
-							"response": []
-						},
+					"item": [
+						{ "name": "Update Apartment", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"apartment_number\": \"101A\",\n  \"status_id\": 2,\n  \"tower_id\": 1,\n  \"owner_id\": 2\n}" }, "url": "{{baseUrl}}/apartments/1" } },
+						{ "name": "Update Status", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"status_id\": 2\n}" }, "url": "{{baseUrl}}/apartments/1/status" } }
+					]
+				},
+				{
+					"name": "delete",
+			"item": [
+						{ "name": "Delete Apartment", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/apartments/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "owners",
+					"item": [
 						{
-							"name": "update my info",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"username\": \"updated_api_user\",\n    \"email\": \"updated_api@example.com\",\n    \"description\": \"Updated API user description\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/me",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"me"
-									]
-								}
-							},
-							"response": []
-						},
+					"name": "get",
+					"item": [
+						{ "name": "Show All Owners", "request": { "method": "GET", "url": "{{baseUrl}}/owners/" } },
+						{ "name": "Show Owner Details", "request": { "method": "GET", "url": "{{baseUrl}}/owners/details" } },
+						{ "name": "Find By UserId", "request": { "method": "GET", "url": "{{baseUrl}}/owners/search?user_id=1" } },
+						{ "name": "Get By Tenant Status", "request": { "method": "GET", "url": "{{baseUrl}}/owners/tenant-status" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/owners/1" } },
+						{ "name": "Find With Details", "request": { "method": "GET", "url": "{{baseUrl}}/owners/1/details" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Owner with User and Profile", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"owner_user\",\n  \"password\": \"password123\",\n  \"user_status_id\": 1,\n  \"role_id\": 3,\n  \"is_tenant\": true,\n  \"birth_date\": \"1990-01-15\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"document_type\": \"CC\",\n  \"document_number\": \"1234567890\",\n  \"phone\": \"555-123-4567\",\n  \"photo_url\": null\n}" }, "url": "{{baseUrl}}/owners" } }
+					]
+				},
 						{
-							"name": "update my password",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"currentPassword\": \"12345678\",\n    \"newPassword\": \"newpassword123\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/me/password",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"me",
-										"password"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "update password admin",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"newPassword\": \"newadminpassword123\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/1/password",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"1",
-										"password"
-									]
-								}
-							},
-							"response": []
+							"name": "update",
+					"item": [
+						{ "name": "Update Owner with User and Profile", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"updated_owner\",\n  \"password\": \"newpassword123\",\n  \"user_status_id\": 1,\n  \"role_id\": 3,\n  \"is_tenant\": false,\n  \"birth_date\": \"1992-05-20\",\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\",\n  \"document_type\": \"CC\",\n  \"document_number\": \"9876543210\",\n  \"phone\": \"555-987-6543\",\n  \"photo_url\": null\n}" }, "url": "{{baseUrl}}/owners/1" } },
+						{ "name": "Update Owner Partial", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"is_tenant\": false,\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\"\n}" }, "url": "{{baseUrl}}/owners/1" } }
+					]
+				},
+				{
+					"name": "delete",
+			"item": [
+						{ "name": "Delete Owner", "request": { "method": "DELETE", "url": "{{baseUrl}}/owners/1" } }
+					]
 						}
 					]
 				},
 				{
-					"name": "DELETE",
+			"name": "users",
 					"item": [
 						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"1"
-									]
-								}
-							},
-							"response": []
+					"name": "get",
+					"item": [
+						{ "name": "Show All Users", "request": { "method": "GET", "url": "{{baseUrl}}/users/" } },
+						{ "name": "Show User Details", "request": { "method": "GET", "url": "{{baseUrl}}/users/details" } },
+						{ "name": "Find By Name", "request": { "method": "GET", "url": "{{baseUrl}}/users/search?name=John" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/users/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ 
+							"name": "Register User with Profile", 
+							"request": { 
+								"method": "POST", 
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}
+								], 
+								"body": { 
+									"mode": "raw", 
+									"raw": "{\n  \"name\": \"John Doe\",\n  \"user_status_id\": 1,\n  \"role_id\": 3,\n  \"profile\": {\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"address\": \"123 Main St\",\n    \"phone\": \"555-123-4567\",\n    \"document_type_id\": 1,\n    \"document_number\": \"ABC123456\",\n    \"birth_date\": \"1990-01-01\"\n  }\n}" 
+								}, 
+								"url": "{{baseUrl}}/users" 
+							} 
 						},
-						{
-							"name": "delete my account",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"password\": \"12345678\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/api-users/me",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"api-users",
-										"me"
-									]
-								}
-							},
-							"response": []
+						{ 
+							"name": "Register User (Minimal Profile)", 
+							"request": { 
+								"method": "POST", 
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}
+								], 
+								"body": { 
+									"mode": "raw", 
+									"raw": "{\n  \"name\": \"Jane Smith\",\n  \"user_status_id\": 1,\n  \"role_id\": 3,\n  \"profile\": {\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Smith\"\n  }\n}" 
+								}, 
+								"url": "{{baseUrl}}/users" 
+							} 
 						}
+					]
+				},
+						{
+							"name": "update",
+					"item": [
+						{ "name": "Update User", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jane Doe\"\n}" }, "url": "{{baseUrl}}/users/1" } },
+						{ "name": "Update Status", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"status_id\": 2\n}" }, "url": "{{baseUrl}}/users/1/status" } }
+					]
+				},
+				{
+					"name": "delete",
+			"item": [
+						{ "name": "Delete User", "request": { "method": "DELETE", "url": "{{baseUrl}}/users/1" } }
+					]
+						}
+					]
+				},
+				{
+			"name": "notifications",
+					"item": [
+						{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Notifications", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/" } },
+						{ "name": "Get Stats", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/stats" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/1" } },
+						{ "name": "Find By Recipient", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/recipient/1/user" } },
+						{ "name": "Find Unread", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/unread/1/user" } },
+						{ "name": "Find By Type", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/type/1" } }
+					]
+				},
+				{
+					"name": "post",
+			"item": [
+						{ "name": "Register Notification", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"recipient_id\": 1,\n  \"recipient_type\": \"user\",\n  \"message\": \"Test notification\"\n}" }, "url": "{{baseUrl}}/notifications" } }
+					]
+				},
+						{
+							"name": "update",
+					"item": [
+						{ "name": "Update Notification", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"message\": \"Updated notification\"\n}" }, "url": "{{baseUrl}}/notifications/1" } },
+						{ "name": "Mark As Read", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"read\": true\n}" }, "url": "{{baseUrl}}/notifications/1/read" } }
+					]
+				},
+				{
+					"name": "delete",
+			"item": [
+						{ "name": "Delete Notification", "request": { "method": "DELETE", "url": "{{baseUrl}}/notifications/1" } }
+					]
+						}
+					]
+				},
+				{
+			"name": "auth",
+					"item": [
+						{
+					"name": "post",
+					"item": [
+						{ 
+							"name": "Login", 
+							"request": { 
+								"method": "POST", 
+								"header": [{"key": "Content-Type", "value": "application/json"}], 
+								"body": { 
+									"mode": "raw", 
+									"raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"12345678\"\n}" 
+								}, 
+								"url": "{{baseUrl}}/auth/login" 
+							},
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData && jsonData.token) {",
+											"    pm.collectionVariables.set('authToken', jsonData.token);",
+											"    console.log('Token saved to variable: authToken');",
+											"} else {",
+											"    console.log('No token found in response');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							]
+						},
+						{ "name": "Register", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"user\",\n  \"password\": \"pass\"\n}" }, "url": "{{baseUrl}}/auth/register" } },
+						{ "name": "Forgot Password", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\"\n}" }, "url": "{{baseUrl}}/auth/forgot-password" } },
+						{ "name": "Reset Password", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"token\": \"reset-token\",\n  \"new_password\": \"newpass\"\n}" }, "url": "{{baseUrl}}/auth/reset-password" } }
+					]
+				},
+				{
+					"name": "get",
+					"item": [
+						{ 
+							"name": "Validate Token", 
+							"request": { 
+								"method": "GET", 
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authToken}}",
+										"type": "text"
+									}
+								],
+								"url": "{{baseUrl}}/auth/validate-token" 
+							} 
+						}
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ 
+							"name": "Change Password", 
+							"request": { 
+								"method": "POST", 
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authToken}}",
+										"type": "text"
+									}
+								], 
+								"body": { "mode": "raw", "raw": "{\n  \"old_password\": \"oldpass\",\n  \"new_password\": \"newpass\"\n}" }, 
+								"url": "{{baseUrl}}/auth/change-password" 
+							} 
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "apartmentStatus",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Apartment Statuses", "request": { "method": "GET", "url": "{{baseUrl}}/apartment-status/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/apartment-status/:id" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Apartment Status", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"status_name\": \"Available\"\n}" }, "url": "{{baseUrl}}/apartment-status" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Apartment Status", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"status_name\": \"Occupied\"\n}" }, "url": "{{baseUrl}}/apartment-status/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Apartment Status", "request": { "method": "DELETE", "url": "{{baseUrl}}/apartment-status/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "tower",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Towers", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/towers/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/towers/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Tower", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"Tower_name\": \"Tower A\"\n}" }, "url": "{{baseUrl}}/towers" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Tower", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"Tower_name\": \"Tower A Updated\"\n}" }, "url": "{{baseUrl}}/towers/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Tower", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/towers/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "payment",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Payments", "request": { "method": "GET", "url": "{{baseUrl}}/payments/" } },
+						{ "name": "Get Stats", "request": { "method": "GET", "url": "{{baseUrl}}/payments/stats" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/payments/:id" } },
+						{ "name": "Find By Owner", "request": { "method": "GET", "url": "{{baseUrl}}/payments/owner/:owner_id" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Payment", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"amount\": 1000,\n  \"owner_id\": 1\n}" }, "url": "{{baseUrl}}/payments" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Payment", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"amount\": 1200\n}" }, "url": "{{baseUrl}}/payments/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Payment", "request": { "method": "DELETE", "url": "{{baseUrl}}/payments/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "parking",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Parking", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/parking/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/parking/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Parking", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"parking_number\": \"P001\",\n  \"status_id\": 1,\n  \"vehicle_type_id\": 1,\n  \"user_id\": 1\n}" }, "url": "{{baseUrl}}/parking" } },
+						{ "name": "Assign Vehicle", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"parking_id\": 1,\n  \"vehicle_id\": 1\n}" }, "url": "{{baseUrl}}/parking/assignVehicle" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Parking", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"parking_number\": \"P002\",\n  \"status_id\": 2,\n  \"vehicle_type_id\": 1\n}" }, "url": "{{baseUrl}}/parking/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Parking", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/parking/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "pet",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Pets", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/pets/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/pets/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Pet", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Buddy\",\n  \"species\": \"Dog\",\n  \"breed\": \"Golden Retriever\",\n  \"owner_id\": 1,\n  \"vaccination_card\": \"vaccination_card_url\",\n  \"photos\": \"photo_urls\"\n}" }, "url": "{{baseUrl}}/pets" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Pet", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Buddy Updated\",\n  \"species\": \"Dog\",\n  \"breed\": \"Labrador Retriever\"\n}" }, "url": "{{baseUrl}}/pets/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Pet", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/pets/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "survey",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Surveys", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/survey/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/survey/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Survey", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Customer Satisfaction Survey\",\n  \"description\": \"Survey to measure customer satisfaction\",\n  \"questions\": [1, 2, 3]\n}" }, "url": "{{baseUrl}}/survey" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Survey", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Customer Satisfaction Survey\",\n  \"description\": \"Updated survey description\"\n}" }, "url": "{{baseUrl}}/survey/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Survey", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/survey/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "vehicleType",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Vehicle Types", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/vehicleType/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/vehicleType/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Vehicle Type", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"plate\": \"ABC123\",\n  \"model\": \"Toyota Camry\",\n  \"brand\": \"Toyota\",\n  \"color\": \"Blue\",\n  \"user_id\": 1\n}" }, "url": "{{baseUrl}}/vehicleType" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Vehicle Type", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"plate\": \"XYZ789\",\n  \"model\": \"Honda Civic\",\n  \"brand\": \"Honda\",\n  \"color\": \"Red\"\n}" }, "url": "{{baseUrl}}/vehicleType/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Vehicle Type", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/vehicleType/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "question",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/question/1" } },
+						{ "name": "Find By Survey", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/question/bySurvey/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Question", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"question_text\": \"How satisfied are you with our service?\",\n  \"question_type\": \"multiple_choice\",\n  \"options\": [\"Very satisfied\", \"Satisfied\", \"Neutral\", \"Dissatisfied\", \"Very dissatisfied\"]\n}" }, "url": "{{baseUrl}}/question" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Question", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"question_text\": \"Updated question text\",\n  \"question_type\": \"text\"\n}" }, "url": "{{baseUrl}}/question/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Question", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/question/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "answer",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Find By Survey", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/answer/bySurvey/1" } },
+						{ "name": "Find By User", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/answer/byUser/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Answer", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"question_id\": 1,\n  \"user_id\": 1,\n  \"answer_text\": \"Very satisfied\",\n  \"survey_id\": 1\n}" }, "url": "{{baseUrl}}/answer" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Answer", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/answer/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "reservationStatus",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Reservation Statuses", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-status/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-status/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Create Reservation Status", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"status_name\": \"Confirmed\"\n}" }, "url": "{{baseUrl}}/reservation-status" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Reservation Status", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"status_name\": \"Cancelled\"\n}" }, "url": "{{baseUrl}}/reservation-status/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Reservation Status", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-status/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "reservationType",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Reservation Types", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-type/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-type/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Create Reservation Type", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"type_name\": \"Conference Room\"\n}" }, "url": "{{baseUrl}}/reservation-type" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Reservation Type", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"type_name\": \"Meeting Room\"\n}" }, "url": "{{baseUrl}}/reservation-type/1" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Reservation Type", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservation-type/1" } }
 					]
 				}
 			]
@@ -1068,196 +1074,104 @@
 			"name": "profile",
 			"item": [
 				{
-					"name": "GET",
+					"name": "get",
 					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/profile/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"profile",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/profile/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"profile",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Show All Profiles", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/profile/" } },
+						{ "name": "Get My Profile", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/profile/me" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/profile/1" } }
 					]
 				},
 				{
-					"name": "POST",
+					"name": "post",
 					"item": [
-						{
-							"name": "create",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"web_user_id\": 1,\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"123 Main St\",\n    \"document_type_id\": 1,\n    \"document_number\": \"12345678\",\n    \"birth_date\": \"1990-01-01\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/profile/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"profile",
-										""
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Create Profile", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"web_user_id\": 1,\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"address\": \"123 Main St\",\n  \"phone\": \"555-123-4567\",\n  \"document_type_id\": 1,\n  \"document_number\": \"ABC123456\",\n  \"birth_date\": \"1990-01-01\"\n}" }, "url": "{{baseUrl}}/profile" } }
 					]
 				},
 				{
-					"name": "UPDATE",
+					"name": "update",
 					"item": [
-						{
-							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Smith\",\n    \"phone\": \"+0987654321\",\n    \"address\": \"456 Oak Ave\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/profile/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"profile",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Update Profile", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\",\n  \"address\": \"456 Oak Ave\",\n  \"phone\": \"555-987-6543\"\n}" }, "url": "{{baseUrl}}/profile/1" } }
 					]
 				},
 				{
-					"name": "DELETE",
+					"name": "delete",
 					"item": [
-						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/profile/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"profile",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Delete Profile", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/profile/1" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "apiUser",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Get My Info", "request": { "method": "GET", "url": "{{baseUrl}}/api-users/me" } },
+						{ "name": "Show All API Users", "request": { "method": "GET", "url": "{{baseUrl}}/api-users" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api-users/:id" } },
+						{ "name": "Get User Roles", "request": { "method": "GET", "url": "{{baseUrl}}/api-users/:id/roles" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Admin Create API User", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"apiuser\",\n  \"password\": \"pass\"\n}" }, "url": "{{baseUrl}}/api-users/admin/create" } },
+						{ "name": "Assign Role", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"role_id\": 1\n}" }, "url": "{{baseUrl}}/api-users/:id/assign-role" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update My Info", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"newname\"\n}" }, "url": "{{baseUrl}}/api-users/me" } },
+						{ "name": "Update My Password", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"password\": \"newpass\"\n}" }, "url": "{{baseUrl}}/api-users/me/password" } },
+						{ "name": "Update API User", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"newname\"\n}" }, "url": "{{baseUrl}}/api-users/:id" } },
+						{ "name": "Update API User Password", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"password\": \"newpass\"\n}" }, "url": "{{baseUrl}}/api-users/:id/password" } },
+						{ "name": "Update Role", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"role_id\": 2\n}" }, "url": "{{baseUrl}}/api-users/:id/role" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete My Account", "request": { "method": "DELETE", "url": "{{baseUrl}}/api-users/me" } },
+						{ "name": "Delete API User", "request": { "method": "DELETE", "url": "{{baseUrl}}/api-users/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "webUser",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Get My Info", "request": { "method": "GET", "url": "{{baseUrl}}/web-users/me" } },
+						{ "name": "Show All Web Users", "request": { "method": "GET", "url": "{{baseUrl}}/web-users" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/web-users/:id" } },
+						{ "name": "Get User Roles", "request": { "method": "GET", "url": "{{baseUrl}}/web-users/:id/roles" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Admin Create Web User", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"webuser\",\n  \"password\": \"pass\"\n}" }, "url": "{{baseUrl}}/web-users/admin/create" } },
+						{ "name": "Assign Role", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"role_id\": 1\n}" }, "url": "{{baseUrl}}/web-users/:id/assign-role" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update My Info", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"newname\"\n}" }, "url": "{{baseUrl}}/web-users/me" } },
+						{ "name": "Update My Password", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"password\": \"newpass\"\n}" }, "url": "{{baseUrl}}/web-users/me/password" } },
+						{ "name": "Update Web User", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"username\": \"newname\"\n}" }, "url": "{{baseUrl}}/web-users/:id" } },
+						{ "name": "Update Role", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"role_id\": 2\n}" }, "url": "{{baseUrl}}/web-users/:id/role" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete My Account", "request": { "method": "DELETE", "url": "{{baseUrl}}/web-users/me" } },
+						{ "name": "Delete Web User", "request": { "method": "DELETE", "url": "{{baseUrl}}/web-users/:id" } }
 					]
 				}
 			]
@@ -1266,196 +1180,28 @@
 			"name": "roles",
 			"item": [
 				{
-					"name": "GET",
+					"name": "get",
 					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/roles/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"roles",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/roles/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"roles",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Show All Roles", "request": { "method": "GET", "url": "{{baseUrl}}/roles/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/roles/:id" } }
 					]
 				},
 				{
-					"name": "POST",
+					"name": "post",
 					"item": [
-						{
-							"name": "create",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"moderator\",\n    \"description\": \"Moderator role with limited admin access\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/roles/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"roles",
-										""
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Register Role", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"admin\",\n  \"description\": \"Administrator role\"\n}" }, "url": "{{baseUrl}}/roles" } }
 					]
 				},
 				{
-					"name": "UPDATE",
+					"name": "update",
 					"item": [
-						{
-							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"updated_role\",\n    \"description\": \"Updated role description\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/roles/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"roles",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Update Role", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"super-admin\",\n  \"description\": \"Super Administrator role\"\n}" }, "url": "{{baseUrl}}/roles/:id" } }
 					]
 				},
 				{
-					"name": "DELETE",
+					"name": "delete",
 					"item": [
-						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/roles/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"roles",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Delete Role", "request": { "method": "DELETE", "url": "{{baseUrl}}/roles/:id" } }
 					]
 				}
 			]
@@ -1464,747 +1210,58 @@
 			"name": "permissions",
 			"item": [
 				{
-					"name": "GET",
+					"name": "get",
 					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/permissions/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"permissions",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/permissions/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"permissions",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Show All Permissions", "request": { "method": "GET", "url": "{{baseUrl}}/permissions/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/permissions/:id" } }
 					]
 				},
 				{
-					"name": "POST",
+					"name": "post",
 					"item": [
-						{
-							"name": "create",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"posts.create\",\n    \"description\": \"Permission to create posts\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/permissions/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"permissions",
-										""
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Register Permission", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"users:read\",\n  \"description\": \"Can read user data\"\n}" }, "url": "{{baseUrl}}/permissions" } }
 					]
 				},
 				{
-					"name": "UPDATE",
+					"name": "update",
 					"item": [
-						{
-							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"posts.update\",\n    \"description\": \"Permission to update posts\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/permissions/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"permissions",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Update Permission", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"users:write\",\n  \"description\": \"Can write user data\"\n}" }, "url": "{{baseUrl}}/permissions/:id" } }
 					]
 				},
 				{
-					"name": "DELETE",
+					"name": "delete",
 					"item": [
-						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/permissions/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"permissions",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Delete Permission", "request": { "method": "DELETE", "url": "{{baseUrl}}/permissions/:id" } }
 					]
 				}
 			]
 		},
 		{
-			"name": "rolePermissions",
+			"name": "rolesPermissions",
 			"item": [
 				{
-					"name": "GET",
+					"name": "get",
 					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/role-permissions/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"role-permissions",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "show by role",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/role-permissions/role/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"role-permissions",
-										"role",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Show All Role Permissions", "request": { "method": "GET", "url": "{{baseUrl}}/role-permissions/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/role-permissions/:id" } }
 					]
 				},
 				{
-					"name": "POST",
+					"name": "post",
 					"item": [
-						{
-							"name": "assign permission to role",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"role_id\": 1,\n    \"permission_id\": 1\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/role-permissions/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"role-permissions",
-										""
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Register Role Permission", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"role_id\": 1,\n  \"permission_id\": 1\n}" }, "url": "{{baseUrl}}/role-permissions" } }
 					]
 				},
 				{
-					"name": "DELETE",
+					"name": "update",
 					"item": [
-						{
-							"name": "remove permission from role",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/role-permissions/1/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"role-permissions",
-										"1",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "documentType",
-			"item": [
-				{
-					"name": "GET",
-					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/documentType/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"documentType",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/documentType/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"documentType",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Update Role Permission", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"role_id\": 2,\n  \"permission_id\": 2\n}" }, "url": "{{baseUrl}}/role-permissions/:id" } }
 					]
 				},
 				{
-					"name": "POST",
+					"name": "delete",
 					"item": [
-						{
-							"name": "create",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"passport\",\n    \"description\": \"Passport document type\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/documentType/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"documentType",
-										""
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "UPDATE",
-					"item": [
-						{
-							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"driver_license\",\n    \"description\": \"Driver license document type\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/documentType/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"documentType",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "DELETE",
-					"item": [
-						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/documentType/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"documentType",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "userStatus",
-			"item": [
-				{
-					"name": "GET",
-					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/user_status/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"user_status",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/user_status/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"user_status",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "POST",
-					"item": [
-						{
-							"name": "create",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"suspended\",\n    \"description\": \"Suspended user status\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/user_status/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"user_status",
-										""
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "UPDATE",
-					"item": [
-						{
-							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"banned\",\n    \"description\": \"Banned user status\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/user_status/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"user_status",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "DELETE",
-					"item": [
-						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/user_status/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"user_status",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Delete Role Permission", "request": { "method": "DELETE", "url": "{{baseUrl}}/role-permissions/:id" } }
 					]
 				}
 			]
@@ -2213,228 +1270,293 @@
 			"name": "modules",
 			"item": [
 				{
-					"name": "GET",
+					"name": "get",
 					"item": [
-						{
-							"name": "show",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/modules/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"modules",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "showById",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/modules/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"modules",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Show All Modules", "request": { "method": "GET", "url": "{{baseUrl}}/modules/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/modules/:id" } }
 					]
 				},
 				{
-					"name": "POST",
+					"name": "post",
 					"item": [
-						{
-							"name": "create",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"blog\",\n    \"description\": \"Blog module\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/modules/",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"modules",
-										""
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Register Module", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"users\",\n  \"description\": \"User management module\"\n}" }, "url": "{{baseUrl}}/modules" } }
 					]
 				},
 				{
-					"name": "UPDATE",
+					"name": "update",
 					"item": [
+						{ "name": "Update Module", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"user-management\",\n  \"description\": \"Updated user management module\"\n}" }, "url": "{{baseUrl}}/modules/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Module", "request": { "method": "DELETE", "url": "{{baseUrl}}/modules/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "userStatus",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All User Statuses", "request": { "method": "GET", "url": "{{baseUrl}}/user-status/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/user-status/:id" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register User Status", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"active\",\n  \"description\": \"Active user status\"\n}" }, "url": "{{baseUrl}}/user-status" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update User Status", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"inactive\",\n  \"description\": \"Inactive user status\"\n}" }, "url": "{{baseUrl}}/user-status/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete User Status", "request": { "method": "DELETE", "url": "{{baseUrl}}/user-status/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "pqrs",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All PQRS", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/" } },
+						{ "name": "Search PQRS", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/search" } },
+						{ "name": "Get PQRS Stats", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/stats" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/:id" } },
+						{ "name": "Find By Owner", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/owner/:owner_id" } },
+						{ "name": "Find By Status", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/status/:status_id" } },
+						{ "name": "Find By Category", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs/category/:category_id" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register PQRS", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Issue report\",\n  \"description\": \"Description of the issue\",\n  \"category_id\": 1,\n  \"owner_id\": 1\n}" }, "url": "{{baseUrl}}/pqrs" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update PQRS", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated issue\",\n  \"description\": \"Updated description\"\n}" }, "url": "{{baseUrl}}/pqrs/:id" } },
+						{ "name": "Update PQRS Status", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"status_id\": 2\n}" }, "url": "{{baseUrl}}/pqrs/:id/status" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete PQRS", "request": { "method": "DELETE", "url": "{{baseUrl}}/pqrs/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "pqrsCategory",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All PQRS Categories", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs-categories/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/pqrs-categories/:id" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register PQRS Category", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Maintenance\",\n  \"description\": \"Maintenance related issues\"\n}" }, "url": "{{baseUrl}}/pqrs-categories" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update PQRS Category", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Technical Support\",\n  \"description\": \"Technical support issues\"\n}" }, "url": "{{baseUrl}}/pqrs-categories/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete PQRS Category", "request": { "method": "DELETE", "url": "{{baseUrl}}/pqrs-categories/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "visitor",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Visitors", "request": { "method": "GET", "url": "{{baseUrl}}/visitors/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/visitors/:id" } },
+						{ "name": "Find By Host", "request": { "method": "GET", "url": "{{baseUrl}}/visitors/host/:host_id" } },
+						{ "name": "Find By Date", "request": { "method": "GET", "url": "{{baseUrl}}/visitors/date/:visit_date" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Visitor", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Doe\",\n  \"identification\": \"123456789\",\n  \"host_id\": 1,\n  \"visit_date\": \"2024-03-20\"\n}" }, "url": "{{baseUrl}}/visitors" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Visitor", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jane Doe\",\n  \"identification\": \"987654321\"\n}" }, "url": "{{baseUrl}}/visitors/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Visitor", "request": { "method": "DELETE", "url": "{{baseUrl}}/visitors/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "reservation",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Reservations", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservations/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservations/:id" } },
+						{ "name": "Find By Owner", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservations/owner/:owner_id" } },
+						{ "name": "Find By Date Range", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservations/date-range?start_date=2024-03-20&end_date=2024-03-21" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Reservation", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"owner_id\": 1,\n  \"facility_id\": 1,\n  \"start_date\": \"2024-03-20T10:00:00\",\n  \"end_date\": \"2024-03-20T12:00:00\"\n}" }, "url": "{{baseUrl}}/reservations" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Reservation", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"start_date\": \"2024-03-20T11:00:00\",\n  \"end_date\": \"2024-03-20T13:00:00\"\n}" }, "url": "{{baseUrl}}/reservations/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Reservation", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/reservations/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "guard",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Guards", "request": { "method": "GET", "url": "{{baseUrl}}/guards/" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "url": "{{baseUrl}}/guards/:id" } },
+						{ "name": "Find By Shift", "request": { "method": "GET", "url": "{{baseUrl}}/guards/shift/:shift" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Guard", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Smith\",\n  \"identification\": \"123456789\",\n  \"shift\": \"morning\"\n}" }, "url": "{{baseUrl}}/guards" } }
+					]
+				},
+				{
+					"name": "update",
+					"item": [
+						{ "name": "Update Guard", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jane Smith\",\n  \"shift\": \"evening\"\n}" }, "url": "{{baseUrl}}/guards/:id" } }
+					]
+				},
+				{
+					"name": "delete",
+					"item": [
+						{ "name": "Delete Guard", "request": { "method": "DELETE", "url": "{{baseUrl}}/guards/:id" } }
+					]
+				}
+			]
+		},
+		{
+			"name": "facilities",
+			"item": [
+				{
+					"name": "get",
+					"item": [
+						{ "name": "Show All Facilities", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/facilities/" } },
+						{ "name": "Get Availability", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/facilities/availability" } },
+						{ "name": "Find By Status", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/facilities/status?status=available" } },
+						{ "name": "Find By Id", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/facilities/1" } }
+					]
+				},
+				{
+					"name": "post",
+					"item": [
+						{ "name": "Register Facility", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Conference Room\",\n  \"description\": \"Large meeting space\",\n  \"capacity\": 20,\n  \"status\": \"available\"\n}" }, "url": "{{baseUrl}}/facilities" } }
+					]
+				},
 						{
 							"name": "update",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"forum\",\n    \"description\": \"Forum module\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:3000/api_v1/modules/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"modules",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+					"item": [
+						{ "name": "Update Facility", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Conference Room\",\n  \"description\": \"Updated description\",\n  \"capacity\": 25\n}" }, "url": "{{baseUrl}}/facilities/1" } },
+						{ "name": "Update Status", "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "body": { "mode": "raw", "raw": "{\n  \"status\": \"maintenance\"\n}" }, "url": "{{baseUrl}}/facilities/1/status" } }
 					]
 				},
 				{
-					"name": "DELETE",
+					"name": "delete",
 					"item": [
-						{
-							"name": "delete",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{authToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "http://localhost:3000/api_v1/modules/1",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "3000",
-									"path": [
-										"api_v1",
-										"modules",
-										"1"
-									]
-								}
-							},
-							"response": []
-						}
+						{ "name": "Delete Facility", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{authToken}}", "type": "text"}], "url": "{{baseUrl}}/facilities/1" } }
 					]
 				}
 			]
 		}
-	],	"event": [
+	],
+	"event": [
 		{
 			"listen": "prerequest",
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					"// Collection-level pre-request script",
-					"// Automatically add Bearer token to protected endpoints",
-					"",
-					"const authToken = pm.collectionVariables.get(\"authToken\");",
-					"",
-					"if (authToken && !pm.request.url.path.includes(\"login\") && !pm.request.url.path.includes(\"register\")) {",
-					"    pm.request.headers.add({",
-					"        key: 'Authorization',",
-					"        value: `Bearer ${authToken}`",
-					"    });",
-					"    console.log(\"Added auth header to request\");",
-					"}"
+					"// Global pre-request script that runs before every request",
+					"// You can add common logic here if needed"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script that runs after every request",
+					"// You can add common response handling logic here if needed"
 				]
 			}
 		}
 	],
 	"variable": [
-		{
-			"key": "authToken",
-			"value": "",
-			"type": "string",
-			"description": "Bearer token obtained from login endpoint"
-		}
-	]
+		{ "key": "baseUrl", "value": "http://localhost:3000/api" },
+		{ "key": "authToken", "value": "", "type": "string" },
+		{ "key": "ownerToken", "value": "", "type": "string" },
+		{ "key": "securityToken", "value": "", "type": "string" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{authToken}}",
+				"type": "string"
+			}
+		]
+	}
 }

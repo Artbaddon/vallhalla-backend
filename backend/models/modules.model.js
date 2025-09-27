@@ -3,7 +3,7 @@ import { connect } from "../config/db/connectMysql.js";
 class modulesModel {
   static async create({ name, description }) {
     try {
-      let sqlQuery = `INSERT INTO modules (name, description) VALUES (?, ?)`;
+      let sqlQuery = `INSERT INTO module (module_name, module_description) VALUES (?, ?)`;
       const [result] = await connect.query(sqlQuery, [name, description]);
       return result.insertId;
     } catch (error) {
@@ -13,7 +13,7 @@ class modulesModel {
 
   static async show() {
     try {
-      let sqlQuery = "SELECT * FROM `modules` ORDER BY `id` ";
+      let sqlQuery = "SELECT * FROM `module` ORDER BY `module_id` ";
       const [result] = await connect.query(sqlQuery);
       return result;
     } catch (error) {
@@ -24,7 +24,7 @@ class modulesModel {
   static async update(id, { name, description }) {
     try {
       let sqlQuery =
-        "UPDATE modules SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id =?;";
+        "UPDATE module SET module_name = ?, module_description = ?, module_updatedAt = CURRENT_TIMESTAMP WHERE module_id =?;";
       const [result] = await connect.query(sqlQuery, [name, description, id]);
       if (result.affectedRows === 0) {
         return { error: "Module not found" };
@@ -38,7 +38,7 @@ class modulesModel {
 
   static async delete(id) {
     try {
-      let sqlQuery = `DELETE FROM modules WHERE id = ?`;
+      let sqlQuery = `DELETE FROM module WHERE module_id = ?`;
       const [result] = await connect.query(sqlQuery, id);
 
       if (result.affectedRows === 0) {
@@ -53,7 +53,7 @@ class modulesModel {
 
   static async findById(id) {
     try {
-      let sqlQuery = `SELECT * FROM modules WHERE id = ?`;
+      let sqlQuery = `SELECT * FROM module WHERE module_id = ?`;
       const [result] = await connect.query(sqlQuery, id);
 
       return result;

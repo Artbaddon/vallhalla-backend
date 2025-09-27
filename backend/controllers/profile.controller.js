@@ -2,6 +2,7 @@ import ProfileModel from "../models/profile.model.js";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { ROLES } from "../middleware/rbacConfig.js";
 
 // Create profile upload function
 const createProfileUpload = () => {
@@ -44,17 +45,30 @@ class ProfileController {
       
       try {
         const {
-          web_user_id, first_name, last_name, address, phone,
-          document_type_id, document_number, birth_date
+          Profile_fullName,
+          Profile_document_type,
+          Profile_document_number,
+          Profile_telephone_number
         } = req.body;
         
+        // Get user ID from the authenticated user
+        const User_FK_ID = req.user.userId;
+        
         // Only set photo_url if user actually uploaded a file
-        const photo_url = req.file ? `/uploads/profiles/${req.file.filename}` : null;
+        const Profile_photo = req.file ? `/uploads/profiles/${req.file.filename}` : null;
         
         const profileId = await ProfileModel.create({
-          web_user_id, first_name, last_name, address, phone,
-          document_type_id, document_number, photo_url, birth_date
+          User_FK_ID,
+          Profile_fullName,
+          Profile_document_type,
+          Profile_document_number,
+          Profile_telephone_number,
+          Profile_photo
         });
+        
+        if (profileId.error) {
+          return res.status(400).json({ error: profileId.error });
+        }
         
         const response = { 
           message: "Profile created successfully", 
@@ -62,12 +76,13 @@ class ProfileController {
         };
         
         // Only include photo_url in response if file was uploaded
-        if (photo_url) {
-          response.photo_url = photo_url;
+        if (Profile_photo) {
+          response.photo_url = Profile_photo;
         }
         
         res.status(201).json(response);
       } catch (error) {
+        console.error('Error creating profile:', error);
         res.status(500).json({ error: error.message });
       }
     });
@@ -94,7 +109,7 @@ class ProfileController {
       }
       
       try {
-        const { id } = req.params;
+        const id = req.params.id;
         const updateData = { ...req.body };
         
         // Only update photo_url if new file was uploaded
@@ -144,15 +159,51 @@ class ProfileController {
   async findById(req, res) {
     try {
       const id = req.params.id;
+
       if (!id) {
-        return res.status(400).json({ error: "ID is required" });
+        return res.status(400).json({ error: "Profile ID is required" });
       }
+
       const profile = await ProfileModel.findById(id);
+
       if (!profile) {
         return res.status(404).json({ error: "Profile not found" });
       }
-      res.status(200).json({ message: "Profile found successfully", profile });
+
+      // If user is an owner, verify they're accessing their own profile
+      if (req.user.roleId === ROLES.OWNER && profile.User_FK_ID !== req.user.userId) {
+        return res.status(403).json({ error: "You don't have permission to access this profile" });
+      }
+
+      res.status(200).json({
+        message: "Profile found successfully",
+        profile: profile,
+      });
     } catch (error) {
+      console.error("Error finding profile by ID:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+  async getMyProfile(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID could not be determined" });
+      }
+
+      const profile = await ProfileModel.findByUserId(userId);
+
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.status(200).json({
+        message: "Your profile retrieved successfully",
+        profile: profile,
+      });
+    } catch (error) {
+      console.error("Error retrieving profile:", error);
       res.status(500).json({ error: error.message });
     }
   }

@@ -6,7 +6,12 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "migrate": "node migrations/migrate.js"
+    "dev": "nodemon server.js",
+    "migrate": "node migrations/migrate.js",
+    "migrate:rbac": "node migrations/migration_v2_rbac.js",
+    "migrate:v3": "node migrations/migration_v3_add_user_email.js",
+    "seed:rbac": "node scripts/seed_rbac.js",
+    "seed:dummy": "node scripts/seed_dummy.js"
   },
   "keywords": [],
   "author": "",
@@ -18,8 +23,12 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
   }
 }
