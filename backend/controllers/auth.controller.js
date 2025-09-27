@@ -69,7 +69,8 @@ class AuthController {
         userId: user.Users_id,
         username: user.Users_name,
         roleId: user.Role_FK_ID,
-        Role_name: user.Role_name
+        Role_name: user.Role_name,
+        email: user.Users_email
       });
 
       res.status(200).json({
@@ -80,6 +81,7 @@ class AuthController {
           username: user.Users_name,
           status_id: user.User_status_FK_ID,
           role_id: user.Role_FK_ID,
+          email: user.Users_email,
           Role_name: user.Role_name
         }
       });

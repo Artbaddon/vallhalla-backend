@@ -5,6 +5,22 @@ import mongoose from 'mongoose';
 
 class PackageDeliveryController {
   
+  // Helper: determine if a string looks like our business ID (e.g., PKG-...)
+  isBusinessPackageId(id) {
+    return typeof id === 'string' && /^PKG-/i.test(id);
+  }
+
+  // Helper: fetch a package by either Mongo ObjectId or business package_id
+  async findPackageByFlexibleId(id) {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      return await PackageDelivery.findById(id);
+    }
+    if (this.isBusinessPackageId(id)) {
+      return await PackageDelivery.findOne({ package_id: id });
+    }
+    return null;
+  }
+  
   // Helper to get owner from MySQL
   async getOwnerFromMySQL(ownerId) {
     try {
@@ -29,9 +45,9 @@ class PackageDeliveryController {
 
   // Helper to check if logged user can access owner's packages
   async canAccessOwnerPackages(req, ownerId) {
-    const { isGuard, isOwner } = req.userAccess;
+    const { isGuard, isOwner, isAdmin } = req.userAccess;
     
-    if (isGuard) {
+    if (isGuard || isAdmin) {
       return true; // Guards can access all packages
     }
     
@@ -184,7 +200,16 @@ class PackageDeliveryController {
   async getPackageById(req, res) {
     try {
       const { id } = req.params;
-      const packageItem = await PackageDelivery.findById(id);
+      // Validate ID format or support business code lookup
+      const isObjectId = mongoose.Types.ObjectId.isValid(id);
+      const isBizId = this.isBusinessPackageId(id);
+      if (!isObjectId && !isBizId) {
+        return res.status(400).json({
+          error: 'Invalid package identifier. Provide a valid Mongo ObjectId or business package_id (e.g., PKG-...)'
+        });
+      }
+
+      const packageItem = await this.findPackageByFlexibleId(id);
 
       if (!packageItem) {
         return res.status(404).json({ error: 'Package not found' });
@@ -229,8 +254,17 @@ class PackageDeliveryController {
       const { id } = req.params;
       const { status, delivery_notes, recipient_signature } = req.body;
 
-      // Get package from MongoDB
-      const packageItem = await PackageDelivery.findById(id);
+      // Validate ID format or support business code lookup
+      const isObjectId = mongoose.Types.ObjectId.isValid(id);
+      const isBizId = this.isBusinessPackageId(id);
+      if (!isObjectId && !isBizId) {
+        return res.status(400).json({
+          error: 'Invalid package identifier. Provide a valid Mongo ObjectId or business package_id (e.g., PKG-...)'
+        });
+      }
+
+      // Get package from MongoDB (first fetch to check access)
+      const packageItem = await this.findPackageByFlexibleId(id);
       if (!packageItem) {
         return res.status(404).json({ error: 'Package not found' });
       }
@@ -257,10 +291,11 @@ class PackageDeliveryController {
         };
       }
 
-      // Update in MongoDB
-      const updatedPackage = await PackageDelivery.findByIdAndUpdate(
-        id, 
-        updateData, 
+      // Update in MongoDB using flexible filter
+      const filter = isObjectId ? { _id: id } : { package_id: id };
+      const updatedPackage = await PackageDelivery.findOneAndUpdate(
+        filter,
+        updateData,
         { new: true, runValidators: true }
       );
 
@@ -278,7 +313,17 @@ class PackageDeliveryController {
   async deletePackage(req, res) {
     try {
       const { id } = req.params;
-      const deletedPackage = await PackageDelivery.findByIdAndDelete(id);
+      // Validate ID format or support business code lookup
+      const isObjectId = mongoose.Types.ObjectId.isValid(id);
+      const isBizId = this.isBusinessPackageId(id);
+      if (!isObjectId && !isBizId) {
+        return res.status(400).json({
+          error: 'Invalid package identifier. Provide a valid Mongo ObjectId or business package_id (e.g., PKG-...)'
+        });
+      }
+
+      const filter = isObjectId ? { _id: id } : { package_id: id };
+      const deletedPackage = await PackageDelivery.findOneAndDelete(filter);
 
       if (!deletedPackage) {
         return res.status(404).json({ error: 'Package not found' });

@@ -96,9 +96,8 @@ class ReservationModel {
         Facility_FK_ID,
         Reservation_start_time, 
         Reservation_end_time, 
-        Reservation_description, 
-        Reservation_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+        Reservation_description
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       
       const [result] = await connect.query(sqlQuery, [
         owner_id, 
@@ -125,7 +124,7 @@ class ReservationModel {
         LEFT JOIN reservation_type rt ON r.Reservation_type_FK_ID = rt.Reservation_type_id
         LEFT JOIN owner o ON r.Owner_FK_ID = o.Owner_id
         LEFT JOIN users u ON o.User_FK_ID = u.Users_id
-        ORDER BY r.Reservation_date DESC
+        ORDER BY r.Reservation_start_time DESC
       `;
       const [result] = await connect.query(sqlQuery);
       return result;
@@ -160,8 +159,8 @@ class ReservationModel {
         Facility_FK_ID = ?,
         Reservation_start_time = ?, 
         Reservation_end_time = ?, 
-        Reservation_description = ?, 
-        Reservation_date = NOW() 
+        Reservation_description = ?,
+        updatedAt = NOW()
         WHERE Reservation_id = ?`;
       
       const [result] = await connect.query(sqlQuery, [
@@ -231,7 +230,7 @@ class ReservationModel {
         LEFT JOIN reservation_status rs ON r.Reservation_status_FK_ID = rs.Reservation_status_id
         LEFT JOIN reservation_type rt ON r.Reservation_type_FK_ID = rt.Reservation_type_id
         WHERE r.Owner_FK_ID = ?
-        ORDER BY r.Reservation_date DESC
+        ORDER BY r.Reservation_start_time DESC
       `;
       const [result] = await connect.query(sqlQuery, [owner_id]);
       return result;
@@ -248,7 +247,7 @@ class ReservationModel {
         LEFT JOIN reservation_status rs ON r.Reservation_status_FK_ID = rs.Reservation_status_id
         LEFT JOIN reservation_type rt ON r.Reservation_type_FK_ID = rt.Reservation_type_id
         WHERE r.Reservation_start_time >= ? AND r.Reservation_end_time <= ?
-        ORDER BY r.Reservation_date DESC
+        ORDER BY r.Reservation_start_time DESC
       `;
       const [result] = await connect.query(sqlQuery, [start_time, end_time]);
       return result;
