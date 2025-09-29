@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { ROLES, hasPermission, getUserPermissions } from "./rbacConfig.js";
 import { connect } from "../config/db/connectMysql.js";
+import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 dotenv.config();
 
@@ -18,12 +19,14 @@ export const verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     req.user = decoded;
 
+    const normalizedRoleName = decoded?.Role_name?.toUpperCase?.();
+
     // Debug logging
     console.log('Decoded token:', decoded);
     console.log('User object after decode:', req.user);
 
     // If user is an owner, fetch their owner_id
-    if (decoded.Role_name === 'OWNER') {
+    if (normalizedRoleName === 'OWNER') {
       const [rows] = await connect.query(
         'SELECT Owner_id FROM owner WHERE User_FK_ID = ?',
         [decoded.userId]
@@ -91,6 +94,39 @@ export const apiAccessMiddleware = (req, res, next) => {
       if (!moduleName || !permissionName) {
         return res.status(400).json({ message: 'Cannot derive module/permission from request' });
       }
+
+      const roleId = req.user?.roleId;
+      const isAdmin = roleId === ROLES.ADMIN;
+
+      // Allow owners to access their own payment routes without explicit permission assignments
+      if (moduleName === 'payment' && parts[2] === 'owner') {
+        const ownerIdSegment = parts[3];
+
+        if (!ownerIdSegment) {
+          return res.status(400).json({ message: 'Owner identifier missing in payment route' });
+        }
+
+        if (isAdmin) {
+          return next();
+        }
+
+        if (roleId === ROLES.OWNER) {
+          const resolvedOwnerId = await resolveOwnerId(ownerIdSegment);
+
+          if (!resolvedOwnerId) {
+            return res.status(404).json({ message: 'Owner not found for provided identifier' });
+          }
+
+          const userOwnerId = req.user?.Owner_id;
+
+          if (userOwnerId && String(userOwnerId) === String(resolvedOwnerId)) {
+            return next();
+          }
+
+          return res.status(403).json({ message: 'Access denied. Owners can only access their own payments' });
+        }
+      }
+
       const ok = await hasPermission(connect, req.user.userId, moduleName, permissionName);
       if (!ok) {
         console.log(`❌ API access denied. userId ${req.user.userId} lacks ${permissionName}:${moduleName}`);

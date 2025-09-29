@@ -3,19 +3,43 @@ import { connect } from "../config/db/connectMysql.js";
 class RolePermissionModel {
   static async create({ roleId, permissionId, moduleId }) {
     try {
-      // First create or get the module_role entry
-      let moduleRoleQuery = `
-        SELECT Module_role_id 
-        FROM module_role 
-        WHERE Role_FK_ID = ? AND Module_FK_ID = ?
-      `;
-      const [moduleRoleResult] = await connect.query(moduleRoleQuery, [roleId, moduleId]);
-      
+      let transactionActive = false;
+      await connect.query('START TRANSACTION');
+      transactionActive = true;
+
+      // Check if the exact combination already exists
+      const [existingCombination] = await connect.query(
+        `SELECT pmr.Permissions_module_role_id as id
+         FROM permissions_module_role pmr
+         JOIN module_role mr ON pmr.Module_role_FK_ID = mr.Module_role_id
+         WHERE mr.Role_FK_ID = ? AND mr.Module_FK_ID = ? AND pmr.Permissions_FK_ID = ?
+         LIMIT 1`,
+        [roleId, moduleId, permissionId]
+      );
+
+      if (existingCombination.length > 0) {
+        await connect.query('ROLLBACK');
+        transactionActive = false;
+        return {
+          id: existingCombination[0].id,
+          alreadyExists: true,
+          message: "Permission is already assigned to this role for this module"
+        };
+      }
+
+      // Ensure a module_role entry exists (re-use if present)
+      const [moduleRoleResult] = await connect.query(
+        `SELECT Module_role_id 
+         FROM module_role 
+         WHERE Role_FK_ID = ? AND Module_FK_ID = ?
+         LIMIT 1`,
+        [roleId, moduleId]
+      );
+
       let moduleRoleId;
       if (moduleRoleResult.length > 0) {
         moduleRoleId = moduleRoleResult[0].Module_role_id;
       } else {
-        // Create new module_role entry
         const [newModuleRole] = await connect.query(
           'INSERT INTO module_role (Role_FK_ID, Module_FK_ID) VALUES (?, ?)',
           [roleId, moduleId]
@@ -23,25 +47,24 @@ class RolePermissionModel {
         moduleRoleId = newModuleRole.insertId;
       }
 
-      // Check if this permission is already assigned
-      const [existingPermission] = await connect.query(
-        'SELECT Permissions_module_role_id FROM permissions_module_role WHERE Module_role_FK_ID = ? AND Permissions_FK_ID = ?',
+      const [result] = await connect.query(
+        `INSERT INTO permissions_module_role (Module_role_FK_ID, Permissions_FK_ID) VALUES (?, ?)`,
         [moduleRoleId, permissionId]
       );
 
-      if (existingPermission.length > 0) {
-        return { error: "This permission is already assigned to this role for this module" };
-      }
+      await connect.query('COMMIT');
+      transactionActive = false;
 
-      // Create the permissions_module_role entry
-      let sqlQuery = `
-        INSERT INTO permissions_module_role 
-        (Module_role_FK_ID, Permissions_FK_ID) 
-        VALUES (?, ?)
-      `;
-      const [result] = await connect.query(sqlQuery, [moduleRoleId, permissionId]);
-      return result.insertId;
+      return {
+        id: result.insertId,
+        created: true
+      };
     } catch (error) {
+      try {
+        await connect.query('ROLLBACK');
+      } catch (_) {
+        // ignore rollback errors
+      }
       return { error: error.message };
     }
   }

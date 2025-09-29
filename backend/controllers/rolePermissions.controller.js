@@ -8,10 +8,10 @@ class RolePermissionsController {
     try {
       const { roleId, permissionId, moduleId } = req.body;
 
-      if (!roleId || !permissionId) {
+      if (!roleId || !permissionId || !moduleId) {
         return res
           .status(400)
-          .json({ error: "roleId and permissionId are required" });
+          .json({ error: "roleId, permissionId and moduleId are required" });
       }
 
       // Validate role exists
@@ -26,45 +26,30 @@ class RolePermissionsController {
         return res.status(404).json({ error: "Permission not found" });
       }
 
-      // If moduleId is not provided, get or create a default module
-      let targetModuleId = moduleId;
-      if (!targetModuleId) {
-        // Try to get the first module
-        const modules = await ModulesModel.show();
-        if (!modules || modules.length === 0) {
-          // Create a default module if none exists
-          const defaultModuleId = await ModulesModel.create({
-            name: "Default",
-            description: "Default module for system permissions"
-          });
-          if (defaultModuleId.error) {
-            return res.status(500).json({ error: "Failed to create default module" });
-          }
-          targetModuleId = defaultModuleId;
-        } else {
-          targetModuleId = modules[0].module_id;
-        }
-      } else {
-        // Validate the specified module exists
-        const existingModule = await ModulesModel.findById(targetModuleId);
-        if (!existingModule || existingModule.length === 0) {
-          return res.status(404).json({ error: "Module not found" });
-        }
+      // Validate module exists
+      const existingModule = await ModulesModel.findById(moduleId);
+      if (!existingModule) {
+        return res.status(404).json({ error: "Module not found" });
       }
 
-      const RolePermissionId = await RolePermission.create({
+      const rolePermissionResult = await RolePermission.create({
         roleId,
         permissionId,
-        moduleId: targetModuleId
+        moduleId
       });
 
-      if (RolePermissionId.error) {
-        return res.status(400).json({ error: RolePermissionId.error });
+      if (rolePermissionResult.error) {
+        return res.status(400).json({ error: rolePermissionResult.error, message: rolePermissionResult.message });
       }
 
-      res.status(201).json({
-        message: "Role-Permission created successfully",
-        id: RolePermissionId,
+      const statusCode = rolePermissionResult.alreadyExists ? 200 : 201;
+
+      res.status(statusCode).json({
+        message: rolePermissionResult.alreadyExists
+          ? "Permission was already assigned to this role/module"
+          : "Role-Permission created successfully",
+        id: rolePermissionResult.id,
+        alreadyExists: rolePermissionResult.alreadyExists || false
       });
     } catch (error) {
       res.status(500).json({ error: error.message });

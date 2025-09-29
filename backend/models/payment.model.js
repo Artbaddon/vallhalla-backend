@@ -1,9 +1,24 @@
 import { connect } from "../config/db/connectMysql.js";
+import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class PaymentModel {
   static async create(paymentData) {
     try {
       const { amount, owner_id } = paymentData;
+
+      const paymentAmount = Number(amount);
+      if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+        const error = new Error("Amount must be a positive number");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const ownerId = await resolveOwnerId(owner_id);
+      if (!ownerId) {
+        const error = new Error("Owner not found for the provided identifier");
+        error.statusCode = 400;
+        throw error;
+      }
 
       // Generate a unique reference number
       const reference = `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -17,8 +32,8 @@ class PaymentModel {
           Payment_method
         ) VALUES (?, ?, ?, ?, ?)`,
         [
-          owner_id,
-          amount,
+          ownerId,
+          paymentAmount,
           1, // Status 1 = PENDING
           reference,
           'PENDING' // Default method until payment is processed
@@ -81,8 +96,8 @@ class PaymentModel {
   static async findById(payment_id) {
     try {
       console.log('Finding payment by ID:', payment_id);
-      const [rows] = await connect.query(
-        `SELECT p.*, 
+        const [rows] = await connect.query(
+          `SELECT p.*, 
                 ps.Payment_status_name as status_name,
                 CONCAT(pr.Profile_fullName) as owner_name
          FROM payment p
@@ -100,11 +115,20 @@ class PaymentModel {
     }
   }
 
-  static async findByOwner(owner_id) {
+  static async findByOwner(ownerIdentifier) {
     try {
-      console.log('Finding payments for owner:', owner_id);
+      console.log('Finding payments for owner identifier:', ownerIdentifier);
+
+      const ownerId = await resolveOwnerId(ownerIdentifier);
+      if (!ownerId) {
+        const error = new Error('Owner not found for the provided identifier');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      console.log('Resolved owner ID:', ownerId);
       const [rows] = await connect.query(
-        `SELECT p.*, 
+          `SELECT p.*, 
                 ps.Payment_status_name as payment_status,
                 pr.Profile_fullName as owner_name
          FROM payment p
@@ -113,7 +137,7 @@ class PaymentModel {
          LEFT JOIN profile pr ON o.User_FK_ID = pr.User_FK_ID
          WHERE p.Owner_ID_FK = ?
          ORDER BY p.Payment_date DESC`,
-        [owner_id]
+        [ownerId]
       );
       console.log('Found payments:', rows.length);
       return rows;
@@ -207,9 +231,18 @@ class PaymentModel {
     }
   }
 
-  static async getOwnerPendingPayments(owner_id) {
+  static async getOwnerPendingPayments(ownerIdentifier) {
     try {
-      console.log('Finding pending payments for owner:', owner_id);
+      console.log('Finding pending payments for owner identifier:', ownerIdentifier);
+
+      const ownerId = await resolveOwnerId(ownerIdentifier);
+      if (!ownerId) {
+        const error = new Error('Owner not found for the provided identifier');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      console.log('Resolved owner ID:', ownerId);
       const [rows] = await connect.query(
         `SELECT p.*, 
                 ps.Payment_status_name as payment_status,
@@ -220,7 +253,7 @@ class PaymentModel {
          LEFT JOIN profile pr ON o.User_FK_ID = pr.User_FK_ID
          WHERE p.Owner_ID_FK = ? AND p.Payment_Status_ID_FK = 1
          ORDER BY p.Payment_date DESC`,
-        [owner_id]
+        [ownerId]
       );
       console.log('Found pending payments:', rows.length);
       return rows;

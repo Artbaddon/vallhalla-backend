@@ -1,11 +1,12 @@
 import { connect } from "../config/db/connectMysql.js";
+import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class ParkingModel {
-  static async create({ number, status_id, type_id }) {
+  static async create({ number, status_id, type_id, user_id }) {
     try {
       const [result] = await connect.query(
-        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK) VALUES (?, ?, ?)",
-        [number, status_id, type_id]
+        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK, User_ID_FK) VALUES (?, ?, ?, ?)",
+        [number, status_id, type_id, user_id]
       );
       return result.insertId;
     } catch (error) {
@@ -17,11 +18,12 @@ class ParkingModel {
   static async show() {
     try {
       const [parkings] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
          FROM parking p
          LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
          LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
          LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         LEFT JOIN users u ON p.User_ID_FK = u.Users_id
          ORDER BY p.Parking_id`
       );
       return parkings;
@@ -31,16 +33,17 @@ class ParkingModel {
     }
   }
 
-  static async update(id, { number, type_id, status_id }) {
+  static async update(id, { number, type_id, status_id, user_id }) {
     try {
       const [result] = await connect.query(
         `UPDATE parking 
              SET 
                 Parking_number = ?,
                 Parking_type_ID_FK = ?,
-                Parking_status_ID_FK = ?
+                Parking_status_ID_FK = ?,
+                User_ID_FK = ?
              WHERE Parking_id = ?`,
-        [number, type_id, status_id, id]
+        [number, type_id, status_id, user_id, id]
       );
 
       return result.affectedRows > 0;
@@ -63,11 +66,12 @@ class ParkingModel {
   static async findById(id) {
     try {
       const [rows] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
          FROM parking p
          LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
          LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
          LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         LEFT JOIN users u ON p.User_ID_FK = u.Users_id
          WHERE p.Parking_id = ?`, 
         [id]
       );
@@ -78,13 +82,16 @@ class ParkingModel {
     }
   }
 
-  static async assignVehicle(parkingId, vehicleTypeId) {
+  static async assignVehicle(parkingId, vehicleTypeId, userId) {
     try {
       const [result] = await connect.query(
         `UPDATE parking 
-         SET Vehicle_type_ID_FK = ?
+         SET Vehicle_type_ID_FK = ?,
+             User_ID_FK = ?,
+             Parking_status_ID_FK = 1,
+             Parking_updatedAt = CURRENT_TIMESTAMP
          WHERE Parking_id = ?`,
-        [vehicleTypeId, parkingId]
+        [vehicleTypeId, userId, parkingId]
       );
       return result.affectedRows > 0;
     } catch (error) {
@@ -96,11 +103,12 @@ class ParkingModel {
   static async findByStatus(statusId) {
     try {
       const [result] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
          FROM parking p
          LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
          LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
          LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         LEFT JOIN users u ON p.User_ID_FK = u.Users_id
          WHERE p.Parking_status_ID_FK = ?`,
         [statusId]
       );
@@ -114,11 +122,12 @@ class ParkingModel {
   static async findByUser(userId) {
     try {
       const [result] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
          FROM parking p
          LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
          LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
          LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+         LEFT JOIN users u ON p.User_ID_FK = u.Users_id
          WHERE p.User_ID_FK = ?`,
         [userId]
       );
@@ -173,12 +182,29 @@ class ParkingModel {
   // New method to process a payment for parking
   static async processPayment({ parking_id, user_id, payment_method, amount, reference_number, payment_date }) {
     try {
+      const paymentAmount = Number(amount);
+      if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+        const error = new Error("Amount must be a positive number");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const ownerId = await resolveOwnerId(user_id);
+      if (!ownerId) {
+        const error = new Error("Owner not found for the provided user");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const reference = reference_number || `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const paymentDate = payment_date || new Date();
+
       // Create a payment record
       const [paymentResult] = await connect.query(
         `INSERT INTO payment 
          (Owner_ID_FK, Payment_total_payment, Payment_Status_ID_FK, Payment_date, Payment_method, Payment_reference_number)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [user_id, amount, 1, payment_date, payment_method, reference_number]
+        [ownerId, paymentAmount, 1, paymentDate, payment_method, reference]
       );
 
       if (paymentResult.insertId) {
@@ -194,17 +220,18 @@ class ParkingModel {
         return {
           payment_id: paymentResult.insertId,
           parking_id,
+          owner_id: ownerId,
           user_id,
-          amount,
+          amount: paymentAmount,
           payment_method,
-          reference_number,
-          payment_date
+          reference_number: reference,
+          payment_date: paymentDate
         };
       }
       return null;
     } catch (error) {
-      console.error("Error processing payment:", error.message);
-      return null;
+      console.error("Error processing parking payment:", error.message);
+      throw error;
     }
   }
 }

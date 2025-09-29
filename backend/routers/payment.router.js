@@ -46,21 +46,18 @@ router.delete('/:id',
 router.get('/owner/:owner_id',
   verifyToken,
   ownerResourceAccess('owner_id', 'userId'),
-  requirePermission('payments', 'read'),
   paymentController.getOwnerPayments
 );
 
 router.get('/owner/:owner_id/pending',
   verifyToken,
   ownerResourceAccess('owner_id', 'userId'),
-  requirePermission('payments', 'read'),
   paymentController.getPendingPayments
 );
 
 router.post('/owner/:owner_id/pay/:payment_id',
   verifyToken,
   ownerResourceAccess('owner_id', 'userId'),
-  requirePermission('payments', 'update'),
   paymentController.makePayment
 );
 

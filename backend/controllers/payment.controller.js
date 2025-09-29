@@ -1,4 +1,5 @@
 import PaymentModel from "../models/payment.model.js";
+import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class PaymentController {
   // Constructor is not needed since we don't have any initialization
@@ -156,22 +157,26 @@ class PaymentController {
 
   async getOwnerPayments(req, res) {
     try {
-      const owner_id = req.params.owner_id;
+      const ownerIdentifier = req.params.owner_id;
 
       // Debug logging
       console.log('User object:', req.user);
       console.log('Role name:', req.user.Role_name);
       console.log('Role ID:', req.user.roleId);
-      console.log('Owner ID check:', {
-        requestedOwnerId: owner_id,
-        userOwnerId: req.user.Owner_id,
-        isAdmin: req.user.roleId === 1 // Admin role ID is 1
-      });
+      console.log('Owner identifier received:', ownerIdentifier);
 
-      if (!owner_id) {
+      if (!ownerIdentifier) {
         return res.status(400).json({
           success: false,
-          error: "Owner ID is required"
+          error: "Owner identifier is required"
+        });
+      }
+
+      const ownerId = await resolveOwnerId(ownerIdentifier);
+      if (!ownerId) {
+        return res.status(404).json({
+          success: false,
+          error: "Propietario no encontrado"
         });
       }
 
@@ -180,8 +185,7 @@ class PaymentController {
 
       // If user is not admin, verify they're accessing their own payments
       if (!isAdmin) {
-        // For non-admin users, check if they're the owner
-        if (!req.user.Owner_id || req.user.Owner_id !== parseInt(owner_id)) {
+        if (!req.user.Owner_id || req.user.Owner_id !== ownerId) {
           return res.status(403).json({
             success: false,
             error: "No tienes permiso para ver los pagos de este propietario"
@@ -189,7 +193,7 @@ class PaymentController {
         }
       }
 
-      const payments = await PaymentModel.findByOwner(owner_id);
+      const payments = await PaymentModel.findByOwner(ownerId);
 
       res.status(200).json({
         success: true,
@@ -225,19 +229,26 @@ class PaymentController {
 
   async getPendingPayments(req, res) {
     try {
-      const owner_id = req.params.owner_id;
+      const ownerIdentifier = req.params.owner_id;
 
-      if (!owner_id) {
+      if (!ownerIdentifier) {
         return res.status(400).json({
           success: false,
-          error: "Owner ID is required"
+          error: "Owner identifier is required"
+        });
+      }
+
+      const ownerId = await resolveOwnerId(ownerIdentifier);
+      if (!ownerId) {
+        return res.status(404).json({
+          success: false,
+          error: "Propietario no encontrado"
         });
       }
 
       // If user is not admin, verify they're accessing their own payments
       if (req.user.Role_name !== 'ADMIN') {
-        // For non-admin users, check if they're the owner
-        if (!req.user.Owner_id || req.user.Owner_id !== parseInt(owner_id)) {
+        if (!req.user.Owner_id || req.user.Owner_id !== ownerId) {
           return res.status(403).json({
             success: false,
             error: "No tienes permiso para ver los pagos pendientes de este propietario"
@@ -245,7 +256,7 @@ class PaymentController {
         }
       }
 
-      const pendingPayments = await PaymentModel.getOwnerPendingPayments(owner_id);
+      const pendingPayments = await PaymentModel.getOwnerPendingPayments(ownerId);
 
       res.status(200).json({
         success: true,
@@ -296,7 +307,8 @@ class PaymentController {
       });
     } catch (error) {
       console.error("Error creating payment:", error);
-      res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
         success: false,
         error: error.message || "Error interno del servidor"
       });
@@ -305,12 +317,12 @@ class PaymentController {
 
   async makePayment(req, res) {
     try {
-      const { owner_id, payment_id } = req.params;
+      const { owner_id: ownerIdentifier, payment_id } = req.params;
       const { method, payment_date } = req.body;
 
       // Debug logging
       console.log('Make payment request:', {
-        requestedOwnerId: owner_id,
+        requestedOwnerId: ownerIdentifier,
         paymentId: payment_id,
         userOwnerId: req.user.Owner_id,
         userRole: req.user.Role_name,
@@ -323,6 +335,21 @@ class PaymentController {
         return res.status(400).json({
           success: false,
           error: "Payment ID and payment method are required"
+        });
+      }
+
+      if (!ownerIdentifier) {
+        return res.status(400).json({
+          success: false,
+          error: "Owner identifier is required"
+        });
+      }
+
+      const ownerId = await resolveOwnerId(ownerIdentifier);
+      if (!ownerId) {
+        return res.status(404).json({
+          success: false,
+          error: "Propietario no encontrado"
         });
       }
 
@@ -345,9 +372,16 @@ class PaymentController {
         });
       }
 
+      if (payment.Owner_ID_FK !== ownerId) {
+        return res.status(403).json({
+          success: false,
+          error: "No tienes permiso para realizar este pago"
+        });
+      }
+
       // Check if user is admin or the owner of this specific payment
       const isAdmin = req.user.Role_name === 'ADMIN' || req.user.roleId === 1;
-      const isPaymentOwner = req.user.Owner_id && req.user.Owner_id === payment.Owner_ID_FK;
+      const isPaymentOwner = req.user.Owner_id && req.user.Owner_id === ownerId;
 
       if (!isAdmin && !isPaymentOwner) {
         return res.status(403).json({

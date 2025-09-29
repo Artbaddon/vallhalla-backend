@@ -51,7 +51,7 @@ class ParkingistratorController {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { number, type_id, status_id } = req.body;
+      const { number, type_id, status_id, user_id } = req.body;
 
       // Verificar si el parking existe
       const existingParking = await ParkingModel.findById(id);
@@ -66,7 +66,8 @@ class ParkingistratorController {
       const updateData = {
         number: number || existingParking.Parking_number,
         type_id: type_id || existingParking.Parking_type_ID_FK,
-        status_id: status_id || existingParking.Parking_status_ID_FK
+        status_id: status_id || existingParking.Parking_status_ID_FK,
+        user_id: user_id || existingParking.User_ID_FK
       };
 
       // Actualizar
@@ -184,12 +185,12 @@ class ParkingistratorController {
 
   async assignVehicle(req, res) {
     try {
-      const { parkingId, vehicleTypeId } = req.body;
+      const { parkingId, vehicleTypeId, userId } = req.body;
 
-      if (!parkingId || !vehicleTypeId) {
+      if (!parkingId || !vehicleTypeId || !userId) {
         return res.status(400).json({
           success: false,
-          error: "parkingId y vehicleTypeId son requeridos",
+          error: "parkingId, vehicleTypeId y userId son requeridos",
         });
       }
 
@@ -202,14 +203,21 @@ class ParkingistratorController {
         });
       }
 
-      const success = await ParkingModel.assignVehicle(parkingId, vehicleTypeId);
+      const success = await ParkingModel.assignVehicle(parkingId, vehicleTypeId, userId);
 
+      if (!success) {
+        return res.status(400).json({
+          success: false,
+          error: "No se pudo asignar el vehículo al parqueadero",
+        });
+      }
       res.status(200).json({
         success: true,
         message: "Vehículo asignado exitosamente al parqueadero",
         data: {
           parkingId,
-          vehicleTypeId
+          vehicleTypeId,
+          userId
         }
       });
     } catch (error) {
@@ -394,7 +402,7 @@ class ParkingistratorController {
           error: "Failed to process payment",
         });
       }
-      
+
       res.status(200).json({
         success: true,
         message: "Payment processed successfully",
@@ -402,9 +410,10 @@ class ParkingistratorController {
       });
     } catch (error) {
       console.error("Error in pay:", error);
-      res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
         success: false,
-        error: "Internal server error while processing payment",
+        error: error.message || "Internal server error while processing payment",
       });
     }
   }
