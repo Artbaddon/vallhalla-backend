@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import {runMigration} from './migration_v1.js';
 
 runMigration()
