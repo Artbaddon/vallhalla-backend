@@ -345,9 +345,8 @@ class UserController {
 
   async getMyPermissions(req, res) {
     try {
-      const userId = req.user?.userId;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const perms = await getUserPermissions(null, userId); // null uses default pool
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const perms = getUserPermissions(req.user);
       res.status(200).json({
         message: "Permissions retrieved successfully",
         permissions: perms

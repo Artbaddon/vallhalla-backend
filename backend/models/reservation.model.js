@@ -1,12 +1,15 @@
 import { connect } from "../config/db/connectMysql.js";
+import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class ReservationModel {
   static async validateForeignKeys({ owner_id, type_id, status_id }) {
     try {
-      // Check if owner exists
-      if (owner_id) {
-        const [ownerResult] = await connect.query('SELECT Owner_id FROM owner WHERE Owner_id = ?', [owner_id]);
-        if (ownerResult.length === 0) {
+      let resolvedOwnerId;
+
+      if (owner_id !== undefined) {
+        resolvedOwnerId = await resolveOwnerId(owner_id);
+
+        if (!resolvedOwnerId) {
           return { error: "Owner not found" };
         }
       }
@@ -27,7 +30,7 @@ class ReservationModel {
         }
       }
 
-      return { valid: true };
+      return { valid: true, resolvedOwnerId };
     } catch (error) {
       return { error: error.message };
     }
@@ -80,6 +83,12 @@ class ReservationModel {
         return { error: validation.error };
       }
 
+      const ownerIdToUse = validation.resolvedOwnerId ?? owner_id;
+
+      if (!ownerIdToUse) {
+        return { error: "Owner ID is required" };
+      }
+
       // Check for overlapping reservations
       const overlapping = await this.checkOverlappingReservations(facility_id, start_date, end_date);
       if (overlapping.error) {
@@ -100,7 +109,7 @@ class ReservationModel {
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       
       const [result] = await connect.query(sqlQuery, [
-        owner_id, 
+        ownerIdToUse, 
         type_id, 
         status_id, 
         facility_id,
@@ -135,10 +144,51 @@ class ReservationModel {
 
   static async update(id, { owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
     try {
-      // Validate foreign keys first
       const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
       if (validation.error) {
         return { error: validation.error };
+      }
+
+      const updates = [];
+      const params = [];
+
+      if (validation.resolvedOwnerId !== undefined) {
+        updates.push("Owner_FK_ID = ?");
+        params.push(validation.resolvedOwnerId);
+      }
+
+      if (type_id !== undefined) {
+        updates.push("Reservation_type_FK_ID = ?");
+        params.push(type_id);
+      }
+
+      if (status_id !== undefined) {
+        updates.push("Reservation_status_FK_ID = ?");
+        params.push(status_id);
+      }
+
+      if (facility_id !== undefined) {
+        updates.push("Facility_FK_ID = ?");
+        params.push(facility_id);
+      }
+
+      if (start_date !== undefined) {
+        updates.push("Reservation_start_time = ?");
+        params.push(start_date);
+      }
+
+      if (end_date !== undefined) {
+        updates.push("Reservation_end_time = ?");
+        params.push(end_date);
+      }
+
+      if (description !== undefined) {
+        updates.push("Reservation_description = ?");
+        params.push(description);
+      }
+
+      if (updates.length === 0) {
+        return { error: "No fields provided to update" };
       }
 
       // Check for overlapping reservations (excluding this reservation)
@@ -152,33 +202,18 @@ class ReservationModel {
         }
       }
 
-      let sqlQuery = `UPDATE reservation SET 
-        Owner_FK_ID = ?, 
-        Reservation_type_FK_ID = ?, 
-        Reservation_status_FK_ID = ?, 
-        Facility_FK_ID = ?,
-        Reservation_start_time = ?, 
-        Reservation_end_time = ?, 
-        Reservation_description = ?,
-        updatedAt = NOW()
-        WHERE Reservation_id = ?`;
-      
-      const [result] = await connect.query(sqlQuery, [
-        owner_id, 
-        type_id, 
-        status_id, 
-        facility_id,
-        start_date, 
-        end_date, 
-        description, 
-        id
-      ]);
-      
+      updates.push("updatedAt = NOW()");
+
+      const sqlQuery = `UPDATE reservation SET ${updates.join(", ")} WHERE Reservation_id = ?`;
+      params.push(id);
+
+      const [result] = await connect.query(sqlQuery, params);
+
       if (result.affectedRows === 0) {
         return { error: "Reservation not found" };
-      } else {
-        return result.affectedRows;
       }
+
+      return result.affectedRows;
     } catch (error) {
       return { error: error.message };
     }
@@ -224,6 +259,12 @@ class ReservationModel {
 
   static async findByOwner(owner_id) {
     try {
+      const resolvedOwnerId = await resolveOwnerId(owner_id);
+
+      if (!resolvedOwnerId) {
+        return [];
+      }
+
       let sqlQuery = `
         SELECT r.*, rs.Reservation_status_name, rt.Reservation_type_name
         FROM reservation r
@@ -232,7 +273,7 @@ class ReservationModel {
         WHERE r.Owner_FK_ID = ?
         ORDER BY r.Reservation_start_time DESC
       `;
-      const [result] = await connect.query(sqlQuery, [owner_id]);
+      const [result] = await connect.query(sqlQuery, [resolvedOwnerId]);
       return result;
     } catch (error) {
       return { error: error.message };

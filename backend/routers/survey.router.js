@@ -1,6 +1,6 @@
 import { Router } from "express";
 import SurveyController from "../controllers/survey.controller.js";
-import { requirePermission } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireAdmin } from "../middleware/permissionMiddleware.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -30,6 +30,7 @@ router.get(
 router.post(
   "/",
   verifyToken,
+  requireAdmin,
   requirePermission("surveys", "create"),
   SurveyController.createWithQuestions
 );
@@ -46,6 +47,7 @@ router.get(
 router.put(
   "/:id",
   verifyToken,
+  requireAdmin,
   requirePermission("surveys", "update"),
   SurveyController.update
 );
@@ -54,6 +56,7 @@ router.put(
 router.delete(
   "/:id",
   verifyToken,
+  requireAdmin,
   requirePermission("surveys", "delete"),
   SurveyController.delete
 );
@@ -103,6 +106,7 @@ router.get(
 router.get(
   "/stats/overview",
   verifyToken,
+  requireAdmin,
   requirePermission("surveys", "manage"),
   SurveyController.getStats
 );

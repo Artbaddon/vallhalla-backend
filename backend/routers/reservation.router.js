@@ -1,8 +1,12 @@
 import { Router } from "express";
 import ReservationController from "../controllers/reservation.controller.js";
-import { requirePermission } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireRoles } from "../middleware/permissionMiddleware.js";
+import { ROLES } from "../middleware/rbacConfig.js";
 
 const router = Router();
+
+// Owners handle reservations (admin bypasses)
+router.use(requireRoles(ROLES.OWNER));
 
 // Get all reservations (requires read permission)
 router.get("/", 

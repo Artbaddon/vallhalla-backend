@@ -3,19 +3,33 @@
 // NOTE: This file uses rbacConfig.js as the single source of truth.
 // Do NOT reintroduce PermissionsModel or duplicate permission logic.
 // If new patterns are needed, extend rbacConfig helpers.
-import { hasPermission, isAdmin, ownsResource, getUserRoleId, ROLES } from "./rbacConfig.js";
-import { connect } from "../config/db/connectMysql.js";
+import { hasPermission, isAdmin, ownsResource } from "./rbacConfig.js";
 
 // Utility to normalize module names (lowercase)
 export const normalizeModule = (m) => (m ? String(m).trim().toLowerCase() : '');
 
+// Middleware to allow specific roles (admins always pass)
+export const requireRoles = (...roles) => {
+  const allowed = roles.flat().filter((role) => role !== undefined && role !== null);
+  return (req, res, next) => {
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    if (isAdmin(user)) return next();
+    const roleId = user.roleId ?? user.Role_id ?? user.Role_FK_ID ?? null;
+    if (roleId && allowed.includes(Number(roleId))) {
+      return next();
+    }
+    return res.status(403).json({ error: 'Access denied: insufficient role privileges' });
+  };
+};
+
 // Middleware to check if user is admin
 export const requireAdmin = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    console.log("Checking if user", userId, "is admin");
+    const user = req.user;
+    console.log("Checking if user", user?.userId, "is admin");
 
-    const isUserAdmin = await isAdmin(connect, userId);
+    const isUserAdmin = isAdmin(user);
     if (isUserAdmin) {
       console.log("✅ User is admin, allowing access");
       next();
@@ -33,14 +47,14 @@ export const requireAdmin = async (req, res, next) => {
 export const requirePermission = (moduleName, permissionName) => {
   return async (req, res, next) => {
     try {
-      const userId = req.user?.userId;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
       const mod = normalizeModule(moduleName);
       const perm = normalizeModule(permissionName);
-      console.log(`Checking permission user=${userId} ${perm} on module: ${mod}`);
+      console.log(`Checking permission user=${user?.userId} ${perm} on module: ${mod}`);
 
       // Check permission (hasPermission already includes admin check)
-      const hasUserPermission = await hasPermission(connect, userId, mod, perm);
+      const hasUserPermission = hasPermission(user, mod, perm);
       if (hasUserPermission) {
         console.log(`✅ User has permission: ${perm} on module: ${mod}`);
         next();
@@ -60,18 +74,18 @@ export const requirePermission = (moduleName, permissionName) => {
 export const requireOwnership = (resourceType, idParam = 'id', options = {}) => {
   return async (req, res, next) => {
     try {
-      const userId = req.user?.userId;
-      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
       const resourceId = req.params[idParam];
       if (!resourceId) return res.status(400).json({ error: 'Missing resource id' });
 
       // Self-access for user resource (avoid separate DB hit)
-      if (options.allowSelfForUser && resourceType === 'user' && String(resourceId) === String(userId)) {
+      if (options.allowSelfForUser && resourceType === 'user' && String(resourceId) === String(user?.userId)) {
         console.log('✅ Self user access allowed');
         return next();
       }
 
-      const owns = await ownsResource(connect, userId, resourceType, resourceId, {
+      const owns = ownsResource(user, resourceType, resourceId, {
         bypassRoles: options.bypassRoles,
         bypassResources: options.bypassResources
       });
@@ -92,11 +106,11 @@ export const requireOwnership = (resourceType, idParam = 'id', options = {}) => 
 export const requirePermissions = (permissions) => {
   return async (req, res, next) => {
     try {
-  const userId = req.user?.userId;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
       // First check if user is admin
-      const isUserAdmin = await isAdmin(connect, userId);
+      const isUserAdmin = isAdmin(user);
       if (isUserAdmin) {
         console.log("✅ User is admin, allowing access");
         return next();
@@ -106,7 +120,7 @@ export const requirePermissions = (permissions) => {
       for (const { module: moduleName, permission: permissionName } of permissions) {
         const mod = normalizeModule(moduleName);
         const perm = normalizeModule(permissionName);
-        const hasUserPermission = await hasPermission(connect, userId, mod, perm);
+        const hasUserPermission = hasPermission(user, mod, perm);
         if (!hasUserPermission) {
           console.log(`❌ User lacks permission: ${perm} on module: ${mod}`);
           return res.status(403).json({ 
@@ -128,12 +142,12 @@ export const requirePermissions = (permissions) => {
 export const requireAccess = ({ module: moduleName, permission, ownership }) => {
   return async (req, res, next) => {
     try {
-      const userId = req.user?.userId;
-      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
       const mod = normalizeModule(moduleName);
       const perm = normalizeModule(permission);
 
-      const hasPerm = await hasPermission(connect, userId, mod, perm);
+      const hasPerm = hasPermission(user, mod, perm);
       if (!hasPerm) {
         return res.status(403).json({ error: `Permission denied: ${perm} required for ${mod}` });
       }
@@ -142,7 +156,7 @@ export const requireAccess = ({ module: moduleName, permission, ownership }) => 
         const { resourceType, idParam = 'id', options = {} } = ownership;
         const resourceId = req.params[idParam];
         if (!resourceId) return res.status(400).json({ error: 'Missing resource id' });
-        const owns = await ownsResource(connect, userId, resourceType, resourceId, options);
+        const owns = ownsResource(user, resourceType, resourceId, options);
         if (!owns) {
           return res.status(403).json({ error: `Access denied: Not owner of ${resourceType}` });
         }

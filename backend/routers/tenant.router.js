@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import TenantController from '../controllers/tenant.controller.js';
-import { requirePermission, requireOwnership } from '../middleware/permissionMiddleware.js';
+import { requirePermission, requireOwnership, requireRoles } from '../middleware/permissionMiddleware.js';
+import { ROLES } from '../middleware/rbacConfig.js';
 
 const router = Router();
 
-// Public routes (if any)
+// Restrict router to owners (admin bypasses automatically)
+router.use(requireRoles(ROLES.OWNER));
 
 // Protected routes
 // Owners can see their tenants, admin can see all

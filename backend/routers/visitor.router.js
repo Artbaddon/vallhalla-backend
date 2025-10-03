@@ -1,8 +1,12 @@
 import { Router } from "express";
 import VisitorController from "../controllers/visitor.controller.js";
-import { requirePermission } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireRoles } from "../middleware/permissionMiddleware.js";
+import { ROLES } from "../middleware/rbacConfig.js";
 
 const router = Router();
+
+// Security staff manage visitors (admin bypasses automatically)
+router.use(requireRoles(ROLES.SECURITY));
 
 // Create a new visitor
 router.post("/", 
@@ -38,6 +42,11 @@ router.get("/date/:enter_date",
 router.put("/:id", 
   requirePermission("visitors", "update"),
   VisitorController.update
+);
+
+router.put("/:id/exit",
+  requirePermission("visitors", "update"),
+  VisitorController.visitorExit
 );
 
 // Delete visitor

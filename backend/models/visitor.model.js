@@ -49,7 +49,20 @@ class VisitorModel {
       return { error: error.message };
     }
   }
+  static async visitorExit(id) {
+    try {
+      let sqlQuery = `UPDATE visitor SET exit_date = NOW() WHERE ID = ?`;
+      const [result] = await connect.query(sqlQuery, [id]);
 
+      if (result.affectedRows === 0) {
+        return { error: "Visitor not found" };
+      } else {
+        return result.affectedRows;
+      }
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
   static async delete(id) {
     try {
       let sqlQuery = `DELETE FROM visitor WHERE ID = ?`;

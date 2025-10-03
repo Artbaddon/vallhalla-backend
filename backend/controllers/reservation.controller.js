@@ -167,6 +167,7 @@ class ReservationController {
     try {
       const id = req.params.id;
       const {
+        owner_id,
         type_id,
         status_id,
         facility_id,
@@ -205,6 +206,7 @@ class ReservationController {
       }
 
       const updateResult = await ReservationModel.update(id, {
+        owner_id,
         type_id,
         status_id,
         facility_id,
@@ -224,6 +226,7 @@ class ReservationController {
           type_id,
           status_id,
           facility_id,
+    owner_id,
           start_date: start_date ? new Date(start_date).toISOString() : undefined,
           end_date: end_date ? new Date(end_date).toISOString() : undefined,
           description,
