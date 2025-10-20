@@ -16,15 +16,42 @@ const OWNER_RULES = {
   owners: ["read", "update"],
   tenants: ["create", "read", "update", "delete"],
   reservations: ["create", "read", "update", "delete"],
+  reservation: ["create", "read", "update", "delete"], // Add singular form with full permissions
+  facilities: ["read"],
+  facility: ["read"], // Add singular form
+  "reservation-types": ["read"],
+  "reservation-type": ["read"], // Add singular form
+  reservationtypes: ["read"], // Add without hyphen
+  reservationtype: ["read"], // Add singular without hyphen
+  "reservation-status": ["read"],
+  reservationstatus: ["read"], // Add without hyphen
   parking: ["read", "update"],
   pets: ["create", "read", "update", "delete"],
   pqrs: ["create", "read", "update"],
   surveys: ["read", "create"],
-};
+  payments: ["create", "read", "update"],
+  payment: ["create", "read", "update"], // Add singular form
 
+  notifications: ["read"],
+  profile: ["read", "update"], // Singular form
+  profiles: ["read", "update"],
+  questions: ["read"],
+  answers: ["create", "read", "update"],
+  pqrscategories: ["read"],
+  pqrs: ["create", "read", "update"],
+  pqrscategory: ["read"],
+  parking: ["read", "update"],
+  "vehicle-type": ["read"],
+  "vehicle-types": ["read"],
+
+
+};
 const SECURITY_RULES = {
   visitors: ["create", "read", "update", "delete"],
   parking: ["read"],
+  profile: ["read", "update"], // Singular form
+  profiles: ["read", "update"],
+   owners: ["read"],
 };
 
 const RAW_RULES = {
@@ -87,14 +114,40 @@ export function hasPermission(userContext, moduleName, permissionName) {
   const roleId = extractRoleId(userContext);
   const moduleKey = normalize(moduleName);
   const permissionKey = normalize(permissionName);
-  if (!roleId || !moduleKey || !permissionKey) return false;
-  if (roleId === ROLES.ADMIN) return true;
+
+  // Debug logging
+  console.log('🔒 RBAC Check:', {
+    roleId,
+    moduleKey,
+    permissionKey,
+    userContext: JSON.stringify(userContext)
+  });
+
+  if (!roleId || !moduleKey || !permissionKey) {
+    console.log('❌ Missing required data');
+    return false;
+  }
+  if (roleId === ROLES.ADMIN) {
+    console.log('✅ Admin access granted');
+    return true;
+  }
 
   const permissions = ROLE_PERMISSION_INDEX[roleId];
-  if (!permissions) return false;
+  if (!permissions) {
+    console.log('❌ No permissions found for roleId:', roleId);
+    return false;
+  }
+
   const modulePermissions = permissions[moduleKey];
-  if (!modulePermissions) return false;
-  return modulePermissions.has(permissionKey);
+  if (!modulePermissions) {
+    console.log('❌ No module permissions found for:', moduleKey);
+    console.log('Available modules:', Object.keys(permissions));
+    return false;
+  }
+
+  const hasAccess = modulePermissions.has(permissionKey);
+  console.log(hasAccess ? '✅ Access granted' : '❌ Access denied');
+  return hasAccess;
 }
 
 export function getUserPermissions(userContext) {

@@ -21,7 +21,7 @@ class GuardModel {
       // Create the user with Security role
       const userQuery = `
         INSERT INTO users (Users_name, Users_password, User_status_FK_ID, Role_FK_ID) 
-        VALUES (?, ?, 1, (SELECT Role_id FROM role WHERE Role_name = 'Security'))
+        VALUES (?, ?, 1, (SELECT Role_id FROM role WHERE Role_name = 'Seguridad'))
       `;
       const hashedPassword = await bcrypt.hash(password, 10);
       const [userResult] = await connection.query(userQuery, [username, hashedPassword]);
