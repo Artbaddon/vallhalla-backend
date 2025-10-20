@@ -1,4 +1,5 @@
 import UserModel from "../models/user.model.js";
+import OwnerModel from "../models/owner.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto"; // crypto for secure token generation & hashing
@@ -56,6 +57,20 @@ class AuthController {
         });
       }
 
+      // If user is an owner, fetch their Owner_id
+      let ownerId = null;
+      if (user.Role_FK_ID === 2) { // Owner role
+        console.log('🔍 Fetching owner record for userId:', user.Users_id);
+        const owner = await OwnerModel.findByUserId(user.Users_id);
+        console.log('📋 Owner record found:', owner);
+        if (owner && !owner.error) {
+          ownerId = owner.Owner_id;
+          console.log('✅ Owner_id extracted:', ownerId);
+        } else {
+          console.log('⚠️ No owner record found for userId:', user.Users_id);
+        }
+      }
+
       // Generate JWT token
       const token = jwt.sign(
         {
@@ -63,18 +78,20 @@ class AuthController {
           username: user.Users_name,
           roleId: user.Role_FK_ID,
           Role_name: user.Role_name,
+          Owner_id: ownerId,
         },
         process.env.JWT_SECRET || "your-secret-key",
         { expiresIn: "1h" }
       );
 
       // Debug logging
-      console.log("User data for token:", {
+      console.log("🎫 Token payload:", {
         userId: user.Users_id,
         username: user.Users_name,
         roleId: user.Role_FK_ID,
         Role_name: user.Role_name,
         email: user.Users_email,
+        Owner_id: ownerId,
       });
 
       res.status(200).json({

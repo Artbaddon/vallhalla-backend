@@ -90,26 +90,41 @@ export const apiAccessMiddleware = (req, res, next) => {
       const userIsAdmin = isAdmin(req.user);
 
       // Allow owners to access their own payment routes without explicit permission assignments
-      if (moduleName === 'payment' && parts[2] === 'owner') {
-        const ownerIdSegment = parts[3];
+      if (moduleName === 'payment' || moduleName === 'payments') {
+        // For specific owner payment routes like /payment/owner/:owner_id
+        if (parts[2] === 'owner') {
+          const ownerIdSegment = parts[3];
 
-        if (!ownerIdSegment) {
-          return res.status(400).json({ message: 'Owner identifier missing in payment route' });
-        }
+          console.log('🔍 Payment owner route check:', {
+            ownerIdSegment,
+            userOwnerId: req.user?.Owner_id,
+            roleId,
+            isAdmin: userIsAdmin,
+            match: String(req.user?.Owner_id) === String(ownerIdSegment)
+          });
 
-        if (userIsAdmin) {
-          return next();
-        }
+          if (!ownerIdSegment) {
+            return res.status(400).json({ message: 'Owner identifier missing in payment route' });
+          }
 
-        if (roleId === ROLES.OWNER) {
-          const userOwnerId = req.user?.Owner_id;
-
-          if (userOwnerId && String(userOwnerId) === String(ownerIdSegment)) {
+          if (userIsAdmin) {
+            console.log('✅ Admin accessing owner payment route');
             return next();
           }
 
-          return res.status(403).json({ message: 'Access denied. Owners can only access their own payments' });
+          if (roleId === ROLES.OWNER) {
+            const userOwnerId = req.user?.Owner_id;
+
+            if (userOwnerId && String(userOwnerId) === String(ownerIdSegment)) {
+              console.log('✅ Owner accessing their own payment route');
+              return next();
+            }
+
+            console.log('❌ Owner trying to access another owner\'s payments');
+            return res.status(403).json({ message: 'Access denied. Owners can only access their own payments' });
+          }
         }
+        // For general payment routes, let RBAC handle it and the controller will filter by owner
       }
 
       const ok = hasPermission(req.user, moduleName, permissionName);

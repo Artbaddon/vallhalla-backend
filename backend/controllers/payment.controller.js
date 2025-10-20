@@ -15,7 +15,22 @@ class PaymentController {
 
   async show(req, res) {
     try {
-      const payments = await PaymentModel.show();
+      let payments;
+      
+      // If user is an owner, only show their payments
+      if (req.user.roleId === 2) { // Owner role
+        const ownerId = req.user.Owner_id;
+        if (!ownerId) {
+          return res.status(403).json({
+            success: false,
+            error: "Owner ID not found for this user",
+          });
+        }
+        payments = await PaymentModel.findByOwner(ownerId);
+      } else {
+        // Admin or other roles can see all payments
+        payments = await PaymentModel.show();
+      }
 
       res.status(200).json({
         success: true,
@@ -285,22 +300,40 @@ class PaymentController {
 
   async create(req, res) {
     try {
-      const { amount, owner_id, payment_type, description } = req.body;
+      let { amount, owner_id, payment_type, description } = req.body;
 
       // Validate required fields
-      if (!amount || !owner_id || !payment_type || !description) {
+      if (!amount || !payment_type || !description) {
         return res.status(400).json({
           success: false,
-          error: "Amount, owner ID, payment type, and description are required",
+          error: "Amount, payment type, and description are required",
         });
       }
 
-      // Only admins can create payments
       const isAdmin = req.user.Role_name === "ADMIN" || req.user.roleId === 1;
-      if (!isAdmin) {
+      const isOwner = req.user.roleId === 2;
+
+      // If user is an owner, automatically use their Owner_id
+      if (isOwner) {
+        if (!req.user.Owner_id) {
+          return res.status(403).json({
+            success: false,
+            error: "No se encontró el registro de propietario para este usuario",
+          });
+        }
+        owner_id = req.user.Owner_id; // Force owner_id to be the authenticated owner's ID
+      } else if (isAdmin) {
+        // Admin must specify owner_id
+        if (!owner_id) {
+          return res.status(400).json({
+            success: false,
+            error: "Admin debe especificar el owner_id",
+          });
+        }
+      } else {
         return res.status(403).json({
           success: false,
-          error: "Solo los administradores pueden crear pagos",
+          error: "No tiene permisos para crear pagos",
         });
       }
 

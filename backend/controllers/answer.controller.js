@@ -1,4 +1,5 @@
 import AnswerModel from "../models/answer.model.js";
+import SurveyModel from "../models/survey.model.js";
 
 class AnswerController {
   async register(req, res) {
@@ -9,6 +10,15 @@ class AnswerController {
         return res.status(400).json({
           success: false,
           error: "survey_id, question_id y value son obligatorios",
+        });
+      }
+
+      // Validate that the survey exists
+      const survey = await SurveyModel.findById(survey_id);
+      if (!survey) {
+        return res.status(404).json({
+          success: false,
+          error: `La encuesta con ID ${survey_id} no existe`,
         });
       }
 
@@ -24,6 +34,13 @@ class AnswerController {
           return res.status(409).json({
             success: false,
             error: "Ya has respondido esta pregunta anteriormente"
+          });
+        }
+        // Check if it's a foreign key error
+        if (result.error.includes("foreign key constraint fails")) {
+          return res.status(400).json({
+            success: false,
+            error: "La encuesta o pregunta especificada no existe"
           });
         }
         return res.status(500).json({

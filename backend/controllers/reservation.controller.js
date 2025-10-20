@@ -61,9 +61,9 @@ class ReservationController {
             error: "Admin must specify owner_id when creating a reservation"
           });
         }
-      } else if (req.user.roleId === 3) { // Owner role
+      } else if (req.user.roleId === 2) { // Owner role (Propietario)
         // Get owner ID from the authenticated user
-        const owner = await OwnerModel.findByUserId(req.user.id);
+        const owner = await OwnerModel.findByUserId(req.user.userId);
         if (!owner) {
           return res.status(403).json({
             error: "Owner record not found for this user"
