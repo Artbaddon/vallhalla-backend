@@ -1,5 +1,7 @@
 import PetModel from "../models/pet.model.js";
 import dotenv from "dotenv";
+import { getPetReportData } from "../services/petReportService.js";
+import { generateExcelReport } from "../utils/excelGenerator.js";
 
 dotenv.config();
 class PetController {
@@ -32,7 +34,7 @@ class PetController {
       res.status(201).json({
         message: "Mascota creada con exito",
         data: {
-          petId:petId,
+          petId: petId,
           name,
           species,
           breed,
@@ -45,6 +47,12 @@ class PetController {
       console.error("Error en register pet:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
+  }
+
+  async getAllpets() {
+    const pets = await PetModel.show();
+    if (pets.error) throw new Error(pets.error);
+    return pets;
   }
 
   async update(req, res) {
@@ -62,11 +70,9 @@ class PetController {
         !photo ||
         !owner_id
       ) {
-        return res
-          .status(400)
-          .json({
-            error: "Debe proporcionar al menos un campo para actualizar",
-          });
+        return res.status(400).json({
+          error: "Debe proporcionar al menos un campo para actualizar",
+        });
       }
 
       // Verificar si pet existe
@@ -208,6 +214,28 @@ class PetController {
         error: "Internal server error while retrieving pets",
       });
     }
+  }
+
+  async downloadPetReport(req, res) {
+    const data = await getPetReportData();
+
+    const headers = [
+      { key: "name", label: "Nombre de la mascota" },
+      { key: "species", label: "Especie" },
+      { key: "breed", label: "Raza" },
+    ];
+
+    const buffer = await generateExcelReport(data, headers, "Pets", false);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="reporte_mascotas.xlsx"'
+    );
+    res.send(buffer);
   }
 }
 

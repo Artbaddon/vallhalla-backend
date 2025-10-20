@@ -13,6 +13,11 @@ router.get("/",
   PetController.show
 );
 
+router.get("/report", 
+  requirePermission("pets", "read"),
+  PetController.downloadPetReport
+);
+
 // Create pet
 router.post("/",
   requirePermission("pets", "create"),

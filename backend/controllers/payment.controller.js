@@ -1,9 +1,17 @@
 import PaymentModel from "../models/payment.model.js";
 import { resolveOwnerId } from "../utils/ownerUtils.js";
+import { getPaymentReportData } from "../services/paymentReportService.js";
+import { generateExcelReport } from "../utils/excelGenerator.js";
 
 class PaymentController {
   // Constructor is not needed since we don't have any initialization
   constructor() {}
+
+  async getAllpayment() {
+    const payments = await PaymentModel.show();
+    if (payments.error) throw new Error(payments.error);
+    return payments;
+  }
 
   async show(req, res) {
     try {
@@ -12,13 +20,13 @@ class PaymentController {
       res.status(200).json({
         success: true,
         message: "Payments retrieved successfully",
-        data: payments
+        data: payments,
       });
     } catch (error) {
       console.error("Error retrieving payments:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -30,7 +38,7 @@ class PaymentController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: "Payment ID is required"
+          error: "Payment ID is required",
         });
       }
 
@@ -39,20 +47,20 @@ class PaymentController {
       if (!payment) {
         return res.status(404).json({
           success: false,
-          error: "Pago no encontrado"
+          error: "Pago no encontrado",
         });
       }
 
       res.status(200).json({
         success: true,
         message: "Payment found successfully",
-        data: payment
+        data: payment,
       });
     } catch (error) {
       console.error("Error finding payment:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -65,36 +73,36 @@ class PaymentController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: "Payment ID is required"
+          error: "Payment ID is required",
         });
       }
 
       if (!status_id) {
         return res.status(400).json({
           success: false,
-          error: "Status ID is required"
+          error: "Status ID is required",
         });
       }
 
       // Get existing payment first
       const existingPayment = await PaymentModel.findById(id);
-      
+
       if (!existingPayment) {
         return res.status(404).json({
           success: false,
-          error: "Pago no encontrado"
+          error: "Pago no encontrado",
         });
       }
 
       // Only allow status updates
       const updated = await PaymentModel.update(id, {
-        status_id
+        status_id,
       });
 
       if (!updated) {
         return res.status(500).json({
           success: false,
-          error: "Error al actualizar el estado del pago"
+          error: "Error al actualizar el estado del pago",
         });
       }
 
@@ -104,19 +112,19 @@ class PaymentController {
       res.status(200).json({
         success: true,
         message: "Payment status updated successfully",
-        data: updatedPayment
+        data: updatedPayment,
       });
     } catch (error) {
       console.error("Error updating payment:", error);
       if (error.message === "Invalid payment status transition") {
         res.status(400).json({
           success: false,
-          error: "Transición de estado de pago inválida"
+          error: "Transición de estado de pago inválida",
         });
       } else {
         res.status(500).json({
           success: false,
-          error: error.message || "Error interno del servidor"
+          error: error.message || "Error interno del servidor",
         });
       }
     }
@@ -129,7 +137,7 @@ class PaymentController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: "Payment ID is required"
+          error: "Payment ID is required",
         });
       }
 
@@ -138,19 +146,19 @@ class PaymentController {
       if (!deleted) {
         return res.status(404).json({
           success: false,
-          error: "Pago no encontrado"
+          error: "Pago no encontrado",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: "Payment deleted successfully"
+        message: "Payment deleted successfully",
       });
     } catch (error) {
       console.error("Error deleting payment:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -160,15 +168,15 @@ class PaymentController {
       const ownerIdentifier = req.params.owner_id;
 
       // Debug logging
-      console.log('User object:', req.user);
-      console.log('Role name:', req.user.Role_name);
-      console.log('Role ID:', req.user.roleId);
-      console.log('Owner identifier received:', ownerIdentifier);
+      console.log("User object:", req.user);
+      console.log("Role name:", req.user.Role_name);
+      console.log("Role ID:", req.user.roleId);
+      console.log("Owner identifier received:", ownerIdentifier);
 
       if (!ownerIdentifier) {
         return res.status(400).json({
           success: false,
-          error: "Owner identifier is required"
+          error: "Owner identifier is required",
         });
       }
 
@@ -176,19 +184,19 @@ class PaymentController {
       if (!ownerId) {
         return res.status(404).json({
           success: false,
-          error: "Propietario no encontrado"
+          error: "Propietario no encontrado",
         });
       }
 
       // Check if user is admin (either by Role_name or roleId)
-      const isAdmin = req.user.Role_name === 'ADMIN' || req.user.roleId === 1;
+      const isAdmin = req.user.Role_name === "ADMIN" || req.user.roleId === 1;
 
       // If user is not admin, verify they're accessing their own payments
       if (!isAdmin) {
         if (!req.user.Owner_id || req.user.Owner_id !== ownerId) {
           return res.status(403).json({
             success: false,
-            error: "No tienes permiso para ver los pagos de este propietario"
+            error: "No tienes permiso para ver los pagos de este propietario",
           });
         }
       }
@@ -198,13 +206,13 @@ class PaymentController {
       res.status(200).json({
         success: true,
         message: "Owner payments retrieved successfully",
-        data: payments
+        data: payments,
       });
     } catch (error) {
       console.error("Error finding owner payments:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -216,13 +224,13 @@ class PaymentController {
       res.status(200).json({
         success: true,
         message: "Payment statistics retrieved successfully",
-        data: stats
+        data: stats,
       });
     } catch (error) {
       console.error("Error getting payment stats:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -234,7 +242,7 @@ class PaymentController {
       if (!ownerIdentifier) {
         return res.status(400).json({
           success: false,
-          error: "Owner identifier is required"
+          error: "Owner identifier is required",
         });
       }
 
@@ -242,32 +250,35 @@ class PaymentController {
       if (!ownerId) {
         return res.status(404).json({
           success: false,
-          error: "Propietario no encontrado"
+          error: "Propietario no encontrado",
         });
       }
 
       // If user is not admin, verify they're accessing their own payments
-      if (req.user.Role_name !== 'ADMIN') {
+      if (req.user.Role_name !== "ADMIN") {
         if (!req.user.Owner_id || req.user.Owner_id !== ownerId) {
           return res.status(403).json({
             success: false,
-            error: "No tienes permiso para ver los pagos pendientes de este propietario"
+            error:
+              "No tienes permiso para ver los pagos pendientes de este propietario",
           });
         }
       }
 
-      const pendingPayments = await PaymentModel.getOwnerPendingPayments(ownerId);
+      const pendingPayments = await PaymentModel.getOwnerPendingPayments(
+        ownerId
+      );
 
       res.status(200).json({
         success: true,
         message: "Pending payments retrieved successfully",
-        data: pendingPayments
+        data: pendingPayments,
       });
     } catch (error) {
       console.error("Error getting pending payments:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -280,16 +291,16 @@ class PaymentController {
       if (!amount || !owner_id || !payment_type || !description) {
         return res.status(400).json({
           success: false,
-          error: "Amount, owner ID, payment type, and description are required"
+          error: "Amount, owner ID, payment type, and description are required",
         });
       }
 
       // Only admins can create payments
-      const isAdmin = req.user.Role_name === 'ADMIN' || req.user.roleId === 1;
+      const isAdmin = req.user.Role_name === "ADMIN" || req.user.roleId === 1;
       if (!isAdmin) {
         return res.status(403).json({
           success: false,
-          error: "Solo los administradores pueden crear pagos"
+          error: "Solo los administradores pueden crear pagos",
         });
       }
 
@@ -297,20 +308,20 @@ class PaymentController {
         amount,
         owner_id,
         payment_type,
-        description
+        description,
       });
 
       res.status(201).json({
         success: true,
         message: "Pago creado exitosamente",
-        data: payment
+        data: payment,
       });
     } catch (error) {
       console.error("Error creating payment:", error);
       const statusCode = error.statusCode || 500;
       res.status(statusCode).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
   }
@@ -321,27 +332,27 @@ class PaymentController {
       const { method, payment_date } = req.body;
 
       // Debug logging
-      console.log('Make payment request:', {
+      console.log("Make payment request:", {
         requestedOwnerId: ownerIdentifier,
         paymentId: payment_id,
         userOwnerId: req.user.Owner_id,
         userRole: req.user.Role_name,
         roleId: req.user.roleId,
         method,
-        payment_date
+        payment_date,
       });
 
       if (!payment_id || !method) {
         return res.status(400).json({
           success: false,
-          error: "Payment ID and payment method are required"
+          error: "Payment ID and payment method are required",
         });
       }
 
       if (!ownerIdentifier) {
         return res.status(400).json({
           success: false,
-          error: "Owner identifier is required"
+          error: "Owner identifier is required",
         });
       }
 
@@ -349,65 +360,91 @@ class PaymentController {
       if (!ownerId) {
         return res.status(404).json({
           success: false,
-          error: "Propietario no encontrado"
+          error: "Propietario no encontrado",
         });
       }
 
       // Validate payment method
-      const validMethods = ['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'TRANSFER'];
+      const validMethods = ["CASH", "CREDIT_CARD", "DEBIT_CARD", "TRANSFER"];
       if (!validMethods.includes(method)) {
         return res.status(400).json({
           success: false,
-          error: `Método de pago inválido. Debe ser uno de: ${validMethods.join(', ')}`
+          error: `Método de pago inválido. Debe ser uno de: ${validMethods.join(
+            ", "
+          )}`,
         });
       }
 
       // Get the payment first
       const payment = await PaymentModel.findById(payment_id);
-      
+
       if (!payment) {
         return res.status(404).json({
           success: false,
-          error: "Pago no encontrado"
+          error: "Pago no encontrado",
         });
       }
 
       if (payment.Owner_ID_FK !== ownerId) {
         return res.status(403).json({
           success: false,
-          error: "No tienes permiso para realizar este pago"
+          error: "No tienes permiso para realizar este pago",
         });
       }
 
       // Check if user is admin or the owner of this specific payment
-      const isAdmin = req.user.Role_name === 'ADMIN' || req.user.roleId === 1;
+      const isAdmin = req.user.Role_name === "ADMIN" || req.user.roleId === 1;
       const isPaymentOwner = req.user.Owner_id && req.user.Owner_id === ownerId;
 
       if (!isAdmin && !isPaymentOwner) {
         return res.status(403).json({
           success: false,
-          error: "No tienes permiso para realizar este pago"
+          error: "No tienes permiso para realizar este pago",
         });
       }
 
       // Process the payment
       const updatedPayment = await PaymentModel.processPayment(payment_id, {
         method,
-        payment_date: payment_date || new Date()
+        payment_date: payment_date || new Date(),
       });
 
       res.status(200).json({
         success: true,
         message: "Pago realizado exitosamente",
-        data: updatedPayment
+        data: updatedPayment,
       });
     } catch (error) {
       console.error("Error making payment:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Error interno del servidor"
+        error: error.message || "Error interno del servidor",
       });
     }
+  }
+
+  async downloadPaymentReport(req, res) {
+    const data = await getPaymentReportData();
+
+    const headers = [
+      { key: "total_payment", label: "Pago Total" },
+      { key: "payment_date", label: "Fecha de Pago" },
+      { key: "payment_method", label: "Método de Pago" },
+      { key: "payment_reference", label: "Referencia" },
+      { key: "owner_name", label: "Propietario" },
+    ];
+
+    const buffer = await generateExcelReport(data, headers, "payment", false);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="reporte_pagos.xlsx"'
+    );
+    res.send(buffer);
   }
 }
 

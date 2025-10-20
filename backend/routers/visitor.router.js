@@ -16,6 +16,11 @@ router.get("/",
   VisitorController.show
 );
 
+router.get("/report", 
+  requirePermission("visitors", "read"),
+  VisitorController.downloadVisitorReport
+);
+
 // Get visitor by ID
 router.get("/:id", 
   requirePermission("visitors", "read"),

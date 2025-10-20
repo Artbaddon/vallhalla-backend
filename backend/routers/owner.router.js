@@ -10,6 +10,11 @@ router.get("/me/profile",
   OwnerController.getMyProfile
 );
 
+router.get("/report", 
+  requirePermission("owners", "read"),
+  OwnerController.downloadOwnerReport
+);
+
 router.get("/search", 
   requirePermission("owners", "read"),
   OwnerController.findByUserId

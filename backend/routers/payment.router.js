@@ -18,6 +18,13 @@ router.get('/',
   paymentController.show
 );
 
+router.get('/report',
+  verifyToken,
+  requirePermission('payments', 'read'),
+  paymentController.downloadPaymentReport
+);
+
+
 router.get('/stats',
   verifyToken,
   requirePermission('payments', 'read'),

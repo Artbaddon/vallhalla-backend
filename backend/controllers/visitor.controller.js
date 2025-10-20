@@ -1,5 +1,7 @@
 import VisitorModel from "../models/visitor.model.js";
 import OwnerModel from "../models/owner.model.js";
+import { getVisitorReportData } from "../services/visitorReportService.js";
+import { generateExcelReport } from "../utils/excelGenerator.js"
 
 class VisitorController {
   async register(req, res) {
@@ -14,14 +16,14 @@ class VisitorController {
 
       if (!host_id || !visitor_name || !document_number) {
         return res.status(400).json({
-          error: "Host ID, visitor name, and document number are required"
+          error: "Host ID, visitor name, and document number are required",
         });
       }
 
       const visitorId = await VisitorModel.create({
         host_id,
         visitor_name,
-        document_number
+        document_number,
       });
 
       if (visitorId.error) {
@@ -30,11 +32,17 @@ class VisitorController {
 
       res.status(201).json({
         message: "Visitor registered successfully",
-        id: visitorId
+        id: visitorId,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  }
+
+  async getAllVisitors() {
+    const visitors = await VisitorModel.show();
+    if (visitors.error) throw new Error(visitors.error);
+    return visitors;
   }
 
   async show(req, res) {
@@ -47,7 +55,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitors retrieved successfully",
-        visitors: visitors
+        visitors: visitors,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -65,13 +73,13 @@ class VisitorController {
 
       if (!visitor_name || !document_number) {
         return res.status(400).json({
-          error: "Visitor name and document number are required"
+          error: "Visitor name and document number are required",
         });
       }
 
       const updateResult = await VisitorModel.update(id, {
         visitor_name,
-        document_number
+        document_number,
       });
 
       if (updateResult.error) {
@@ -80,7 +88,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitor updated successfully",
-        id: id
+        id: id,
       });
     } catch (error) {
       console.error("Error updating visitor:", error);
@@ -104,7 +112,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitor deleted successfully",
-        id: id
+        id: id,
       });
     } catch (error) {
       console.error("Error deleting visitor:", error);
@@ -132,7 +140,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Visitor found successfully",
-        visitor: visitor
+        visitor: visitor,
       });
     } catch (error) {
       console.error("Error finding visitor by ID:", error);
@@ -156,7 +164,7 @@ class VisitorController {
 
       res.status(200).json({
         message: "Host visitors retrieved successfully",
-        visitors: visitors
+        visitors: visitors,
       });
     } catch (error) {
       console.error("Error finding visitors by host:", error);
@@ -177,15 +185,15 @@ class VisitorController {
       try {
         const date = new Date(enter_date);
         if (isNaN(date.getTime())) {
-          return res.status(400).json({ 
-            error: "Invalid date format. Please use YYYY-MM-DD format" 
+          return res.status(400).json({
+            error: "Invalid date format. Please use YYYY-MM-DD format",
           });
         }
         // Format date as YYYY-MM-DD
-        formattedDate = date.toISOString().split('T')[0];
+        formattedDate = date.toISOString().split("T")[0];
       } catch (error) {
-        return res.status(400).json({ 
-          error: "Invalid date format. Please use YYYY-MM-DD format" 
+        return res.status(400).json({
+          error: "Invalid date format. Please use YYYY-MM-DD format",
         });
       }
 
@@ -197,15 +205,38 @@ class VisitorController {
 
       // Don't return 404 if no visitors found, just return an empty array
       res.status(200).json({
-        message: visitors.length > 0 
-          ? "Visitors by date retrieved successfully" 
-          : "No visitors found for this date",
-        visitors: visitors
+        message:
+          visitors.length > 0
+            ? "Visitors by date retrieved successfully"
+            : "No visitors found for this date",
+        visitors: visitors,
       });
     } catch (error) {
       console.error("Error finding visitors by date:", error);
       res.status(500).json({ error: error.message });
     }
+  }
+
+  async downloadVisitorReport(req, res) {
+    const data = await getVisitorReportData();
+
+    const headers = [
+      { key: "name", label: "Nombre del visitante" },
+      { key: "documentNumber", label: "Documento" },
+      { key: "host_name", label: "Anfitrión" },
+    ];
+
+    const buffer = await generateExcelReport(data, headers, "visitors", false);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="reporte_visitantes.xlsx"'
+    );
+    res.send(buffer);
   }
 }
 

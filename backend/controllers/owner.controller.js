@@ -2,16 +2,18 @@ import { ROLES } from "../middleware/rbacConfig.js";
 import OwnerModel from "../models/owner.model.js";
 import UserModel from "../models/user.model.js";
 import ProfileModel from "../models/profile.model.js";
+import { getOwnerReportData } from "../services/ownerReportService.js";
+import { generateExcelReport } from "../utils/excelGenerator.js"
 
 class OwnerController {
   async register(req, res) {
     try {
-      const { 
-        username, 
-        password, 
-        user_status_id, 
-        role_id, 
-        is_tenant, 
+      const {
+        username,
+        password,
+        user_status_id,
+        role_id,
+        is_tenant,
         birth_date,
         // Profile fields as independent arguments
         first_name,
@@ -19,14 +21,24 @@ class OwnerController {
         document_type,
         document_number,
         phone,
-        photo_url
+        photo_url,
       } = req.body;
 
       // Validate required fields
-      if (!username || !password || !user_status_id || !role_id || is_tenant === undefined || !birth_date) {
+      if (
+        !username ||
+        !password ||
+        !user_status_id ||
+        !role_id ||
+        is_tenant === undefined ||
+        !birth_date
+      ) {
         return res
           .status(400)
-          .json({ error: "username, password, user_status_id, role_id, is_tenant, and birth_date are required" });
+          .json({
+            error:
+              "username, password, user_status_id, role_id, is_tenant, and birth_date are required",
+          });
       }
 
       // Validate profile data
@@ -49,8 +61,8 @@ class OwnerController {
           document_type,
           document_number,
           phone,
-          photo_url
-        }
+          photo_url,
+        },
       });
 
       if (result.error) {
@@ -60,11 +72,17 @@ class OwnerController {
       res.status(201).json({
         message: "Owner created successfully with user and profile",
         owner_id: result.owner_id,
-        user_id: result.user_id
+        user_id: result.user_id,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  }
+
+  async getAllowners() {
+    const owners = await OwnerModel.getOwnersWithDetails();
+    if (owners.error) throw new Error(owners.error);
+    return owners;
   }
 
   async show(req, res) {
@@ -112,12 +130,12 @@ class OwnerController {
   async update(req, res) {
     try {
       const id = req.params.id;
-      const { 
-        username, 
-        password, 
-        user_status_id, 
-        role_id, 
-        is_tenant, 
+      const {
+        username,
+        password,
+        user_status_id,
+        role_id,
+        is_tenant,
         birth_date,
         // Profile fields
         first_name,
@@ -125,7 +143,7 @@ class OwnerController {
         document_type,
         document_number,
         phone,
-        photo_url
+        photo_url,
       } = req.body;
 
       if (!id) {
@@ -133,15 +151,32 @@ class OwnerController {
       }
 
       // At least one field must be provided for update
-      if (!username && !password && !user_status_id && !role_id && 
-          is_tenant === undefined && !birth_date && !first_name && 
-          !last_name && !document_type && !document_number && !phone && !photo_url) {
-        return res.status(400).json({ error: "At least one field must be provided for update" });
+      if (
+        !username &&
+        !password &&
+        !user_status_id &&
+        !role_id &&
+        is_tenant === undefined &&
+        !birth_date &&
+        !first_name &&
+        !last_name &&
+        !document_type &&
+        !document_number &&
+        !phone &&
+        !photo_url
+      ) {
+        return res
+          .status(400)
+          .json({ error: "At least one field must be provided for update" });
       }
 
       // If first_name is provided, last_name must also be provided and vice versa
       if ((first_name && !last_name) || (!first_name && last_name)) {
-        return res.status(400).json({ error: "Both first_name and last_name must be provided together" });
+        return res
+          .status(400)
+          .json({
+            error: "Both first_name and last_name must be provided together",
+          });
       }
 
       const updateResult = await OwnerModel.update(id, {
@@ -156,7 +191,7 @@ class OwnerController {
         document_type,
         document_number,
         phone,
-        photo_url
+        photo_url,
       });
 
       if (updateResult.error) {
@@ -171,30 +206,42 @@ class OwnerController {
 
       // Create a summary of what was updated
       const updates = {
-        owner: is_tenant !== undefined || birth_date ? {
-          is_tenant: is_tenant,
-          birth_date: birth_date
-        } : undefined,
-        user: username || password || user_status_id || role_id ? {
-          username,
-          user_status_id,
-          role_id,
-          password: password ? "updated" : undefined
-        } : undefined,
-        profile: first_name || document_type || document_number || phone || photo_url ? {
-          full_name: first_name && last_name ? `${first_name} ${last_name}` : undefined,
-          document_type,
-          document_number,
-          phone,
-          photo_url
-        } : undefined
+        owner:
+          is_tenant !== undefined || birth_date
+            ? {
+                is_tenant: is_tenant,
+                birth_date: birth_date,
+              }
+            : undefined,
+        user:
+          username || password || user_status_id || role_id
+            ? {
+                username,
+                user_status_id,
+                role_id,
+                password: password ? "updated" : undefined,
+              }
+            : undefined,
+        profile:
+          first_name || document_type || document_number || phone || photo_url
+            ? {
+                full_name:
+                  first_name && last_name
+                    ? `${first_name} ${last_name}`
+                    : undefined,
+                document_type,
+                document_number,
+                phone,
+                photo_url,
+              }
+            : undefined,
       };
 
       res.status(200).json({
         message: "Owner updated successfully with user and profile data",
         success: true,
         updated_fields: updates,
-        current_data: updatedOwner
+        current_data: updatedOwner,
       });
     } catch (error) {
       console.error("Error updating owner:", error);
@@ -226,8 +273,9 @@ class OwnerController {
       }
 
       res.status(200).json({
-        message: "Owner inactivated successfully. Their apartments and other data are preserved.",
-        owner_id: id
+        message:
+          "Owner inactivated successfully. Their apartments and other data are preserved.",
+        owner_id: id,
       });
     } catch (error) {
       console.error("Error inactivating owner:", error);
@@ -244,8 +292,15 @@ class OwnerController {
       }
 
       // If user is an owner, verify they're accessing their own data
-      if (req.user.roleId === ROLES.OWNER && parseInt(id) !== parseInt(req.ownerId)) {
-        return res.status(403).json({ error: "You don't have permission to access this owner data" });
+      if (
+        req.user.roleId === ROLES.OWNER &&
+        parseInt(id) !== parseInt(req.ownerId)
+      ) {
+        return res
+          .status(403)
+          .json({
+            error: "You don't have permission to access this owner data",
+          });
       }
 
       const owner = await OwnerModel.findById(id);
@@ -273,8 +328,15 @@ class OwnerController {
       }
 
       // If user is an owner, verify they're accessing their own data
-      if (req.user.roleId === ROLES.OWNER && parseInt(id) !== parseInt(req.ownerId)) {
-        return res.status(403).json({ error: "You don't have permission to access this owner data" });
+      if (
+        req.user.roleId === ROLES.OWNER &&
+        parseInt(id) !== parseInt(req.ownerId)
+      ) {
+        return res
+          .status(403)
+          .json({
+            error: "You don't have permission to access this owner data",
+          });
       }
 
       const owner = await OwnerModel.getOwnerWithDetails(id);
@@ -330,22 +392,26 @@ class OwnerController {
       if (req.user.roleId !== ROLES.OWNER) {
         return res.status(403).json({ error: "Access denied" });
       }
-      
+
       const userId = req.user.userId;
-      
+
       if (!userId) {
-        return res.status(400).json({ error: "User ID could not be determined" });
+        return res
+          .status(400)
+          .json({ error: "User ID could not be determined" });
       }
 
       // First get the owner record
       const owner = await OwnerModel.findByUserId(userId);
-      
+
       if (!owner) {
         return res.status(404).json({ error: "Owner profile not found" });
       }
-      
+
       // Then get the detailed profile
-      const ownerWithDetails = await OwnerModel.getOwnerWithDetails(owner.Owner_id);
+      const ownerWithDetails = await OwnerModel.getOwnerWithDetails(
+        owner.Owner_id
+      );
 
       if (!ownerWithDetails) {
         return res.status(404).json({ error: "Owner details not found" });
@@ -360,6 +426,30 @@ class OwnerController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  async downloadOwnerReport(req, res) {
+    const data = await getOwnerReportData();
+
+    const headers = [
+      { key: "name", label: "Nombre del propietario" },
+      { key: "profileName", label: "Nombre completo" },
+      { key: "status", label: "Estado" },
+      { key: "documentNumber", label: "Número de documento" },
+      { key: "phoneNumber", label: "Teléfono" },
+    ];
+
+    const buffer = await generateExcelReport(data, headers, "owner", false);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="reporte_propietarios.xlsx"'
+    );
+    res.send(buffer);
+  }
 }
 
-export default new OwnerController(); 
+export default new OwnerController();

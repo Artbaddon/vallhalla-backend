@@ -154,4 +154,3 @@ export const requireAccess = ({ module: moduleName, permission, ownership }) => 
     }
   };
 };
-

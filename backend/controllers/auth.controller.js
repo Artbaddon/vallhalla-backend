@@ -2,7 +2,8 @@ import UserModel from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto"; // crypto for secure token generation & hashing
-
+import transporter from "../utils/email.js";
+import forgotPasswordTemplate from "../utils/templates/forgotPasswordTemplate.js";
 // NOTE: Password reset tokens now stored in DB columns (no new table) to persist across restarts.
 // Added columns (via migration_v3_password_reset.js):
 //   Password_reset_token VARCHAR(64) NULL (sha256 hex digest)
@@ -23,8 +24,8 @@ class AuthController {
       const { username, password } = req.body;
 
       if (!username || !password) {
-        return res.status(400).json({ 
-          error: "Username or password is required" 
+        return res.status(400).json({
+          error: "Username or password is required",
         });
       }
 
@@ -32,45 +33,48 @@ class AuthController {
       const user = await UserModel.findByName(username);
 
       if (!user) {
-        return res.status(401).json({ 
-          error: "User not found" 
+        return res.status(401).json({
+          error: "User not found",
         });
       }
 
       // Check if user is active (assuming status_id 1 is active)
       if (user.User_status_FK_ID !== 1) {
-        return res.status(401).json({ 
-          error: "User account is not active" 
+        return res.status(401).json({
+          error: "User account is not active",
         });
       }
 
       // Validate password
-      const isValidPassword = await AuthController.validatePassword(password, user);      
+      const isValidPassword = await AuthController.validatePassword(
+        password,
+        user
+      );
       if (!isValidPassword) {
-        return res.status(401).json({ 
-          error: "Invalid credentials" 
+        return res.status(401).json({
+          error: "Invalid credentials",
         });
       }
 
       // Generate JWT token
       const token = jwt.sign(
-        { 
-          userId: user.Users_id, 
+        {
+          userId: user.Users_id,
           username: user.Users_name,
           roleId: user.Role_FK_ID,
-          Role_name: user.Role_name
+          Role_name: user.Role_name,
         },
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '1h' }
+        process.env.JWT_SECRET || "your-secret-key",
+        { expiresIn: "1h" }
       );
 
       // Debug logging
-      console.log('User data for token:', {
+      console.log("User data for token:", {
         userId: user.Users_id,
         username: user.Users_name,
         roleId: user.Role_FK_ID,
         Role_name: user.Role_name,
-        email: user.Users_email
+        email: user.Users_email,
       });
 
       res.status(200).json({
@@ -82,10 +86,9 @@ class AuthController {
           status_id: user.User_status_FK_ID,
           role_id: user.Role_FK_ID,
           email: user.Users_email,
-          Role_name: user.Role_name
-        }
+          Role_name: user.Role_name,
+        },
       });
-
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
@@ -97,16 +100,16 @@ class AuthController {
       const { username, email, password, user_status_id, role_id } = req.body;
 
       if (!username || !password || !user_status_id || !role_id) {
-        return res.status(400).json({ 
-          error: "Username, password, user_status_id, and role_id are required" 
+        return res.status(400).json({
+          error: "Username, password, user_status_id, and role_id are required",
         });
       }
 
       // Check if username already exists
       const existingUser = await UserModel.findByName(username);
       if (existingUser) {
-        return res.status(400).json({ 
-          error: "Username already exists" 
+        return res.status(400).json({
+          error: "Username already exists",
         });
       }
 
@@ -127,7 +130,7 @@ class AuthController {
         email,
         password: hashedPassword,
         user_status_id,
-        role_id
+        role_id,
       });
 
       if (userId.error) {
@@ -138,7 +141,6 @@ class AuthController {
         message: "User registered successfully",
         id: userId,
       });
-
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ error: "Registration failed" });
@@ -152,33 +154,56 @@ class AuthController {
         return res.status(400).json({ error: "email is required" });
       }
 
-      // Try locate by email first, then fallback to username for backward compatibility
+      // Buscar usuario por email o nombre de usuario
       let user = await UserModel.findByEmail(email);
       if (!user) {
         user = await UserModel.findByName(email);
       }
 
-      // Generic response to avoid user enumeration
-      const generic = { message: "If the account exists, password reset instructions were generated." };
+      // Respuesta genérica (evita revelar si el usuario existe)
+      const generic = {
+        message:
+          "If the account exists, password reset instructions were generated.",
+      };
 
       if (!user) {
         return res.status(200).json(generic);
       }
 
-      // Generate raw token & expiry (1 hour)
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1h
+      // Generar token de reseteo
+      const rawToken = crypto.randomBytes(4).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
 
-      // Persist hashed token & expiry in users table (overwrites any previous one)
+      // Guardar token en DB
       await UserModel.setResetToken(user.Users_id, tokenHash, expiresAt);
 
-      // Since no email service, return token ONLY when not production
-      const includeToken = process.env.NODE_ENV !== 'production';
+      // ✉️ Enviar correo de prueba
+      const mailOptions = {
+        from: '"Valhalla" <valhalla.email.co@gmail.com>',
+        to: user.Users_email,
+        subject: "Restablecimiento de contraseña",
+        html: forgotPasswordTemplate(user, rawToken),
+      };
+
+      try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log("✅ Correo enviado:", info.messageId);
+      } catch (mailError) {
+        console.error("❌ Error al enviar correo:", mailError);
+      }
+
+      // En desarrollo, mostrar el token crudo
+      const includeToken = process.env.NODE_ENV !== "production";
 
       return res.status(200).json({
         ...generic,
-        ...(includeToken ? { resetToken: rawToken, expiresAt: expiresAt.toISOString() } : {})
+        ...(includeToken
+          ? { resetToken: rawToken, expiresAt: expiresAt.toISOString() }
+          : {}),
       });
     } catch (error) {
       console.error("Forgot password error:", error);
@@ -189,37 +214,59 @@ class AuthController {
   async resetPassword(req, res) {
     try {
       const { token, newPassword } = req.body;
+
+      // 1️⃣ Validar datos
       if (!token || !newPassword) {
-        return res.status(400).json({ error: "token and newPassword are required" });
+        return res
+          .status(400)
+          .json({ error: "El código y la nueva contraseña son obligatorios" });
       }
 
-      // Policy: >=8 chars, at least one number & one letter
-      if (newPassword.length < 8 || !/[0-9]/.test(newPassword) || !/[A-Za-z]/.test(newPassword)) {
-        return res.status(400).json({ error: "Password must be >=8 chars and include letters & numbers" });
+      // 2️⃣ Validar política de contraseña
+      if (
+        newPassword.length < 8 ||
+        !/[0-9]/.test(newPassword) ||
+        !/[A-Za-z]/.test(newPassword)
+      ) {
+        return res.status(400).json({
+          error:
+            "La contraseña debe tener al menos 8 caracteres e incluir letras y números",
+        });
       }
 
       const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
       const record = await UserModel.findByResetToken(tokenHash);
       if (!record) {
-        return res.status(400).json({ error: "Invalid or expired token" });
-      }
-      if (new Date(record.Password_reset_expires) < new Date()) {
-        await UserModel.clearResetToken(record.Users_id); // cleanup expired
-        return res.status(400).json({ error: "Invalid or expired token" });
+        return res.status(400).json({ error: "Código inválido o expirado" });
       }
 
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-      const updated = await UserModel.updatePassword(record.Users_id, hashedPassword);
+      if (new Date(record.Password_reset_expires) < new Date()) {
+        await UserModel.clearResetToken(record.Users_id); // Limpieza de seguridad
+        return res.status(400).json({ error: "Código inválido o expirado" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      const updated = await UserModel.updatePassword(
+        record.Users_id,
+        hashedPassword
+      );
+
       if (!updated) {
-        return res.status(500).json({ error: "Failed to update password" });
+        return res
+          .status(500)
+          .json({ error: "No se pudo actualizar la contraseña" });
       }
 
       await UserModel.clearResetToken(record.Users_id);
-      return res.status(200).json({ message: "Password reset successfully" });
+
+      return res
+        .status(200)
+        .json({ message: "Contraseña restablecida correctamente" });
     } catch (error) {
-      console.error("Reset password error:", error);
-      res.status(500).json({ error: "Password reset failed" });
+      console.error("❌ Reset password error:", error);
+      res.status(500).json({ error: "Error al restablecer la contraseña" });
     }
   }
 
@@ -229,8 +276,8 @@ class AuthController {
       const { currentPassword, newPassword } = req.body;
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({ 
-          error: "Current password and new password are required" 
+        return res.status(400).json({
+          error: "Current password and new password are required",
         });
       }
 
@@ -238,17 +285,20 @@ class AuthController {
       const user = await UserModel.findById(userId);
 
       if (!user) {
-        return res.status(404).json({ 
-          error: "User not found" 
+        return res.status(404).json({
+          error: "User not found",
         });
       }
 
       // Validate current password
-      const isValidPassword = await AuthController.validatePassword(currentPassword, user);
-      
+      const isValidPassword = await AuthController.validatePassword(
+        currentPassword,
+        user
+      );
+
       if (!isValidPassword) {
-        return res.status(401).json({ 
-          error: "Current password is incorrect" 
+        return res.status(401).json({
+          error: "Current password is incorrect",
         });
       }
 
@@ -260,15 +310,14 @@ class AuthController {
       const updated = await UserModel.updatePassword(userId, hashedPassword);
 
       if (!updated) {
-        return res.status(500).json({ 
-          error: "Failed to update password" 
+        return res.status(500).json({
+          error: "Failed to update password",
         });
       }
 
       res.status(200).json({
-        message: "Password changed successfully"
+        message: "Password changed successfully",
       });
-
     } catch (error) {
       console.error("Change password error:", error);
       res.status(500).json({ error: "Password change failed" });
@@ -286,10 +335,9 @@ class AuthController {
         user: {
           id: userId,
           username: username,
-          role_id: roleId
-        }
+          role_id: roleId,
+        },
       });
-
     } catch (error) {
       console.error("Token validation error:", error);
       res.status(500).json({ error: "Token validation failed" });
