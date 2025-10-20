@@ -1,12 +1,13 @@
 import { Router } from "express";
 import PQRSController from "../controllers/pqrs.controller.js";
-import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireOwnership, requireAdmin } from "../middleware/permissionMiddleware.js";
 
 const router = Router();
 
 // Protected routes
 // Admin can see all PQRS
 router.get("/", 
+  requireAdmin,
   requirePermission("pqrs", "read"),
   PQRSController.show
 );
@@ -19,6 +20,7 @@ router.post("/",
 
 // Get PQRS statistics (admin only)
 router.get("/stats",
+  requireAdmin,
   requirePermission("pqrs", "read"),
   PQRSController.getStats
 );
@@ -31,12 +33,14 @@ router.get("/owner/:owner_id",
 
 // Get PQRS by status
 router.get("/status/:status_id",
+  requireAdmin,
   requirePermission("pqrs", "read"),
   PQRSController.findByStatus
 );
 
 // Get PQRS by category
 router.get("/category/:category_id",
+  requireAdmin,
   requirePermission("pqrs", "read"),
   PQRSController.findByCategory
 );
@@ -57,7 +61,7 @@ router.put("/:id",
 
 // Update PQRS status (admin only)
 router.put("/:id/status",
-  requirePermission("pqrs", "update"),
+  requireAdmin,
   PQRSController.updateStatus
 );
 

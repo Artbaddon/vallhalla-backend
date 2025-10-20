@@ -96,6 +96,25 @@ class VisitorController {
     }
   }
 
+  async visitorExit(req, res) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        return res.status(400).json({ error: "Visitor ID is required" });
+      }
+      const exitResult = await VisitorModel.visitorExit(id);
+      if (exitResult.error) {
+        return res.status(404).json({ error: exitResult.error });
+      }
+      res.status(200).json({
+        message: "Visitor exit time recorded successfully",
+        id: id,
+      });
+    } catch (error) {
+      console.error("Error marking visitor exit:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
   async delete(req, res) {
     try {
       const id = req.params.id;

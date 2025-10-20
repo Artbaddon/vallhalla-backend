@@ -1,8 +1,12 @@
 import { Router } from "express";
 import ParkingController from "../controllers/parking.controller.js";
-import { requirePermission, requireAdmin } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireAdmin, requireRoles } from "../middleware/permissionMiddleware.js";
+import { ROLES } from "../middleware/rbacConfig.js";
 
 const router = Router();
+
+// Gate access to parking module according to new role rules
+router.use(requireRoles(ROLES.OWNER, ROLES.SECURITY));
 
 // Protected routes
 // View all parking spots

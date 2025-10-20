@@ -268,6 +268,7 @@ class OwnerModel {
         SELECT 
           o.*,
           u.Users_name,
+          u.Users_email,
           u.User_status_FK_ID,
           us.User_status_name,
           p.Profile_fullName,
@@ -294,9 +295,11 @@ class OwnerModel {
         SELECT 
           o.Owner_id,
           u.Users_name,
+          u.Users_email,
           p.Profile_fullName,
           p.Profile_document_number,
           p.Profile_telephone_number,
+          a.Apartment_number,
           o.Owner_is_tenant,
           o.Owner_birth_date,
           o.Owner_createdAt,
@@ -304,6 +307,7 @@ class OwnerModel {
         FROM owner o
         LEFT JOIN users u ON o.User_FK_ID = u.Users_id
         LEFT JOIN profile p ON u.Users_id = p.User_FK_ID
+        LEFT JOIN apartment a ON o.Owner_id = a.Owner_FK_ID
         WHERE o.Owner_id = ?
       `;
       const [result] = await connect.query(sqlQuery, [id]);

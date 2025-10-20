@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { ROLES, hasPermission, getUserPermissions } from "./rbacConfig.js";
-import { connect } from "../config/db/connectMysql.js";
-import { resolveOwnerId } from "../utils/ownerUtils.js";
+import { ROLES, hasPermission, getUserPermissions, isAdmin } from "./rbacConfig.js";
 
 dotenv.config();
 
@@ -17,24 +15,17 @@ export const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      roleId: decoded?.roleId ?? decoded?.Role_id ?? decoded?.Role_FK_ID ?? decoded?.role_id ?? decoded?.roleId,
+      Owner_id: decoded?.Owner_id ?? decoded?.ownerId ?? decoded?.owner_id ?? null,
+    };
 
     const normalizedRoleName = decoded?.Role_name?.toUpperCase?.();
 
     // Debug logging
     console.log('Decoded token:', decoded);
     console.log('User object after decode:', req.user);
-
-    // If user is an owner, fetch their owner_id
-    if (normalizedRoleName === 'OWNER') {
-      const [rows] = await connect.query(
-        'SELECT Owner_id FROM owner WHERE User_FK_ID = ?',
-        [decoded.userId]
-      );
-      if (rows && rows[0]) {
-        req.user.Owner_id = rows[0].Owner_id;
-      }
-    }
 
     // More debug logging
     console.log('Final user object:', req.user);
@@ -67,8 +58,8 @@ export const authMiddleware = (allowedRoles = []) => {
           });
         }
 
-      // Prefetch user permissions (by userId not role) for downstream use
-      req.userPermissions = await getUserPermissions(connect, req.user.userId);
+      // Prefetch user permissions for downstream use
+      req.userPermissions = getUserPermissions(req.user);
 
         next();
       } catch (error) {
@@ -96,7 +87,7 @@ export const apiAccessMiddleware = (req, res, next) => {
       }
 
       const roleId = req.user?.roleId;
-      const isAdmin = roleId === ROLES.ADMIN;
+      const userIsAdmin = isAdmin(req.user);
 
       // Allow owners to access their own payment routes without explicit permission assignments
       if (moduleName === 'payment' && parts[2] === 'owner') {
@@ -106,20 +97,14 @@ export const apiAccessMiddleware = (req, res, next) => {
           return res.status(400).json({ message: 'Owner identifier missing in payment route' });
         }
 
-        if (isAdmin) {
+        if (userIsAdmin) {
           return next();
         }
 
         if (roleId === ROLES.OWNER) {
-          const resolvedOwnerId = await resolveOwnerId(ownerIdSegment);
-
-          if (!resolvedOwnerId) {
-            return res.status(404).json({ message: 'Owner not found for provided identifier' });
-          }
-
           const userOwnerId = req.user?.Owner_id;
 
-          if (userOwnerId && String(userOwnerId) === String(resolvedOwnerId)) {
+          if (userOwnerId && String(userOwnerId) === String(ownerIdSegment)) {
             return next();
           }
 
@@ -127,7 +112,7 @@ export const apiAccessMiddleware = (req, res, next) => {
         }
       }
 
-      const ok = await hasPermission(connect, req.user.userId, moduleName, permissionName);
+      const ok = hasPermission(req.user, moduleName, permissionName);
       if (!ok) {
         console.log(`❌ API access denied. userId ${req.user.userId} lacks ${permissionName}:${moduleName}`);
         return res.status(403).json({ message: `Access denied. Need ${permissionName} on ${moduleName}` });
@@ -146,7 +131,7 @@ export const checkPermission = (moduleName, permissionName) => {
     // First verify the token
     verifyToken(req, res, async () => {
       try {
-        const ok = await hasPermission(connect, req.user.userId, moduleName.toLowerCase(), permissionName.toLowerCase());
+        const ok = hasPermission(req.user, moduleName.toLowerCase(), permissionName.toLowerCase());
         if (!ok) {
           console.log(`❌ Missing permission: ${moduleName}:${permissionName} for user ${req.user.userId}`);
           return res.status(403).json({ message: "Access denied. Missing required permission." });

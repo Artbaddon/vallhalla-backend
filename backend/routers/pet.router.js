@@ -1,10 +1,12 @@
 import { Router } from "express";
 import PetController from "../controllers/pet.controller.js";
-import { requirePermission, requireOwnership } from "../middleware/permissionMiddleware.js";
+import { requirePermission, requireOwnership, requireRoles } from "../middleware/permissionMiddleware.js";
+import { ROLES } from "../middleware/rbacConfig.js";
 
 const router = Router();
 
-// Public routes (if any)
+// Owners manage their pets (admin bypasses automatically)
+router.use(requireRoles(ROLES.OWNER));
 
 // Protected routes
 // Admin can see all pets
