@@ -52,6 +52,7 @@ const SECURITY_RULES = {
   profile: ["read", "update"], // Singular form
   profiles: ["read", "update"],
    owners: ["read"],
+   packages: ["create", "read", "update", "delete"],
 };
 
 const RAW_RULES = {

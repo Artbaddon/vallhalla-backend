@@ -64,13 +64,14 @@ class PackageAuthMiddleware {
   // Check if user has guard role
   static checkGuardRole(req, res, next) {
     try {
-      // Check role based on role name or ID
-      const isGuard = req.user.roleName === 'GUARD' || 
-                     req.user.roleId === 3; // Adjust role ID as needed
+      // Check role based on role ID (more reliable than name)
+      const isAdmin = req.user.roleId === 1;
+      const isGuard = req.user.roleId === 3;
       
-      if (!isGuard) {
+      // Admins can do everything guards can do
+      if (!isGuard && !isAdmin) {
         return res.status(403).json({ 
-          error: 'Access denied. Only guards can perform this action.' 
+          error: 'Access denied. Only guards and admins can perform this action.' 
         });
       }
       
@@ -84,9 +85,10 @@ class PackageAuthMiddleware {
   // Check if user is owner or guard
   static checkOwnerOrGuardAccess(req, res, next) {
     try {
-      const isGuard = req.user.roleName === 'GUARD' || req.user.roleId === 3;
-      const isOwner = req.user.roleName === 'OWNER' || req.user.roleId === 2;
-      const isAdmin = req.user.roleName === 'ADMIN' || req.user.roleId === 1;
+      // Use role IDs for more reliable checking
+      const isAdmin = req.user.roleId === 1;
+      const isOwner = req.user.roleId === 2;
+      const isGuard = req.user.roleId === 3;
       
       if (!isGuard && !isOwner && !isAdmin) {
         return res.status(403).json({ 
