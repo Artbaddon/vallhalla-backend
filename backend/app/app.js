@@ -11,6 +11,7 @@ import rolesRouter from "../routers/roles.router.js";
 import permissionsRouter from "../routers/permissions.router.js";
 import rolePermissionsRouter from "../routers/rolesPermissions.js";
 import modulesRouter from "../routers/modules.router.js";
+import webhookRouter from '../routers/webhook.router.js';
 
 // Property Management
 import ownerRouter from "../routers/owner.router.js";
@@ -48,11 +49,15 @@ import answerRouter from "../routers/answers.router.js";
 const name = "/api";
 const app = express();
 
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// development Weebhook
+app.use('/webhooks', webhookRouter);
 // ===== PUBLIC ROUTES (No authentication required) =====
 
 // Authentication

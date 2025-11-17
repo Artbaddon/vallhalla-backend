@@ -1,18 +1,18 @@
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config({ path: resolve(__dirname, '../../.env') });
+dotenv.config({ path: resolve(__dirname, "../../.env") });
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'vallhalladb',
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "vallhalladb",
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   multipleStatements: true,
 };
@@ -21,7 +21,7 @@ const dbConfig = {
  * CONSOLIDATED MIGRATION
  * This migration creates the entire database schema from scratch
  * Use this for fresh installations - it will DROP and recreate the database
- * 
+ *
  * For seeding data, use separate seeder files
  */
 const sqlStatements = [
@@ -31,7 +31,7 @@ const sqlStatements = [
   `USE ${dbConfig.database};`,
 
   // ==================== CORE TABLES ====================
-  
+
   // Role table (no FK dependencies)
   `CREATE TABLE role (
     Role_id INT(11) NOT NULL AUTO_INCREMENT,
@@ -339,19 +339,30 @@ const sqlStatements = [
 
   // Payment table (depends on owner, payment_status)
   `CREATE TABLE payment (
-    payment_id INT(11) NOT NULL AUTO_INCREMENT,
-    Owner_ID_FK INT(11) NOT NULL,
-    Payment_total_payment FLOAT NOT NULL,
-    Payment_Status_ID_FK INT(11) NOT NULL,
-    Payment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Payment_method VARCHAR(30) NOT NULL,
-    Payment_reference_number VARCHAR(50) DEFAULT NULL,
+    payment_id int NOT NULL AUTO_INCREMENT,
+    Owner_ID_FK int NOT NULL,
+    Payment_Status_ID_FK int NOT NULL,
+    Payment_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Payment_method varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
+    Payment_reference_number varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    currency varchar(3) COLLATE utf8mb4_general_ci DEFAULT 'COP',
     PRIMARY KEY (payment_id),
     KEY Owner_ID_FK (Owner_ID_FK),
     KEY Payment_Status_ID_FK (Payment_Status_ID_FK),
     CONSTRAINT fk_payment_owner FOREIGN KEY (Owner_ID_FK) REFERENCES owner (Owner_id),
     CONSTRAINT fk_payment_status FOREIGN KEY (Payment_Status_ID_FK) REFERENCES payment_status (Payment_status_id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+  `CREATE TABLE payment_detail (
+    detail_id INT NOT NULL AUTO_INCREMENT,
+    payment_id_fk INT NOT NULL,
+    item_type ENUM('parking', 'reservation') NOT NULL,
+    item_id INT NOT NULL,
+    amount FLOAT NOT NULL,
+    PRIMARY KEY (detail_id),
+    KEY payment_id_fk (payment_id_fk),
+    CONSTRAINT fk_detail_payment FOREIGN KEY (payment_id_fk) REFERENCES payment (payment_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== NOTIFICATIONS ====================
 
@@ -451,12 +462,12 @@ const sqlStatements = [
 export async function runConsolidatedMigration() {
   let connection;
 
-  console.log('🚀 Starting consolidated migration...');
-  console.log('📋 Database config:', {
+  console.log("🚀 Starting consolidated migration...");
+  console.log("📋 Database config:", {
     host: dbConfig.host,
     port: dbConfig.port,
     user: dbConfig.user,
-    database: dbConfig.database
+    database: dbConfig.database,
   });
 
   try {
@@ -469,7 +480,9 @@ export async function runConsolidatedMigration() {
         await connection.query(sql);
         statementCount++;
         if (statementCount % 10 === 0) {
-          console.log(`⏳ Executed ${statementCount}/${sqlStatements.length} statements...`);
+          console.log(
+            `⏳ Executed ${statementCount}/${sqlStatements.length} statements...`
+          );
         }
       } catch (error) {
         console.error("❌ Error executing SQL statement:", error.message);
@@ -484,7 +497,7 @@ export async function runConsolidatedMigration() {
     console.log("   1. Run seeders to populate initial data");
     console.log("   2. Create an admin user");
     console.log("   3. Start your application\n");
-    
+
     return { success: true };
   } catch (error) {
     console.error("\n❌ Migration failed:", error);

@@ -2,77 +2,11 @@ import { connect } from "../config/db/connectMysql.js";
 import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class PaymentModel {
-  static async create(paymentData) {
-    try {
-      const { amount, owner_id } = paymentData;
-
-      const paymentAmount = Number(amount);
-      if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
-        const error = new Error("Amount must be a positive number");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const ownerId = await resolveOwnerId(owner_id);
-      if (!ownerId) {
-        const error = new Error("Owner not found for the provided identifier");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      // Generate a unique reference number
-      const reference = `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-      const [result] = await connect.query(
-        `INSERT INTO payment (
-          Owner_ID_FK,
-          Payment_total_payment,
-          Payment_Status_ID_FK,
-          Payment_reference_number,
-          Payment_method
-        ) VALUES (?, ?, ?, ?, ?)`,
-        [
-          ownerId,
-          paymentAmount,
-          1, // Status 1 = PENDING
-          reference,
-          'PENDING' // Default method until payment is processed
-        ]
-      );
-
-      if (result.insertId) {
-        return this.findById(result.insertId);
-      }
-      throw new Error('Failed to create payment');
-    } catch (error) {
-      console.error('Error in create:', error);
-      throw error;
-    }
+  constructor() {
+    this.db = connect;
   }
 
-  static async processPayment(payment_id, { method, payment_date = new Date() }) {
-    try {
-      const [result] = await connect.query(
-        `UPDATE payment 
-         SET Payment_Status_ID_FK = ?,
-             Payment_method = ?,
-             Payment_date = ?
-         WHERE payment_id = ? AND Payment_Status_ID_FK = 1`,
-        [2, method, payment_date, payment_id] // 2 = COMPLETED
-      );
-
-      if (result.affectedRows === 0) {
-        throw new Error('Payment not found or not in pending status');
-      }
-
-      return this.findById(payment_id);
-    } catch (error) {
-      console.error('Error in processPayment:', error);
-      throw error;
-    }
-  }
-
-  static async show() {
+  async show() {
     try {
       let sqlQuery = `
         SELECT 
@@ -93,11 +27,42 @@ class PaymentModel {
     }
   }
 
-  static async findById(payment_id) {
+  async create(paymentData) {
+    const {
+      user_id,
+      currency = "COP",
+      status,
+      payment_method,
+      reference,
+    } = paymentData;
+
+    const query = `
+      INSERT INTO payment 
+      (Owner_ID_FK, Payment_Status_ID_FK, Payment_method, Payment_reference_number, currency)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
     try {
-      console.log('Finding payment by ID:', payment_id);
-        const [rows] = await connect.query(
-          `SELECT p.*, 
+      const [result] = await this.db.execute(query, [
+        user_id,
+        status,
+        payment_method,
+        reference,
+        currency,
+      ]);
+
+      return this.findById(result.insertId);
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      throw error;
+    }
+  }
+
+  async findById(payment_id) {
+    try {
+      console.log("Finding payment by ID:", payment_id);
+      const [rows] = await connect.query(
+        `SELECT p.*, 
                 ps.Payment_status_name as status_name,
                 CONCAT(pr.Profile_fullName) as owner_name
          FROM payment p
@@ -107,28 +72,28 @@ class PaymentModel {
          WHERE p.payment_id = ?`,
         [payment_id]
       );
-      console.log('Found payment:', rows[0]);
+      console.log("Found payment:", rows[0]);
       return rows[0];
     } catch (error) {
-      console.error('Error in findById:', error);
+      console.error("Error in findById:", error);
       throw error;
     }
   }
 
-  static async findByOwner(ownerIdentifier) {
+  async findByOwner(ownerIdentifier) {
     try {
-      console.log('Finding payments for owner identifier:', ownerIdentifier);
+      console.log("Finding payments for owner identifier:", ownerIdentifier);
 
       const ownerId = await resolveOwnerId(ownerIdentifier);
       if (!ownerId) {
-        const error = new Error('Owner not found for the provided identifier');
+        const error = new Error("Owner not found for the provided identifier");
         error.statusCode = 404;
         throw error;
       }
 
-      console.log('Resolved owner ID:', ownerId);
+      console.log("Resolved owner ID:", ownerId);
       const [rows] = await connect.query(
-          `SELECT p.*, 
+        `SELECT p.*, 
                 ps.Payment_status_name as payment_status,
                 pr.Profile_fullName as owner_name
          FROM payment p
@@ -139,70 +104,72 @@ class PaymentModel {
          ORDER BY p.Payment_date DESC`,
         [ownerId]
       );
-      console.log('Found payments:', rows.length);
+      console.log("Found payments:", rows.length);
       return rows;
     } catch (error) {
-      console.error('Error in findByOwner:', error);
+      console.error("Error in findByOwner:", error);
       throw error;
     }
   }
 
-  static async update(id, { status_id }) {
+  async findByReference(reference) {
+    const query = `SELECT * FROM payment WHERE Payment_reference_number = ?`;
     try {
-      await connect.query('START TRANSACTION');
+      const [rows] = await this.db.execute(query, [reference]);
+      return rows[0];
+    } catch (error) {
+      console.error("Error finding payment by reference:", error);
+      throw error;
+    }
+  }
 
-      // First check if payment exists and get current status
-      const currentPayment = await this.findById(id);
+  isValidStatusTransition(currentStatus, newStatus) {
+    const allowedTransitions = {
+      1: [2, 3, 4], // PENDING -> PROCESSING, COMPLETED, FAILED
+      2: [3, 4], // PROCESSING -> COMPLETED, FAILED
+      3: [], // COMPLETED -> no puede cambiar
+      4: [], // FAILED -> no puede cambiar
+    };
+
+    return allowedTransitions[currentStatus]?.includes(newStatus) || false;
+  }
+
+  async updateByReference(reference, { status_id }) {
+    try {
+      await connect.query("START TRANSACTION");
+
+      // First check if payment exists and get current status using reference
+      const currentPayment = await this.findByReference(reference);
       if (!currentPayment) {
         throw new Error("Payment not found");
       }
 
       // Validate status transition
-      if (!this.isValidStatusTransition(currentPayment.Payment_Status_ID_FK, status_id)) {
+      if (
+        !this.isValidStatusTransition(
+          currentPayment.Payment_Status_ID_FK,
+          status_id
+        )
+      ) {
         throw new Error("Invalid payment status transition");
       }
 
       let sqlQuery = `
         UPDATE payment 
         SET Payment_Status_ID_FK = ?
-        WHERE payment_id = ?`;
+        WHERE Payment_reference_number = ?`;
 
-      const [result] = await connect.query(sqlQuery, [status_id, id]);
+      const [result] = await connect.query(sqlQuery, [status_id, reference]);
 
-      // If status changed, create notification
-      if (status_id !== currentPayment.Payment_Status_ID_FK) {
-        const statusMap = {
-          1: 'PENDING',
-          2: 'PROCESSING',
-          3: 'COMPLETED',
-          4: 'FAILED'
-        };
-
-        await connect.query(`
-          INSERT INTO notification (
-            Notification_type_FK_ID,
-            Notification_description,
-            Notification_User_FK_ID
-          ) VALUES (
-            2, # Payment notification type
-            ?,
-            (SELECT User_FK_ID FROM owner WHERE Owner_id = ?)
-          )`, [
-            `Payment status updated: ${currentPayment.Payment_reference_number} is now ${statusMap[status_id]}`,
-            currentPayment.Owner_ID_FK
-          ]
-        );
-      }
-
-      await connect.query('COMMIT');
+      await connect.query("COMMIT");
       return result.affectedRows > 0;
     } catch (error) {
-      await connect.query('ROLLBACK');
+      await connect.query("ROLLBACK");
       throw error;
     }
   }
 
-  static async delete(id) {
+  async delete(id) {
     try {
       const sqlQuery = "DELETE FROM payment WHERE payment_id = ?";
       const [result] = await connect.query(sqlQuery, [id]);
@@ -212,97 +179,122 @@ class PaymentModel {
     }
   }
 
-  static async getPaymentStats() {
-    try {
-      const sqlQuery = `
-        SELECT 
-          COUNT(*) as total_payments,
-          SUM(CASE WHEN Payment_Status_ID_FK = 1 THEN 1 ELSE 0 END) as pending_count,
-          SUM(CASE WHEN Payment_Status_ID_FK = 2 THEN 1 ELSE 0 END) as completed_count,
-          SUM(CASE WHEN Payment_Status_ID_FK = 3 THEN 1 ELSE 0 END) as failed_count,
-          SUM(Payment_total_payment) as total_amount,
-          SUM(CASE WHEN Payment_Status_ID_FK = 2 THEN Payment_total_payment ELSE 0 END) as collected_amount
-        FROM payment
-      `;
-      const [result] = await connect.query(sqlQuery);
-      return result[0];
-    } catch (error) {
-      throw error;
+  async getPaymentHistory(userId, page = 1, limit = 10, status = null) {
+    let query = `
+      SELECT * FROM payment 
+      WHERE Owner_ID_FK = ?
+    `;
+    const params = [userId];
+
+    if (status) {
+      query += ` AND status = ?`;
+      params.push(status);
     }
-  }
 
-  static async getOwnerPendingPayments(ownerIdentifier) {
+    query += ` ORDER BY Payment_date DESC LIMIT ? OFFSET ?`;
+    params.push(limit, (page - 1) * limit);
+
     try {
-      console.log('Finding pending payments for owner identifier:', ownerIdentifier);
-
-      const ownerId = await resolveOwnerId(ownerIdentifier);
-      if (!ownerId) {
-        const error = new Error('Owner not found for the provided identifier');
-        error.statusCode = 404;
-        throw error;
-      }
-
-      console.log('Resolved owner ID:', ownerId);
-      const [rows] = await connect.query(
-        `SELECT p.*, 
-                ps.Payment_status_name as payment_status,
-                pr.Profile_fullName as owner_name
-         FROM payment p
-         LEFT JOIN payment_status ps ON p.Payment_Status_ID_FK = ps.Payment_status_id
-         LEFT JOIN owner o ON p.Owner_ID_FK = o.Owner_id
-         LEFT JOIN profile pr ON o.User_FK_ID = pr.User_FK_ID
-         WHERE p.Owner_ID_FK = ? AND p.Payment_Status_ID_FK = 1
-         ORDER BY p.Payment_date DESC`,
-        [ownerId]
-      );
-      console.log('Found pending payments:', rows.length);
+      const [rows] = await this.db.execute(query, params);
       return rows;
     } catch (error) {
-      console.error('Error in getOwnerPendingPayments:', error);
+      console.error("Error getting payment history:", error);
       throw error;
     }
   }
 
-  static isValidStatusTransition(currentStatus, newStatus) {
-    // Define valid status transitions based on existing DB statuses:
-    // 1 = PENDING
-    // 2 = COMPLETED 
-    // 3 = FAILED
-    const validTransitions = {
-      1: [2, 3], // From PENDING can go to COMPLETED or FAILED
-      2: [], // From COMPLETED cannot change
-      3: [1] // From FAILED can go back to PENDING
-    };
+  async getPendingPayments(userId = null) {
+    let query = `SELECT * FROM payment WHERE status = 'PENDING'`;
+    const params = [];
 
-    return validTransitions[currentStatus]?.includes(newStatus) || false;
+    if (userId) {
+      query += ` AND Owner_ID_FK = ?`;
+      params.push(userId);
+    }
+
+    query += ` ORDER BY Payment_date ASC`;
+
+    try {
+      const [rows] = await this.db.execute(query, params);
+      return rows;
+    } catch (error) {
+      console.error("Error getting pending payments:", error);
+      throw error;
+    }
   }
 
-  static async updateStatus(payment_id, status_id) {
+  async getPaymentReports(startDate, endDate, groupBy = "day") {
+    let dateFormat;
+    switch (groupBy) {
+      case "day":
+        dateFormat = "%Y-%m-%d";
+        break;
+      case "month":
+        dateFormat = "%Y-%m";
+        break;
+      case "year":
+        dateFormat = "%Y";
+        break;
+      default:
+        dateFormat = "%Y-%m-%d";
+    }
+
+    const query = `
+      SELECT 
+        DATE_FORMAT(Payment_date, ?) as period,
+        status,
+        currency,
+        COUNT(*) as total_count,
+        SUM(Payment_total_payment) as total_amount,
+        COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved_count,
+        COUNT(CASE WHEN status = 'PENDING' THEN 1 END) as pending_count
+      FROM payment 
+      WHERE Payment_date BETWEEN ? AND ?
+      GROUP BY period, status, currency
+      ORDER BY period DESC
+    `;
+
     try {
-      const [result] = await connect.query(
-        'UPDATE payment SET Payment_Status_ID_FK = ? WHERE payment_id = ?',
-        [status_id, payment_id]
-      );
-
-      if (result.affectedRows === 0) {
-        throw new Error('Payment not found');
-      }
-
-      // Get the updated payment
-      const [rows] = await connect.query(
-        `SELECT p.*, ps.Payment_status_name as status_name
-         FROM payment p
-         LEFT JOIN payment_status ps ON p.Payment_Status_ID_FK = ps.Payment_status_id
-         WHERE p.payment_id = ?`,
-        [payment_id]
-      );
-
-      return rows[0];
+      const [rows] = await this.db.execute(query, [
+        dateFormat,
+        startDate,
+        endDate,
+      ]);
+      return rows;
     } catch (error) {
-      console.error('Error in updateStatus:', error);
+      console.error("Error getting payment reports:", error);
+      throw error;
+    }
+  }
+
+  async getIndividualReport(userId, startDate = null, endDate = null) {
+    let query = `
+      SELECT 
+        status,
+        COUNT(*) as count,
+        SUM(Payment_total_payment) as total_amount,
+        currency
+      FROM payment 
+      WHERE Owner_ID_FK = ?
+    `;
+
+    const params = [userId];
+
+    if (startDate && endDate) {
+      query += ` AND Payment_date BETWEEN ? AND ?`;
+      params.push(startDate, endDate);
+    }
+
+    query += ` GROUP BY status, currency`;
+
+    try {
+      const [rows] = await this.db.execute(query, params);
+      return rows;
+    } catch (error) {
+      console.error("Error getting individual report:", error);
       throw error;
     }
   }
 }
 
-export default PaymentModel;
+export default new PaymentModel();

@@ -1,71 +1,73 @@
-import express from 'express';
-import paymentController from '../controllers/payment.controller.js';
-import { verifyToken, ownerResourceAccess } from '../middleware/authMiddleware.js';
-import { requirePermission, requireAdmin } from '../middleware/permissionMiddleware.js';
+import express from "express";
+import paymentController from "../controllers/payment.controller.js";
+import {
+  verifyToken,
+  ownerResourceAccess,
+} from "../middleware/authMiddleware.js";
+import {
+  requirePermission,
+  requireAdmin,
+} from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 // Admin routes
-router.post('/', 
+router.post(
+  "/",
   verifyToken,
   requireAdmin,
-  paymentController.create
+  paymentController.pay.bind(paymentController)
 );
 
-router.get('/',
+router.get(
+  "/",
   verifyToken,
-  requirePermission('payments', 'read'),
+  requirePermission("payments", "read"),
   paymentController.show
 );
 
-router.get('/report',
+router.get(
+  "/report",
   verifyToken,
-  requirePermission('payments', 'read'),
+  requirePermission("payments", "read"),
   paymentController.downloadPaymentReport
 );
 
-
-router.get('/stats',
+router.get(
+  "/stats",
   verifyToken,
-  requirePermission('payments', 'read'),
+  requirePermission("payments", "read"),
   paymentController.getPaymentStats
 );
 
-router.get('/:id',
+router.get(
+  "/:id",
   verifyToken,
-  requirePermission('payments', 'read'),
+  requirePermission("payments", "read"),
   paymentController.showById
 );
 
-router.put('/:id',
+router.delete(
+  "/:id",
   verifyToken,
-  requirePermission('payments', 'update'),
-  paymentController.update
-);
-
-router.delete('/:id',
-  verifyToken,
-  requirePermission('payments', 'delete'),
+  requirePermission("payments", "delete"),
   paymentController.delete
 );
 
 // Owner routes
-router.get('/owner/:owner_id',
+router.get(
+  "/owner/:owner_id",
   verifyToken,
-  ownerResourceAccess('owner_id', 'userId'),
+  ownerResourceAccess("owner_id", "userId"),
   paymentController.getOwnerPayments
 );
 
-router.get('/owner/:owner_id/pending',
+router.get(
+  "/owner/:owner_id/pending",
   verifyToken,
-  ownerResourceAccess('owner_id', 'userId'),
+  ownerResourceAccess("owner_id", "userId"),
   paymentController.getPendingPayments
 );
 
-router.post('/owner/:owner_id/pay/:payment_id',
-  verifyToken,
-  ownerResourceAccess('owner_id', 'userId'),
-  paymentController.makePayment
-);
 
 export default router;
