@@ -351,17 +351,6 @@ const sqlStatements = [
     CONSTRAINT fk_payment_status FOREIGN KEY (Payment_Status_ID_FK) REFERENCES payment_status (Payment_status_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-  `CREATE TABLE payment_detail (
-    detail_id INT NOT NULL AUTO_INCREMENT,
-    payment_id_fk INT NOT NULL,
-    item_type ENUM('parking', 'reservation') NOT NULL,
-    item_id INT NOT NULL,
-    amount FLOAT NOT NULL,
-    PRIMARY KEY (detail_id),
-    KEY payment_id_fk (payment_id_fk),
-    CONSTRAINT fk_detail_payment FOREIGN KEY (payment_id_fk) REFERENCES payment (payment_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-
   // ==================== NOTIFICATIONS ====================
 
   // Notification type table (no FK dependencies)
