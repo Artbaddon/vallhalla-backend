@@ -1,10 +1,10 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class NotificationModel {
-  static async create({ 
-    type_id, 
+  static async create({
+    type_id,
     description,
-    user_id // null or 0 for all users
+    user_id, // null or 0 for all users
   }) {
     try {
       let sqlQuery = `INSERT INTO notification (
@@ -14,11 +14,11 @@ class NotificationModel {
         Notification_createdAt, 
         Notification_updatedAt
       ) VALUES (?, ?, ?, NOW(), NOW())`;
-      
+
       const [result] = await connect.query(sqlQuery, [
-        type_id, 
+        type_id,
         description,
-        user_id === 0 ? null : user_id // Convert 0 to null for database
+        user_id === 0 ? null : user_id, // Convert 0 to null for database
       ]);
       return result.insertId;
     } catch (error) {
@@ -41,11 +41,7 @@ class NotificationModel {
     }
   }
 
-  static async update(id, { 
-    type_id, 
-    description,
-    user_id
-  }) {
+  static async update(id, { type_id, description, user_id }) {
     try {
       let sqlQuery = `UPDATE notification SET 
         Notification_type_FK_ID = ?, 
@@ -53,14 +49,14 @@ class NotificationModel {
         Notification_User_FK_ID = ?,
         Notification_updatedAt = NOW() 
         WHERE Notification_id = ?`;
-      
+
       const [result] = await connect.query(sqlQuery, [
-        type_id, 
+        type_id,
         description,
         user_id === 0 ? null : user_id, // Convert 0 to null for database
-        id
+        id,
       ]);
-      
+
       if (result.affectedRows === 0) {
         return { error: "Notification not found" };
       } else {
@@ -105,15 +101,31 @@ class NotificationModel {
     }
   }
 
+  static async findByUnread(user_id) {
+    try {
+      let sqlQuery = `
+      SELECT n.*, nt.Notification_type_name
+      FROM notification n
+      LEFT JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
+      WHERE n.Notification_User_FK_ID IS NULL
+      ORDER BY n.Notification_createdAt DESC
+    `;
+      const [result] = await connect.query(sqlQuery, [user_id]);
+      return result;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
   static async findByUser(user_id) {
     try {
       let sqlQuery = `
-        SELECT n.*, nt.Notification_type_name
-        FROM notification n
-        LEFT JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
-        WHERE n.Notification_User_FK_ID = ? OR n.Notification_User_FK_ID IS NULL
-        ORDER BY n.Notification_createdAt DESC
-      `;
+      SELECT n.*, nt.Notification_type_name
+      FROM notification n
+      INNER JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
+      WHERE n.Notification_User_FK_ID = ?  -- SOLO notificaciones personales
+      ORDER BY n.Notification_createdAt DESC
+    `;
       const [result] = await connect.query(sqlQuery, [user_id]);
       return result;
     } catch (error) {

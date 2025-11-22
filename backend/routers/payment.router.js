@@ -19,6 +19,12 @@ router.post(
   paymentController.pay.bind(paymentController)
 );
 
+router.post(
+  "/check/:reference",
+  verifyToken,
+  paymentController.checkPaymentStatus
+)
+
 router.get(
   "/",
   verifyToken,

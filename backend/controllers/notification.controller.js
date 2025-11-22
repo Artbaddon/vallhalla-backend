@@ -214,7 +214,7 @@ class NotificationController {
       }
 
       // Since we don't track read status, just return all notifications
-      const notifications = await NotificationModel.findByUser(recipient_id);
+      const notifications = await NotificationModel.findByUnread(recipient_id);
 
       if (notifications.error) {
         return res.status(500).json({ error: notifications.error });

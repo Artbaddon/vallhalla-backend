@@ -235,6 +235,118 @@ class PaymentController {
     }
   }
 
+  async generatePaymentLink(req, res) {
+    try {
+      let {
+        amount,
+        owner_id,
+        currency = "COP",
+        customer_email,
+        customer_data,
+        item_type,
+        item_id,
+        redirect_url, // URL para redirección después del pago
+      } = req.body;
+
+      // Validaciones básicas
+      if (!amount || !customer_email) {
+        return res.status(400).json({
+          success: false,
+          error: "Amount y customer_email son requeridos",
+        });
+      }
+
+      // Validar item_type e item_id
+      if (!item_type || !item_id) {
+        return res.status(400).json({
+          success: false,
+          error: "item_type e item_id son requeridos",
+        });
+      }
+
+      if (!["parking", "reservation"].includes(item_type)) {
+        return res.status(400).json({
+          success: false,
+          error: "item_type debe ser 'parking' o 'reservation'",
+        });
+      }
+
+      // Validar permisos
+      const isAdmin = req.user.Role_name === "ADMIN" || req.user.roleId === 1;
+      const isOwner = req.user.roleId === 2;
+
+      if (isOwner) {
+        if (!req.user.Owner_id) {
+          return res.status(403).json({
+            success: false,
+            error: "No se encontró el registro de propietario",
+          });
+        }
+        owner_id = req.user.Owner_id;
+      } else if (isAdmin) {
+        if (!owner_id) {
+          return res.status(400).json({
+            success: false,
+            error: "Admin debe especificar owner_id",
+          });
+        }
+      } else {
+        return res.status(403).json({
+          success: false,
+          error: "No tiene permisos para crear pagos",
+        });
+      }
+
+      // Generar referencia única
+      const reference = `PAY_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`.toUpperCase();
+
+      // Crear payment en BD con estado PENDING
+      const paymentData = {
+        user_id: owner_id,
+        total: amount,
+        currency: currency,
+        status: 1, // PENDING
+        payment_method: "LINK", // Indica que es pago por link
+        reference: reference,
+        item_type: item_type,
+        item_id: item_id,
+      };
+
+      const payment = await PaymentModel.create(paymentData);
+
+      // Generar link de pago con Wompi
+      const paymentLink = await WompiService.generatePaymentLink({
+        amount: Math.round(amount * 100),
+        currency: currency,
+        reference: reference,
+        customer_email: customer_email,
+        customer_data: customer_data,
+        redirect_url:
+          redirect_url || `${process.env.FRONTEND_URL}/payment-result`,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          payment_id: payment.payment_id,
+          reference: reference,
+          payment_url: paymentLink, // URL para redirigir al usuario
+          amount: amount,
+          currency: currency,
+          expires_in: "15 minutes", // Los links de Wompi suelen expirar
+        },
+      });
+    } catch (error) {
+      console.error("Error generating payment link:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Error interno del servidor",
+      });
+    }
+  }
+
   async pay(req, res) {
     try {
       let {
@@ -414,12 +526,11 @@ class PaymentController {
 
       // Mapear estados de Wompi a tus estados internos
       const statusMap = {
-        APPROVED: 3, // COMPLETED
-        DECLINED: 4, // FAILED
-        VOIDED: 4, // FAILED
-        ERROR: 4, // FAILED
+        APPROVED: 2, // COMPLETED
+        DECLINED: 3, // FAILED
+        ERROR: 5, // FAILED
         PENDING: 1, // PENDING
-        IN_PROGRESS: 2, // PROCESSING
+        VOIDED: 4, // FAILED
       };
 
       const status_id = statusMap[wompiStatus];
@@ -443,6 +554,48 @@ class PaymentController {
     } catch (error) {
       console.error("Error processing Wompi webhook:", error);
       throw error;
+    }
+  }
+  async checkPaymentStatus(req, res) {
+    try {
+      const { reference } = req.params;
+
+      // Usar tu método existente
+      const payment = await PaymentModel.findByReference(reference);
+
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          error: "Pago no encontrado",
+        });
+      }
+
+      // Mapear estados numéricos a texto legible
+      const statusMap = {
+        1: "PENDING",
+        2: "APPROVED",
+        3: "DECLINED",
+        4: "VOIDED",
+        5: "ERROR",
+      };
+
+      res.json({
+        success: true,
+        data: {
+          reference: payment.Payment_reference_number,
+          status: payment.Payment_Status_ID_FK, // Tu estado numérico
+          status_text: statusMap[payment.Payment_Status_ID_FK] || "UNKNOWN",
+          amount: payment.Payment_total_payment,
+          currency: payment.Payment_currency, // si tienes este campo
+          created_at: payment.Payment_date,
+        },
+      });
+    } catch (error) {
+      console.error("Error checking payment status:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor",
+      });
     }
   }
 

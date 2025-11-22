@@ -64,28 +64,6 @@ export async function seedBasicData() {
     `);
     console.log('   ✓ Estados de apartamento creados');
 
-    // 4. SEED PARKING STATUSES
-    console.log('\n📝 Sembrando estados de parqueadero...');
-    await connection.query(`
-      INSERT INTO parking_status (Parking_status_name) VALUES
-        ('Disponible'),
-        ('Ocupado'),
-        ('Reservado')
-      ON DUPLICATE KEY UPDATE Parking_status_name = VALUES(Parking_status_name)
-    `);
-    console.log('   ✓ Estados de parqueadero creados');
-
-    // 5. SEED PARKING TYPES
-    console.log('\n📝 Sembrando tipos de parqueadero...');
-    await connection.query(`
-      INSERT INTO parking_type (Parking_type_name) VALUES
-        ('Regular'),
-        ('Visitante'),
-        ('Discapacitado')
-      ON DUPLICATE KEY UPDATE Parking_type_name = VALUES(Parking_type_name)
-    `);
-    console.log('   ✓ Tipos de parqueadero creados');
-
     // 6. SEED RESERVATION STATUSES
     console.log('\n📝 Sembrando estados de reserva...');
     await connection.query(`
@@ -116,10 +94,11 @@ export async function seedBasicData() {
     console.log('\n📝 Sembrando estados de pago...');
     await connection.query(`
       INSERT INTO payment_status (Payment_status_name) VALUES
-        ('Pendiente'),
-        ('Procesando'),
-        ('Completado'),
-        ('Fallido')
+        ('PENDIENTE'),
+        ('APROBADO'),
+        ('RECHAZADO'),
+        ('ANULADO'),
+        ('ERROR')
       ON DUPLICATE KEY UPDATE Payment_status_name = VALUES(Payment_status_name)
     `);
     console.log('   ✓ Estados de pago creados');

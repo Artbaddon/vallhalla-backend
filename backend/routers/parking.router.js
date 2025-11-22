@@ -15,6 +15,17 @@ router.get('/',
   ParkingController.show
 );
 
+router.get('/parking-types', 
+  requirePermission('parking', 'read'),
+  ParkingController.getParkingTypes
+);
+
+router.get('/parking-statuses', 
+  requirePermission('parking', 'read'),
+  ParkingController.getParkingStatus
+);
+
+
 // View specific parking spot
 router.get('/:id',
   requirePermission('parking', 'read'),
@@ -25,6 +36,11 @@ router.get('/:id',
 router.post('/',
   requireAdmin,
   ParkingController.register
+);
+
+router.put('/reserve',
+  requirePermission('parking', 'update'),
+  ParkingController.reserve
 );
 
 // Only admin can update parking configuration
