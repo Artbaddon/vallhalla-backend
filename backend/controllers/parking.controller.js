@@ -29,15 +29,16 @@ class ParkingistratorController {
           id: parkingId,
           number,
           type_id,
-          status_id: status_id || 1
+          status_id: status_id || 1,
         },
       });
     } catch (error) {
       console.error("Error en register parking:", error);
-      if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      if (error.code === "ER_NO_REFERENCED_ROW_2") {
         res.status(400).json({
           success: false,
-          error: "El tipo de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
+          error:
+            "El tipo de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
         });
       } else {
         res.status(500).json({
@@ -67,7 +68,7 @@ class ParkingistratorController {
         number: number || existingParking.Parking_number,
         type_id: type_id || existingParking.Parking_type_ID_FK,
         status_id: status_id || existingParking.Parking_status_ID_FK,
-        user_id: user_id || existingParking.User_ID_FK
+        user_id: user_id || existingParking.User_ID_FK,
       };
 
       // Actualizar
@@ -85,15 +86,16 @@ class ParkingistratorController {
         message: "Parking actualizado exitosamente",
         data: {
           id,
-          ...updateData
+          ...updateData,
         },
       });
     } catch (error) {
       console.error("Error en update parking:", error);
-      if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      if (error.code === "ER_NO_REFERENCED_ROW_2") {
         res.status(400).json({
           success: false,
-          error: "El tipo o estado de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
+          error:
+            "El tipo o estado de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
         });
       } else {
         res.status(500).json({
@@ -126,13 +128,13 @@ class ParkingistratorController {
   async delete(req, res) {
     try {
       const id = req.params.id;
-      
+
       // Verificar si el parking existe
       const existingParking = await ParkingModel.findById(id);
       if (!existingParking) {
         return res.status(404).json({
           success: false,
-          error: "Parking no encontrado"
+          error: "Parking no encontrado",
         });
       }
 
@@ -140,46 +142,33 @@ class ParkingistratorController {
       res.status(200).json({
         success: true,
         message: "Parking eliminado exitosamente",
-        data: { id }
+        data: { id },
       });
     } catch (error) {
       console.error("Error al eliminar parking:", error);
       res.status(500).json({
         success: false,
-        error: "Error interno del servidor al eliminar parking"
+        error: "Error interno del servidor al eliminar parking",
       });
     }
   }
 
-  async findById(req, res) {
+  async findById(id) {
     try {
-      const id = req.params.id;
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          error: "ID de parking requerido"
-        });
-      }
-
-      const parking = await ParkingModel.findById(id);
-      if (!parking) {
-        return res.status(404).json({
-          success: false,
-          error: "Parking no encontrado"
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Parking encontrado exitosamente",
-        data: parking
-      });
+      const [rows] = await connect.query(
+        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
+       FROM parking p
+       LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
+       LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
+       LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+       LEFT JOIN users u ON p.User_ID_FK = u.Users_id
+       WHERE p.Parking_id = ?`,
+        [id]
+      );
+      return rows[0] || null;
     } catch (error) {
-      console.error("Error al buscar parking:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error interno del servidor al buscar parking"
-      });
+      console.error("Error finding parking by ID:", error.message);
+      throw error;
     }
   }
 
@@ -199,11 +188,15 @@ class ParkingistratorController {
       if (!existingParking) {
         return res.status(404).json({
           success: false,
-          error: "Parking no encontrado"
+          error: "Parking no encontrado",
         });
       }
 
-      const success = await ParkingModel.assignVehicle(parkingId, vehicleTypeId, userId);
+      const success = await ParkingModel.assignVehicle(
+        parkingId,
+        vehicleTypeId,
+        userId
+      );
 
       if (!success) {
         return res.status(400).json({
@@ -217,20 +210,20 @@ class ParkingistratorController {
         data: {
           parkingId,
           vehicleTypeId,
-          userId
-        }
+          userId,
+        },
       });
     } catch (error) {
       console.error("Error en assignVehicle:", error);
-      if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      if (error.code === "ER_NO_REFERENCED_ROW_2") {
         res.status(400).json({
           success: false,
-          error: "El tipo de vehículo especificado no existe"
+          error: "El tipo de vehículo especificado no existe",
         });
       } else {
         res.status(500).json({
           success: false,
-          error: "Error interno del servidor al asignar vehículo"
+          error: "Error interno del servidor al asignar vehículo",
         });
       }
     }
@@ -241,17 +234,19 @@ class ParkingistratorController {
     try {
       // Status 1 is typically "available" - adjust as needed based on your status IDs
       const availableStatusId = 1;
-      
+
       // You may need to add this method to your model
-      const availableParkings = await ParkingModel.findByStatus(availableStatusId);
-      
+      const availableParkings = await ParkingModel.findByStatus(
+        availableStatusId
+      );
+
       if (!availableParkings) {
         return res.status(500).json({
           success: false,
           error: "Error retrieving available parking spots",
         });
       }
-      
+
       res.status(200).json({
         success: true,
         message: "Available parking spots retrieved successfully",
@@ -270,48 +265,45 @@ class ParkingistratorController {
   // New method to reserve a parking spot
   async reserve(req, res) {
     try {
-      const { parking_id, user_id, vehicle_type_id, start_date, end_date } = req.body;
-      
-      if (!parking_id || !user_id || !vehicle_type_id) {
+      const { parking_id, user_id, vehicle_id, start_date, end_date } =
+        req.body;
+
+      if (!parking_id || !user_id || !vehicle_id || !start_date || !end_date) {
         return res.status(400).json({
           success: false,
-          error: "Parking ID, user ID, and vehicle type ID are required",
+          error:
+            "Parking ID, user ID, vehicle ID, start date, and end date are required",
         });
       }
-      
-      // Check if parking spot is available
-      const parkingSpot = await ParkingModel.findById(parking_id);
-      if (!parkingSpot) {
-        return res.status(404).json({
-          success: false,
-          error: "Parking spot not found",
-        });
-      }
-      
-      // Status 1 is typically "available" - adjust as needed
-      if (parkingSpot.Parking_status_FK_ID !== 1) {
+
+      // Validar fechas
+      const start = new Date(start_date);
+      const end = new Date(end_date);
+
+      if (start >= end) {
         return res.status(400).json({
           success: false,
-          error: "Parking spot is not available for reservation",
+          error: "End date must be after start date",
         });
       }
-      
-      // You may need to add this method to your model
+
+      // Verificar que la fecha de inicio no sea en el pasado
+      const now = new Date();
+      if (start < now) {
+        return res.status(400).json({
+          success: false,
+          error: "Start date cannot be in the past",
+        });
+      }
+
       const reservationResult = await ParkingModel.reserve({
         parking_id,
         user_id,
-        vehicle_type_id,
-        start_date: start_date || new Date(),
-        end_date: end_date || null,
+        vehicle_id,
+        start_date: start,
+        end_date: end,
       });
-      
-      if (!reservationResult) {
-        return res.status(500).json({
-          success: false,
-          error: "Failed to reserve parking spot",
-        });
-      }
-      
+
       res.status(200).json({
         success: true,
         message: "Parking spot reserved successfully",
@@ -319,9 +311,31 @@ class ParkingistratorController {
       });
     } catch (error) {
       console.error("Error in reserve:", error);
-      res.status(500).json({
+
+      // Manejar diferentes tipos de errores
+      let statusCode = 500;
+      let errorMessage = "Internal server error while reserving parking spot";
+
+      if (
+        error.message.includes("no encontrado") ||
+        error.message.includes("not found")
+      ) {
+        statusCode = 404;
+        errorMessage = error.message;
+      } else if (
+        error.message.includes("no está disponible") ||
+        error.message.includes("not available") ||
+        error.message.includes("no pertenece") ||
+        error.message.includes("no es compatible") ||
+        error.message.includes("cannot be in the past")
+      ) {
+        statusCode = 400;
+        errorMessage = error.message;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: "Internal server error while reserving parking spot",
+        error: errorMessage,
       });
     }
   }
@@ -330,24 +344,24 @@ class ParkingistratorController {
   async getMySpots(req, res) {
     try {
       const userId = req.user.userId;
-      
+
       if (!userId) {
         return res.status(400).json({
           success: false,
           error: "User ID is required",
         });
       }
-      
+
       // You may need to add this method to your model
       const userParkings = await ParkingModel.findByUser(userId);
-      
+
       if (!userParkings) {
         return res.status(500).json({
           success: false,
           error: "Error retrieving user's parking spots",
         });
       }
-      
+
       res.status(200).json({
         success: true,
         message: "User's parking spots retrieved successfully",
@@ -359,61 +373,6 @@ class ParkingistratorController {
       res.status(500).json({
         success: false,
         error: "Internal server error while retrieving user's parking spots",
-      });
-    }
-  }
-
-  // New method to pay for parking
-  async pay(req, res) {
-    try {
-      const parkingId = req.params.id;
-      const { payment_method, amount, reference_number } = req.body;
-      const userId = req.user.userId;
-      
-      if (!parkingId || !payment_method || !amount) {
-        return res.status(400).json({
-          success: false,
-          error: "Parking ID, payment method, and amount are required",
-        });
-      }
-      
-      // Verify parking ownership
-      const parkingSpot = await ParkingModel.findById(parkingId);
-      if (!parkingSpot) {
-        return res.status(404).json({
-          success: false,
-          error: "Parking spot not found",
-        });
-      }
-      
-      // You may need to add this method to your model
-      const paymentResult = await ParkingModel.processPayment({
-        parking_id: parkingId,
-        user_id: userId,
-        payment_method,
-        amount,
-        reference_number: reference_number || null,
-        payment_date: new Date()
-      });
-      
-      if (!paymentResult) {
-        return res.status(500).json({
-          success: false,
-          error: "Failed to process payment",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Payment processed successfully",
-        data: paymentResult,
-      });
-    } catch (error) {
-      console.error("Error in pay:", error);
-      const statusCode = error.statusCode || 500;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || "Internal server error while processing payment",
       });
     }
   }
