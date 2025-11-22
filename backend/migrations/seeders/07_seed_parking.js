@@ -30,9 +30,7 @@ export async function seedParking() {
     await connection.query(`
       INSERT INTO vehicle_type (Vehicle_type_name, Vehicle_type_description) VALUES
         ('Carro', 'Vehículo de 4 ruedas'),
-        ('Moto', 'Motocicleta de 2 ruedas'), 
-        ('Camioneta', 'Vehículo grande para carga'),
-        ('Bicicleta', 'Bicicleta sin motor')
+        ('Moto', 'Motocicleta de 2 ruedas')
       ON DUPLICATE KEY UPDATE 
         Vehicle_type_description = VALUES(Vehicle_type_description)
     `);
@@ -87,12 +85,6 @@ export async function seedParking() {
     const motoId = vehicleTypes.find(
       (v) => v.Vehicle_type_name === "Moto"
     ).Vehicle_type_id;
-    const camionetaId = vehicleTypes.find(
-      (v) => v.Vehicle_type_name === "Camioneta"
-    ).Vehicle_type_id;
-    const bicicletaId = vehicleTypes.find(
-      (v) => v.Vehicle_type_name === "Bicicleta"
-    ).Vehicle_type_id;
 
     const vehicles = [
       // Carros - Owner 1
@@ -133,46 +125,6 @@ export async function seedParking() {
         year: 2022,
         type: motoId,
         user: owners[1].Users_id,
-      },
-
-      // Camionetas - Owner 3
-      {
-        plate: "CAM001",
-        model: "Ranger",
-        brand: "Ford",
-        color: "Blanco",
-        year: 2021,
-        type: camionetaId,
-        user: owners[2].Users_id,
-      },
-      {
-        plate: "CAM002",
-        model: "Hilux",
-        brand: "Toyota",
-        color: "Gris",
-        year: 2023,
-        type: camionetaId,
-        user: owners[2].Users_id,
-      },
-
-      // Bicicletas - Owner 4
-      {
-        plate: "BIC001",
-        model: "Mountain",
-        brand: "Trek",
-        color: "Negro",
-        year: 2024,
-        type: bicicletaId,
-        user: owners[3].Users_id,
-      },
-      {
-        plate: "BIC002",
-        model: "Urban",
-        brand: "Specialized",
-        color: "Azul",
-        year: 2023,
-        type: bicicletaId,
-        user: owners[3].Users_id,
       },
 
       // Más vehículos - Owner 5
@@ -336,42 +288,6 @@ export async function seedParking() {
         num: "RM04",
         status: disponibleId,
         vehicleType: motoId,
-        vehicleId: null,
-        type: residenteId,
-        user: null,
-      },
-
-      // RESIDENTES - Camionetas
-      {
-        num: "RC01",
-        status: disponibleId,
-        vehicleType: camionetaId,
-        vehicleId: null,
-        type: residenteId,
-        user: null,
-      },
-      {
-        num: "RC02",
-        status: disponibleId,
-        vehicleType: camionetaId,
-        vehicleId: null,
-        type: residenteId,
-        user: null,
-      },
-
-      // RESIDENTES - Bicicletas
-      {
-        num: "RB01",
-        status: disponibleId,
-        vehicleType: bicicletaId,
-        vehicleId: null,
-        type: residenteId,
-        user: null,
-      },
-      {
-        num: "RB02",
-        status: disponibleId,
-        vehicleType: bicicletaId,
         vehicleId: null,
         type: residenteId,
         user: null,

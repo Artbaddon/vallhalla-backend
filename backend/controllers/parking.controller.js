@@ -383,22 +383,24 @@ class ParkingistratorController {
   // New method to get user's parking spots
   async getMySpots(req, res) {
     try {
-      const userId = req.user.userId;
+      const { id } = req.params;
 
-      if (!userId) {
+      if (!id) {
         return res.status(400).json({
           success: false,
           error: "User ID is required",
         });
       }
 
-      // You may need to add this method to your model
-      const userParkings = await ParkingModel.findByUser(userId);
+      const userParkings = await ParkingModel.findByUser(id);
 
-      if (!userParkings) {
-        return res.status(500).json({
-          success: false,
-          error: "Error retrieving user's parking spots",
+      // Si no hay parkings, devolver array vacío
+      if (!userParkings || userParkings.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: "No parking spots found for this user",
+          data: [],
+          count: 0,
         });
       }
 
@@ -410,6 +412,7 @@ class ParkingistratorController {
       });
     } catch (error) {
       console.error("Error in getMySpots:", error);
+
       res.status(500).json({
         success: false,
         error: "Internal server error while retrieving user's parking spots",

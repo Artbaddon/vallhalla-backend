@@ -117,7 +117,8 @@ class ParkingModel {
       console.error("Error finding parking by status:", error.message);
       throw error;
     }
-  }static async getStatus() {
+  }
+  static async getStatus() {
     try {
       const [result] = await connect.query(
         `SELECT * FROM parking_status ORDER BY Parking_status_id;`
@@ -128,7 +129,6 @@ class ParkingModel {
     }
   }
 
-  
   static async getTypes() {
     try {
       const [result] = await connect.query(
@@ -143,13 +143,23 @@ class ParkingModel {
   static async findByUser(userId) {
     try {
       const [result] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
-         FROM parking p
-         LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
-         LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
-         LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
-         LEFT JOIN users u ON p.User_ID_FK = u.Users_id
-         WHERE p.User_ID_FK = ?`,
+        `SELECT 
+         p.Parking_id,
+         p.Parking_number,
+         ps.Parking_status_name as status,
+         pt.Parking_type_name as type,
+         vt.Vehicle_type_name as vehicle_type,
+         u.Users_name as user_name,
+         p.reservation_start_date,
+         p.reservation_end_date,
+         p.created_at,
+         p.updated_at
+       FROM parking p
+       LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
+       LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
+       LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
+       LEFT JOIN users u ON p.User_ID_FK = u.Users_id
+       WHERE p.User_ID_FK = ?`,
         [userId]
       );
       return result;

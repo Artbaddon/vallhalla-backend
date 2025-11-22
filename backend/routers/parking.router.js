@@ -35,6 +35,12 @@ router.get(
   ParkingController.findById
 );
 
+router.get(
+  "/spots/:id",
+  requirePermission("parking", "read"),
+  ParkingController.getMySpots
+);
+
 // Only admin can create new parking spots
 router.post("/", requireAdmin, ParkingController.register);
 
