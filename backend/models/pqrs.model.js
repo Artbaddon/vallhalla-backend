@@ -1,6 +1,40 @@
 import { connect } from "../config/db/connectMysql.js";
 
 class PQRSModel {
+  static latestStatusJoin = `
+    LEFT JOIN (
+      SELECT t.PQRS_tracking_PQRS_FK_ID,
+             t.PQRS_tracking_status_FK_ID,
+             t.PQRS_tracking_date_update
+      FROM pqrs_tracking t
+      INNER JOIN (
+        SELECT PQRS_tracking_PQRS_FK_ID,
+               MAX(PQRS_tracking_date_update) AS latest_update
+        FROM pqrs_tracking
+        GROUP BY PQRS_tracking_PQRS_FK_ID
+      ) latest
+        ON latest.PQRS_tracking_PQRS_FK_ID = t.PQRS_tracking_PQRS_FK_ID
+       AND latest.latest_update = t.PQRS_tracking_date_update
+    ) latest_status
+      ON latest_status.PQRS_tracking_PQRS_FK_ID = p.PQRS_id
+    LEFT JOIN pqrs_tracking_status pts
+      ON pts.PQRS_tracking_status_id = latest_status.PQRS_tracking_status_FK_ID
+  `;
+
+  static baseSelect = `
+    SELECT p.*,
+           pc.PQRS_category_name,
+           o.Owner_id,
+           u.Users_name AS owner_name,
+           latest_status.PQRS_tracking_status_FK_ID AS current_status_id,
+           pts.PQRS_tracking_status_name AS current_status_name
+    FROM pqrs p
+    LEFT JOIN pqrs_category pc ON p.PQRS_category_FK_ID = pc.PQRS_category_id
+    LEFT JOIN owner o ON p.Owner_FK_ID = o.Owner_id
+    LEFT JOIN users u ON o.User_FK_ID = u.Users_id
+    ${PQRSModel.latestStatusJoin}
+  `;
+
   static async validateForeignKeys({ owner_id, category_id }) {
     try {
       // Check if owner exists
@@ -96,16 +130,9 @@ class PQRSModel {
 
   static async show() {
     try {
-      let sqlQuery = `
-        SELECT p.*, pc.PQRS_category_name,
-               o.Owner_id, u.Users_name as owner_name
-        FROM pqrs p
-        LEFT JOIN pqrs_category pc ON p.PQRS_category_FK_ID = pc.PQRS_category_id
-        LEFT JOIN owner o ON p.Owner_FK_ID = o.Owner_id
-        LEFT JOIN users u ON o.User_FK_ID = u.Users_id
-        ORDER BY p.PQRS_createdAt DESC
-      `;
-      const [result] = await connect.query(sqlQuery);
+      const [result] = await connect.query(
+        `${PQRSModel.baseSelect} ORDER BY p.PQRS_createdAt DESC`
+      );
       return result;
     } catch (error) {
       return { error: error.message };
@@ -255,16 +282,10 @@ static async delete(id) {
 
 static async findById(id) {
   try {
-    let sqlQuery = `
-      SELECT p.*, pc.PQRS_category_name,
-              o.Owner_id, u.Users_name as owner_name
-        FROM pqrs p
-        LEFT JOIN pqrs_category pc ON p.PQRS_category_FK_ID = pc.PQRS_category_id
-        LEFT JOIN owner o ON p.Owner_FK_ID = o.Owner_id
-        LEFT JOIN users u ON o.User_FK_ID = u.Users_id
-        WHERE p.PQRS_id = ?
-      `;
-      const [result] = await connect.query(sqlQuery, [id]);
+      const [result] = await connect.query(
+        `${PQRSModel.baseSelect} WHERE p.PQRS_id = ?`,
+        [id]
+      );
 
       if (result.length === 0) {
         return null;
@@ -277,14 +298,10 @@ static async findById(id) {
 
   static async findByOwner(owner_id) {
     try {
-      let sqlQuery = `
-        SELECT p.*, pc.PQRS_category_name
-        FROM pqrs p
-        LEFT JOIN pqrs_category pc ON p.PQRS_category_FK_ID = pc.PQRS_category_id
-        WHERE p.Owner_FK_ID = ?
-        ORDER BY p.PQRS_createdAt DESC
-      `;
-      const [result] = await connect.query(sqlQuery, [owner_id]);
+      const [result] = await connect.query(
+        `${PQRSModel.baseSelect} WHERE p.Owner_FK_ID = ? ORDER BY p.PQRS_createdAt DESC`,
+        [owner_id]
+      );
       return result;
     } catch (error) {
       return { error: error.message };
@@ -293,19 +310,10 @@ static async findById(id) {
 
   static async findByStatus(status_id) {
     try {
-      let sqlQuery = `
-        SELECT p.*, pc.PQRS_category_name, pts.PQRS_tracking_status_name,
-               o.Owner_id, u.Users_name as owner_name
-        FROM pqrs p
-        LEFT JOIN pqrs_category pc ON p.PQRS_category_FK_ID = pc.PQRS_category_id
-        LEFT JOIN pqrs_tracking pt ON p.PQRS_id = pt.PQRS_tracking_PQRS_FK_ID
-        LEFT JOIN pqrs_tracking_status pts ON pt.PQRS_tracking_status_FK_ID = pts.PQRS_tracking_status_id
-        LEFT JOIN owner o ON p.Owner_FK_ID = o.Owner_id
-        LEFT JOIN users u ON o.User_FK_ID = u.Users_id
-        WHERE pt.PQRS_tracking_status_FK_ID = ?
-        ORDER BY p.PQRS_createdAt DESC
-      `;
-      const [result] = await connect.query(sqlQuery, [status_id]);
+      const [result] = await connect.query(
+        `${PQRSModel.baseSelect} WHERE latest_status.PQRS_tracking_status_FK_ID = ? ORDER BY p.PQRS_createdAt DESC`,
+        [status_id]
+      );
       return result;
     } catch (error) {
       return { error: error.message };
@@ -314,17 +322,10 @@ static async findById(id) {
 
   static async findByCategory(category_id) {
     try {
-      let sqlQuery = `
-        SELECT p.*, pc.PQRS_category_name,
-               o.Owner_id, u.Users_name as owner_name
-        FROM pqrs p
-        LEFT JOIN pqrs_category pc ON p.PQRS_category_FK_ID = pc.PQRS_category_id
-        LEFT JOIN owner o ON p.Owner_FK_ID = o.Owner_id
-        LEFT JOIN users u ON o.User_FK_ID = u.Users_id
-        WHERE p.PQRS_category_FK_ID = ?
-        ORDER BY p.PQRS_createdAt DESC
-      `;
-      const [result] = await connect.query(sqlQuery, [category_id]);
+      const [result] = await connect.query(
+        `${PQRSModel.baseSelect} WHERE p.PQRS_category_FK_ID = ? ORDER BY p.PQRS_createdAt DESC`,
+        [category_id]
+      );
       return result;
     } catch (error) {
       return { error: error.message };

@@ -53,24 +53,73 @@ class ProfileModel {
     }
   }
 
-  static async update(id, {
-    first_name,
-    last_name,
-    phone,
-    document_type_id,
-    document_number,
-    photo_url,
-    email
-  }) {
+  static async update(id, payload = {}) {
     let connection;
     try {
-      const fullName = [first_name, last_name]
-        .filter((part) => Boolean(part))
-        .join(' ')
-        .trim() || null;
-
       connection = await connect.getConnection();
       await connection.beginTransaction();
+
+      const [existingRows] = await connection.query(
+        `SELECT Profile_fullName, Profile_document_type, Profile_document_number, Profile_telephone_number, Profile_photo
+         FROM profile
+         WHERE Profile_id = ?
+         LIMIT 1`,
+        [id]
+      );
+
+      const existingProfile = existingRows[0];
+
+      if (!existingProfile) {
+        await connection.rollback();
+        return { error: "Profile not found" };
+      }
+
+      const extractFullName = () => {
+        const hasNameParts =
+          payload.first_name !== undefined || payload.last_name !== undefined;
+
+        if (hasNameParts) {
+          const composed = [payload.first_name, payload.last_name]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+
+          return composed || existingProfile.Profile_fullName;
+        }
+
+        if (payload.Profile_fullName !== undefined) {
+          return payload.Profile_fullName || existingProfile.Profile_fullName;
+        }
+
+        return existingProfile.Profile_fullName;
+      };
+
+      const fullName = extractFullName();
+
+      const documentType =
+        payload.Profile_document_type ??
+        payload.document_type_id ??
+        existingProfile.Profile_document_type;
+
+      const documentNumber =
+        payload.Profile_document_number ??
+        payload.document_number ??
+        existingProfile.Profile_document_number;
+
+      const phone =
+        payload.Profile_telephone_number ??
+        payload.phone ??
+        existingProfile.Profile_telephone_number;
+
+      const photo = (() => {
+        if (Object.prototype.hasOwnProperty.call(payload, 'photo_url')) {
+          return payload.photo_url;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'Profile_photo')) {
+          return payload.Profile_photo;
+        }
+        return existingProfile.Profile_photo;
+      })();
 
       const [result] = await connection.query(
         `UPDATE profile SET 
@@ -82,26 +131,26 @@ class ProfileModel {
           WHERE Profile_id = ?`,
         [
           fullName,
-          document_type_id,
-          document_number,
+          documentType,
+          documentNumber,
           phone,
-          photo_url,
+          photo,
           id
         ]
       );
 
-      if (result.affectedRows > 0 && email !== undefined) {
+      if (result.affectedRows > 0 && payload.email !== undefined) {
         await connection.query(
           `UPDATE users u
            INNER JOIN profile p ON p.User_FK_ID = u.Users_id
            SET u.Users_email = ?
            WHERE p.Profile_id = ?`,
-          [email, id]
+          [payload.email, id]
         );
       }
 
       await connection.commit();
-      return result;
+      return { ...result, photo }; // include latest photo path for callers that need it
     } catch (error) {
       if (connection) {
         try {

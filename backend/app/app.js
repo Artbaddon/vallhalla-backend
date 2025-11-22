@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import { verifyToken, apiAccessMiddleware } from "../middleware/authMiddleware.js";
 
 // Import all routers
@@ -46,13 +48,15 @@ import answerRouter from "../routers/answers.router.js";
 
 const name = "/api";
 const app = express();
-
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsRoot = path.resolve(__dirname, "../uploads");
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(uploadsRoot));
 
 // development Weebhook
 app.use('/webhooks', webhookRouter);
