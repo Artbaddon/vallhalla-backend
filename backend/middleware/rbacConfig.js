@@ -45,6 +45,7 @@ const OWNER_RULES = {
 
 };
 const SECURITY_RULES = {
+  notifications: ["read"],
   visitors: ["create", "read", "update", "delete"],
   parking: ["read"],
   profile: ["read", "update"], // Singular form
