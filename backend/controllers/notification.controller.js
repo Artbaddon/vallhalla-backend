@@ -3,15 +3,11 @@ import NotificationModel from "../models/notification.model.js";
 class NotificationController {
   async register(req, res) {
     try {
-      const {
-        type_id,
-        description,
-        user_id
-      } = req.body;
+      const { type_id, description, user_id } = req.body;
 
       if (!type_id || !description) {
         return res.status(400).json({
-          error: "Type ID and description are required"
+          error: "Type ID and description are required",
         });
       }
 
@@ -19,7 +15,7 @@ class NotificationController {
       const notificationId = await NotificationModel.create({
         type_id,
         description,
-        user_id: user_id || 0 // Convert null/undefined to 0 for all users
+        user_id: user_id || 0, // Convert null/undefined to 0 for all users
       });
 
       if (notificationId.error) {
@@ -44,9 +40,9 @@ class NotificationController {
       }
 
       // Add a flag to indicate if notification is for all users
-      const formattedNotifications = notifications.map(n => ({
+      const formattedNotifications = notifications.map((n) => ({
         ...n,
-        is_for_all_users: n.Notification_User_FK_ID === null
+        is_for_all_users: n.Notification_User_FK_ID === null,
       }));
 
       res.status(200).json({
@@ -61,11 +57,7 @@ class NotificationController {
   async update(req, res) {
     try {
       const id = req.params.id;
-      const {
-        type_id,
-        description,
-        user_id
-      } = req.body;
+      const { type_id, description, user_id } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: "Notification ID is required" });
@@ -74,7 +66,7 @@ class NotificationController {
       const updateResult = await NotificationModel.update(id, {
         type_id,
         description,
-        user_id: user_id || 0 // Convert null/undefined to 0 for all users
+        user_id: user_id || 0, // Convert null/undefined to 0 for all users
       });
 
       if (updateResult.error) {
@@ -132,7 +124,7 @@ class NotificationController {
       // Add a flag to indicate if notification is for all users
       const formattedNotification = {
         ...notification,
-        is_for_all_users: notification.Notification_User_FK_ID === null
+        is_for_all_users: notification.Notification_User_FK_ID === null,
       };
 
       res.status(200).json({
@@ -160,9 +152,9 @@ class NotificationController {
       }
 
       // Add a flag to indicate if notification is for all users
-      const formattedNotifications = notifications.map(n => ({
+      const formattedNotifications = notifications.map((n) => ({
         ...n,
-        is_for_all_users: n.Notification_User_FK_ID === null
+        is_for_all_users: n.Notification_User_FK_ID === null,
       }));
 
       res.status(200).json({
@@ -190,9 +182,9 @@ class NotificationController {
       }
 
       // Add a flag to indicate if notification is for all users
-      const formattedNotifications = notifications.map(n => ({
+      const formattedNotifications = notifications.map((n) => ({
         ...n,
-        is_for_all_users: n.Notification_User_FK_ID === null
+        is_for_all_users: n.Notification_User_FK_ID === null,
       }));
 
       res.status(200).json({
@@ -221,9 +213,9 @@ class NotificationController {
       }
 
       // Add a flag to indicate if notification is for all users
-      const formattedNotifications = notifications.map(n => ({
+      const formattedNotifications = notifications.map((n) => ({
         ...n,
-        is_for_all_users: n.Notification_User_FK_ID === null
+        is_for_all_users: n.Notification_User_FK_ID === null,
       }));
 
       res.status(200).json({

@@ -124,12 +124,12 @@ class NotificationModel {
   static async findByUser(user_id) {
     try {
       let sqlQuery = `
-        SELECT n.*, nt.Notification_type_name
-        FROM notification n
-        LEFT JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
-        WHERE n.Notification_User_FK_ID = ? OR n.Notification_User_FK_ID IS NULL
-        ORDER BY n.Notification_createdAt DESC
-      `;
+      SELECT n.*, nt.Notification_type_name
+      FROM notification n
+      INNER JOIN notification_type nt ON n.Notification_type_FK_ID = nt.Notification_type_id
+      WHERE n.Notification_User_FK_ID = ?  -- SOLO notificaciones personales
+      ORDER BY n.Notification_createdAt DESC
+    `;
       const [result] = await connect.query(sqlQuery, [user_id]);
       return result;
     } catch (error) {
