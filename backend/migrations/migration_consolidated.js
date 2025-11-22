@@ -160,7 +160,7 @@ const sqlStatements = [
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== PARKING MANAGEMENT ====================
-// Vehicle type table (no FK dependencies)
+  // Vehicle type table (no FK dependencies)
   `CREATE TABLE vehicle_type (
     Vehicle_type_id INT(11) NOT NULL AUTO_INCREMENT,
     Vehicle_type_name VARCHAR(50) NOT NULL,
@@ -341,12 +341,27 @@ const sqlStatements = [
   // ==================== PAYMENTS ====================
 
   // Payment status table (no FK dependencies)
+  // Payment status table (no FK dependencies)
   `CREATE TABLE payment_status (
     Payment_status_id INT(11) NOT NULL AUTO_INCREMENT,
     Payment_status_name VARCHAR(30) NOT NULL,
     PRIMARY KEY (Payment_status_id),
     UNIQUE KEY Payment_status_name (Payment_status_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+  `CREATE TABLE payment_service_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    payment_id INT NOT NULL,
+    service_pricing_id INT NOT NULL,
+    quantity INT DEFAULT 1,
+    duration_hours INT NULL, -- Para servicios por tiempo
+    unit_price DECIMAL(10,2) NOT NULL, -- Precio en el momento de la transacción
+    total_price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+    FOREIGN KEY (payment_id) REFERENCES payment(payment_id) ON DELETE CASCADE,
+    FOREIGN KEY (service_pricing_id) REFERENCES service_pricing(id) ON DELETE RESTRICT
+);`,
 
   // Payment table (depends on owner, payment_status)
   `CREATE TABLE payment (
@@ -363,6 +378,17 @@ const sqlStatements = [
     CONSTRAINT fk_payment_owner FOREIGN KEY (Owner_ID_FK) REFERENCES owner (Owner_id),
     CONSTRAINT fk_payment_status FOREIGN KEY (Payment_Status_ID_FK) REFERENCES payment_status (Payment_status_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+  `CREATE TABLE service_pricing (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    service_type ENUM('parking_rental', 'common_area', 'administration_fee'),
+    name VARCHAR(100), -- 'Parqueadero Visita', 'Zona BBQ', 'Administración Mensual'
+    base_price DECIMAL(10,2),
+    pricing_model ENUM('per_hour', 'per_day', 'fixed_fee', 'per_month'),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);`,
 
   // ==================== NOTIFICATIONS ====================
 
