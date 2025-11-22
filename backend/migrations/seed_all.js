@@ -10,6 +10,7 @@ import { seedParkingAndPets } from './seeders/07_seed_parking_pets.js';
 import { seedPQRSAndPayments } from './seeders/08_seed_pqrs_payments.js';
 import { seedSurveysAndVisitors } from './seeders/09_seed_surveys_visitors.js';
 import { seedNotifications } from './seeders/10_seed_notifications.js';
+import { seedServicePricing } from './seeders/11_seed_service_pricing.js';
 
 async function runAllSeeders() {
   console.log('═══════════════════════════════════════════════════════');
@@ -31,7 +32,8 @@ async function runAllSeeders() {
     { name: 'Parqueaderos y Mascotas', fn: seedParkingAndPets },
     { name: 'PQRS y Pagos', fn: seedPQRSAndPayments },
     { name: 'Encuestas y Visitantes', fn: seedSurveysAndVisitors },
-    { name: 'Notificaciones', fn: seedNotifications }
+    { name: 'Notificaciones', fn: seedNotifications },
+    { name: 'Precios de servicio', fn: seedServicePricing }
   ];
 
   for (const seeder of seeders) {
