@@ -161,20 +161,24 @@ const sqlStatements = [
 
   // ==================== PARKING MANAGEMENT ====================
 
-  // Vehicle type table (no FK dependencies)
-  `CREATE TABLE vehicle_type (
-    Vehicle_type_id INT(11) NOT NULL AUTO_INCREMENT,
-    Vehicle_type_name VARCHAR(50) NOT NULL,
-    vehicle_plate VARCHAR(20) DEFAULT NULL,
-    vehicle_model VARCHAR(20) DEFAULT NULL,
-    vehicle_brand VARCHAR(50) DEFAULT NULL,
-    vehicle_color VARCHAR(30) DEFAULT NULL,
-    vehicle_engineCC VARCHAR(20) DEFAULT NULL,
-    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (Vehicle_type_id),
-    UNIQUE KEY Vehicle_type_name (Vehicle_type_name)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+  // vehicle
+  `CREATE TABLE vehicles (
+    Vehicle_id INT(11) NOT NULL AUTO_INCREMENT,
+    Vehicle_type_FK_ID INT(11) NOT NULL,
+    User_FK_ID INT(11) NOT NULL,
+    vehicle_plate VARCHAR(20) NOT NULL UNIQUE,
+    vehicle_model VARCHAR(50) NOT NULL,
+    vehicle_brand VARCHAR(50) NOT NULL,
+    vehicle_color VARCHAR(30) NOT NULL,
+    vehicle_engineCC VARCHAR(20) NULL,
+    vehicle_year YEAR NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (Vehicle_id),
+    FOREIGN KEY (Vehicle_type_FK_ID) REFERENCES vehicle_type(Vehicle_type_id),
+    FOREIGN KEY (User_FK_ID) REFERENCES users(Users_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // Parking status table (no FK dependencies)
   `CREATE TABLE parking_status (
@@ -197,22 +201,22 @@ const sqlStatements = [
     Parking_id INT(11) NOT NULL AUTO_INCREMENT,
     Parking_number VARCHAR(10) NOT NULL,
     Parking_status_ID_FK INT(11) NOT NULL,
-    Vehicle_type_ID_FK INT(11) DEFAULT NULL,
+    Vehicle_type_ID_FK INT(11) NOT NULL,  -- Tipo de vehículo PERMITIDO
+    Vehicle_ID_FK INT(11) NULL,           -- Vehículo ACTUAL (si está ocupado)
     Parking_type_ID_FK INT(11) NOT NULL,
-    User_ID_FK INT(11) DEFAULT NULL,
-    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    User_ID_FK INT(11) NULL,              -- Usuario ACTUAL (si está ocupado/reservado)
+    reservation_start_date DATETIME NULL,
+    reservation_end_date DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (Parking_id),
     UNIQUE KEY Parking_number (Parking_number),
-    KEY Parking_status_ID_FK (Parking_status_ID_FK),
-    KEY Vehicle_type_ID_FK (Vehicle_type_ID_FK),
-    KEY Parking_type_ID_FK (Parking_type_ID_FK),
-    KEY User_ID_FK (User_ID_FK),
-    CONSTRAINT fk_parking_parking_type FOREIGN KEY (Parking_type_ID_FK) REFERENCES parking_type (Parking_type_id),
-    CONSTRAINT fk_parking_status FOREIGN KEY (Parking_status_ID_FK) REFERENCES parking_status (Parking_status_id),
-    CONSTRAINT fk_parking_user FOREIGN KEY (User_ID_FK) REFERENCES users (Users_id),
-    CONSTRAINT fk_parking_vehicle_type FOREIGN KEY (Vehicle_type_ID_FK) REFERENCES vehicle_type (Vehicle_type_id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    FOREIGN KEY (Parking_status_ID_FK) REFERENCES parking_status(Parking_status_id),
+    FOREIGN KEY (Vehicle_type_ID_FK) REFERENCES vehicle_type(Vehicle_type_id),
+    FOREIGN KEY (Vehicle_ID_FK) REFERENCES vehicles(Vehicle_id),
+    FOREIGN KEY (Parking_type_ID_FK) REFERENCES parking_type(Parking_type_id),
+    FOREIGN KEY (User_ID_FK) REFERENCES users(Users_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== PETS ====================
 
