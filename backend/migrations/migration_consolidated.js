@@ -160,7 +160,16 @@ const sqlStatements = [
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== PARKING MANAGEMENT ====================
-
+// Vehicle type table (no FK dependencies)
+  `CREATE TABLE vehicle_type (
+    Vehicle_type_id INT(11) NOT NULL AUTO_INCREMENT,
+    Vehicle_type_name VARCHAR(50) NOT NULL,
+    Vehicle_type_description VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (Vehicle_type_id),
+    UNIQUE KEY Vehicle_type_name (Vehicle_type_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   // vehicle
   `CREATE TABLE vehicles (
     Vehicle_id INT(11) NOT NULL AUTO_INCREMENT,
