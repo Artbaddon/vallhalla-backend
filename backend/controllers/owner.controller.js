@@ -15,7 +15,7 @@ class OwnerController {
         role_id,
         is_tenant,
         birth_date,
-        // Profile fields as independent arguments
+        email,
         first_name,
         last_name,
         document_type,
@@ -50,6 +50,7 @@ class OwnerController {
 
       const result = await OwnerModel.create({
         username,
+        email,
         password,
         user_status_id,
         role_id,

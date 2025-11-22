@@ -6,17 +6,17 @@ class ApartmentController {
     try {
       const { apartment_number, status_id, tower_id, owner_id } = req.body;
 
-      if (!apartment_number || !status_id || !tower_id || !owner_id) {
+      if (!apartment_number || !status_id || !tower_id) {
         return res
           .status(400)
-          .json({ error: "apartment_number, status_id, tower_id, and owner_id are required" });
+          .json({ error: "apartment_number, status_id, and tower_id are required" });
       }
 
       const apartmentId = await ApartmentModel.create({
         apartment_number,
         status_id,
         tower_id,
-        owner_id,
+        owner_id: owner_id ?? null,
       });
 
       if (apartmentId.error) {
@@ -115,15 +115,15 @@ class ApartmentController {
         return res.status(400).json({ error: "Apartment ID is required" });
       }
 
-      if (!apartment_number || !status_id || !tower_id || !owner_id) {
-        return res.status(400).json({ error: "apartment_number, status_id, tower_id, and owner_id are required" });
+      if (!apartment_number || !status_id || !tower_id) {
+        return res.status(400).json({ error: "apartment_number, status_id, and tower_id are required" });
       }
 
       const updateResult = await ApartmentModel.update(id, {
         apartment_number,
         status_id,
         tower_id,
-        owner_id,
+        owner_id: owner_id ?? null,
       });
 
       if (updateResult.error) {

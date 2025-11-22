@@ -90,7 +90,7 @@ class SurveyModel {
     try {
       const [result] = await connect.query(
         `INSERT INTO answer 
-         (survey_id, question_id, user_id, value, created_at)
+         (survey_id, question_id, user_id, value, createdAt)
          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         [survey_id, question_id, user_id, value]
       );

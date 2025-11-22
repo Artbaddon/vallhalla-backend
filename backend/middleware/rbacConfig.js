@@ -17,8 +17,6 @@ const OWNER_RULES = {
   tenants: ["create", "read", "update", "delete"],
   reservations: ["create", "read", "update", "delete"],
   reservation: ["create", "read", "update", "delete"], // Add singular form with full permissions
-  facilities: ["read"],
-  facility: ["read"], // Add singular form
   "reservation-types": ["read"],
   "reservation-type": ["read"], // Add singular form
   reservationtypes: ["read"], // Add without hyphen

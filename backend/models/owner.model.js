@@ -4,7 +4,7 @@ import UserModel from "./user.model.js";
 import bcrypt from "bcrypt";
 
 class OwnerModel {
-  static async create({ username, password, user_status_id, role_id, is_tenant, birth_date, profile_data }) {
+  static async create({ username, email, password, user_status_id, role_id, is_tenant, birth_date, profile_data }) {
     try {
       // Start a transaction
       await connect.query("START TRANSACTION");
@@ -14,9 +14,9 @@ class OwnerModel {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
       
-      let sqlCreateUser = `INSERT INTO users (Users_name, Users_password, User_status_FK_ID, Role_FK_ID, Users_createdAt, Users_updatedAt) 
-                          VALUES (?, ?, ?, ?, NOW(), NOW())`;
-      const [userResult] = await connect.query(sqlCreateUser, [username, hashedPassword, user_status_id, role_id]);
+      let sqlCreateUser = `INSERT INTO users (Users_name, Users_email, Users_password, User_status_FK_ID, Role_FK_ID, Users_createdAt, Users_updatedAt) 
+              VALUES (?, ?, ?, ?, ?, NOW(), NOW())`;
+      const [userResult] = await connect.query(sqlCreateUser, [username, email || null, hashedPassword, user_status_id, role_id]);
       const userId = userResult.insertId;
       
       if (!userId) {
@@ -244,7 +244,7 @@ class OwnerModel {
 
   static async findById(id) {
     try {
-      let sqlQuery = `SELECT * FROM owner WHERE Owner_id = ?`;
+      let sqlQuery = `SELECT o.*, a.Apartment_number, t.Tower_name FROM owner o LEFT JOIN apartment a ON o.Owner_id = a.Owner_FK_ID LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id WHERE o.Owner_id = ?`;
       const [result] = await connect.query(sqlQuery, [id]);
       return result[0] || null;
     } catch (error) {
@@ -254,7 +254,7 @@ class OwnerModel {
 
   static async findByUserId(user_id) {
     try {
-      let sqlQuery = `SELECT * FROM owner WHERE User_FK_ID = ?`;
+      let sqlQuery = `SELECT o.*, a.Apartment_number, t.tower_name FROM owner o LEFT JOIN apartment a ON o.Owner_id = a.Owner_FK_ID LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id WHERE o.User_FK_ID = ?`;
       const [result] = await connect.query(sqlQuery, [user_id]);
       return result[0] || null;
     } catch (error) {
@@ -274,11 +274,15 @@ class OwnerModel {
           p.Profile_fullName,
           p.Profile_document_type,
           p.Profile_document_number,
-          p.Profile_telephone_number
+          p.Profile_telephone_number,
+          a.Apartment_number,
+          t.Tower_name
         FROM owner o
         JOIN users u ON o.User_FK_ID = u.Users_id
         JOIN user_status us ON u.User_status_FK_ID = us.User_status_id
         LEFT JOIN profile p ON u.Users_id = p.User_FK_ID
+        LEFT JOIN apartment a ON o.Owner_id = a.Owner_FK_ID
+        LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id
         ${!includeInactive ? 'WHERE u.User_status_FK_ID = 1' : ''}
         ORDER BY o.Owner_id
       `;

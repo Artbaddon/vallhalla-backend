@@ -2,11 +2,20 @@ import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, "../../.env") });
+
+const sslCertPath = "/home/deploy/DigiCertGlobalRootCA.crt.pem";
+const sslOptions = fs.existsSync(sslCertPath)
+  ? {
+      ca: fs.readFileSync(sslCertPath),
+      rejectUnauthorized: false,
+    }
+  : undefined;
 
 const dbConfig = {
   host: process.env.DB_HOST || "localhost",
@@ -16,6 +25,10 @@ const dbConfig = {
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   multipleStatements: true,
 };
+
+if (sslOptions) {
+  dbConfig.ssl = sslOptions;
+}
 
 /**
  * CONSOLIDATED MIGRATION
@@ -136,12 +149,12 @@ const sqlStatements = [
     Apartment_number VARCHAR(4) NOT NULL,
     Apartment_status_FK_ID INT(11) NOT NULL,
     Tower_FK_ID INT(11) NOT NULL,
-    Owner_FK_ID INT(11) NOT NULL,
+    Owner_FK_ID INT(11) DEFAULT NULL,
     PRIMARY KEY (Apartment_id),
     KEY Apartment_status_FK_ID (Apartment_status_FK_ID),
     KEY Tower_FK_ID (Tower_FK_ID),
     KEY Owner_FK_ID (Owner_FK_ID),
-    CONSTRAINT fk_apartment_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id),
+    CONSTRAINT fk_apartment_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id) ON DELETE SET NULL,
     CONSTRAINT fk_apartment_status FOREIGN KEY (Apartment_status_FK_ID) REFERENCES apartment_status (Apartment_status_id),
     CONSTRAINT fk_apartment_tower FOREIGN KEY (Tower_FK_ID) REFERENCES tower (Tower_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
@@ -274,19 +287,7 @@ const sqlStatements = [
     CONSTRAINT fk_pqrs_tracking_user FOREIGN KEY (PQRS_tracking_user_FK_ID) REFERENCES users (Users_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-  // ==================== FACILITIES & RESERVATIONS ====================
-
-  // Facility table (no FK dependencies)
-  `CREATE TABLE facility (
-    Facility_id INT(11) NOT NULL AUTO_INCREMENT,
-    Facility_name VARCHAR(100) NOT NULL,
-    Facility_description TEXT DEFAULT NULL,
-    Facility_capacity INT(11) NOT NULL,
-    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (Facility_id),
-    UNIQUE KEY Facility_name (Facility_name)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+  // ==================== RESERVATIONS ====================
 
   // Reservation status table (no FK dependencies)
   `CREATE TABLE reservation_status (
@@ -304,14 +305,13 @@ const sqlStatements = [
     UNIQUE KEY Reservation_type_name (Reservation_type_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-  // Reservation table (depends on reservation_type, reservation_status, facility, owner)
+  // Reservation table (depends on reservation_type, reservation_status, owner)
   `CREATE TABLE reservation (
     Reservation_id INT(11) NOT NULL AUTO_INCREMENT,
     Reservation_type_FK_ID INT(11) NOT NULL,
     Reservation_status_FK_ID INT(11) NOT NULL,
     Reservation_start_time DATETIME NOT NULL,
     Reservation_end_time DATETIME NOT NULL,
-    Facility_FK_ID INT(11) NOT NULL,
     Reservation_description TEXT DEFAULT NULL,
     Owner_FK_ID INT(11) NOT NULL,
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -320,8 +320,6 @@ const sqlStatements = [
     KEY Reservation_type_FK_ID (Reservation_type_FK_ID),
     KEY Reservation_status_FK_ID (Reservation_status_FK_ID),
     KEY Owner_FK_ID (Owner_FK_ID),
-    KEY Facility_FK_ID (Facility_FK_ID),
-    CONSTRAINT fk_reservation_facility FOREIGN KEY (Facility_FK_ID) REFERENCES facility (Facility_id),
     CONSTRAINT fk_reservation_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id),
     CONSTRAINT fk_reservation_status FOREIGN KEY (Reservation_status_FK_ID) REFERENCES reservation_status (Reservation_status_id),
     CONSTRAINT fk_reservation_type FOREIGN KEY (Reservation_type_FK_ID) REFERENCES reservation_type (Reservation_type_id)

@@ -6,17 +6,16 @@ class ReservationController {
     try {
       const {
         type_id,
-        facility_id,
         start_date,
         end_date,
         description,
-        owner_id, // Optional: Allow admin to specify owner_id
+        owner_id, 
       } = req.body;
 
       // Validate required fields
-      if (!type_id || !start_date || !end_date || !facility_id) {
+      if (!type_id || !start_date || !end_date) {
         return res.status(400).json({
-          error: "Type ID, facility ID, start date, and end date are required",
+          error: "Type ID, start date, and end date are required",
         });
       }
 
@@ -83,7 +82,6 @@ class ReservationController {
         owner_id: reservationOwnerId,
         type_id,
         status_id: initialStatusId,
-        facility_id,
         start_date: startDateTime.toISOString(),
         end_date: endDateTime.toISOString(),
         description: description || null,
@@ -100,7 +98,6 @@ class ReservationController {
           owner_id: reservationOwnerId,
           type_id,
           status_id: initialStatusId,
-          facility_id,
           start_date: startDateTime.toISOString(),
           end_date: endDateTime.toISOString(),
           description,
@@ -170,7 +167,6 @@ class ReservationController {
         owner_id,
         type_id,
         status_id,
-        facility_id,
         start_date,
         end_date,
         description,
@@ -209,7 +205,6 @@ class ReservationController {
         owner_id,
         type_id,
         status_id,
-        facility_id,
         start_date: start_date ? new Date(start_date).toISOString() : undefined,
         end_date: end_date ? new Date(end_date).toISOString() : undefined,
         description,
@@ -225,7 +220,6 @@ class ReservationController {
           id,
           type_id,
           status_id,
-          facility_id,
     owner_id,
           start_date: start_date ? new Date(start_date).toISOString() : undefined,
           end_date: end_date ? new Date(end_date).toISOString() : undefined,

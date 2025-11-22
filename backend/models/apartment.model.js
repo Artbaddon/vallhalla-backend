@@ -4,7 +4,7 @@ class ApartmentModel {
   static async validateForeignKeys({ status_id, tower_id, owner_id }) {
     try {
       // Check if status exists
-      if (status_id) {
+      if (status_id !== undefined && status_id !== null) {
         const [statusResult] = await connect.query('SELECT Apartment_status_id FROM apartment_status WHERE Apartment_status_id = ?', [status_id]);
         if (statusResult.length === 0) {
           return { error: "Apartment status not found" };
@@ -12,7 +12,7 @@ class ApartmentModel {
       }
 
       // Check if tower exists
-      if (tower_id) {
+      if (tower_id !== undefined && tower_id !== null) {
         const [towerResult] = await connect.query('SELECT Tower_id FROM tower WHERE Tower_id = ?', [tower_id]);
         if (towerResult.length === 0) {
           return { error: "Tower not found" };
@@ -20,7 +20,7 @@ class ApartmentModel {
       }
 
       // Check if owner exists
-      if (owner_id) {
+      if (owner_id !== undefined && owner_id !== null) {
         const [ownerResult] = await connect.query('SELECT Owner_id FROM owner WHERE Owner_id = ?', [owner_id]);
         if (ownerResult.length === 0) {
           return { error: "Owner not found" };
@@ -47,8 +47,8 @@ class ApartmentModel {
         return { error: "Apartment number already exists" };
       }
 
-      let sqlQuery = `INSERT INTO apartment (Apartment_number, Apartment_status_FK_ID, Tower_FK_ID, Owner_FK_ID) VALUES (?, ?, ?, ?)`;
-      const [result] = await connect.query(sqlQuery, [apartment_number, status_id, tower_id, owner_id]);
+      const sqlQuery = `INSERT INTO apartment (Apartment_number, Apartment_status_FK_ID, Tower_FK_ID, Owner_FK_ID) VALUES (?, ?, ?, ?)`;
+      const [result] = await connect.query(sqlQuery, [apartment_number, status_id, tower_id, owner_id ?? null]);
       return result.insertId;
     } catch (error) {
       return { error: error.message };
@@ -92,8 +92,8 @@ class ApartmentModel {
         return { error: "Apartment number already exists" };
       }
 
-      let sqlQuery = "UPDATE apartment SET Apartment_number = ?, Apartment_status_FK_ID = ?, Tower_FK_ID = ?, Owner_FK_ID = ? WHERE Apartment_id = ?";
-      const [result] = await connect.query(sqlQuery, [apartment_number, status_id, tower_id, owner_id, id]);
+      const sqlQuery = "UPDATE apartment SET Apartment_number = ?, Apartment_status_FK_ID = ?, Tower_FK_ID = ?, Owner_FK_ID = ? WHERE Apartment_id = ?";
+      const [result] = await connect.query(sqlQuery, [apartment_number, status_id, tower_id, owner_id ?? null, id]);
       if (result.affectedRows === 0) {
         return { error: "Apartment not found" };
       } else {
@@ -120,7 +120,7 @@ class ApartmentModel {
 
   static async findById(id) {
     try {
-      let sqlQuery = `SELECT * FROM apartment WHERE Apartment_id = ?`;
+      let sqlQuery = `SELECT a.*, t.Tower_name FROM apartment a LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id WHERE a.Apartment_id = ?`;
       const [result] = await connect.query(sqlQuery, [id]);
       return result[0] || null;
     } catch (error) {
@@ -153,7 +153,7 @@ class ApartmentModel {
 
   static async findByOwner(owner_id) {
     try {
-      let sqlQuery = `SELECT * FROM apartment WHERE Owner_FK_ID = ?`;
+      let sqlQuery = `SELECT a.*, t.Tower_name FROM apartment a LEFT JOIN tower t ON a.Tower_FK_ID = t.Tower_id WHERE a.Owner_FK_ID = ?`;
       const [result] = await connect.query(sqlQuery, [owner_id]);
       return result;
     } catch (error) {

@@ -18,8 +18,6 @@ import ownerRouter from "../routers/owner.router.js";
 import apartmentRouter from "../routers/apartment.router.js";
 import apartmentStatusRouter from "../routers/apartmentStatus.router.js";
 
-// Facility Management
-import facilityRouter from "../routers/facility.router.js";
 
 // Payment System
 import paymentRouter from "../routers/payment.router.js";
@@ -82,8 +80,6 @@ app.use(name + "/owners", ownerRouter);
 app.use(name + "/apartments", apartmentRouter);
 app.use(name + "/apartment-status", apartmentStatusRouter);
 
-// Facility Management
-app.use(name + "/facilities", facilityRouter);
 
 // Payment System
 app.use(name + "/payment", paymentRouter);

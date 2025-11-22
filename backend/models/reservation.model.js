@@ -36,14 +36,18 @@ class ReservationModel {
     }
   }
 
-  static async checkOverlappingReservations(facility_id, start_date, end_date, exclude_id = null) {
+  static async checkOverlappingReservations(type_id, start_date, end_date, exclude_id = null) {
     try {
+      if (!type_id) {
+        return [];
+      }
+
       let sqlQuery = `
         SELECT r.*, rs.Reservation_status_name, rt.Reservation_type_name
         FROM reservation r
         LEFT JOIN reservation_status rs ON r.Reservation_status_FK_ID = rs.Reservation_status_id
         LEFT JOIN reservation_type rt ON r.Reservation_type_FK_ID = rt.Reservation_type_id
-        WHERE r.Facility_FK_ID = ?
+        WHERE r.Reservation_type_FK_ID = ?
         AND r.Reservation_status_FK_ID != 4 -- Not cancelled
         AND r.Reservation_status_FK_ID != 5 -- Not no-show
         AND (
@@ -56,7 +60,7 @@ class ReservationModel {
       `;
 
       const params = [
-        facility_id,
+        type_id,
         end_date, start_date,    // First condition
         end_date, end_date,      // Second condition
         start_date, end_date     // Third condition
@@ -75,7 +79,7 @@ class ReservationModel {
     }
   }
 
-  static async create({ owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
+  static async create({ owner_id, type_id, status_id, start_date, end_date, description }) {
     try {
       // Validate foreign keys first
       const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
@@ -90,29 +94,27 @@ class ReservationModel {
       }
 
       // Check for overlapping reservations
-      const overlapping = await this.checkOverlappingReservations(facility_id, start_date, end_date);
+      const overlapping = await this.checkOverlappingReservations(type_id, start_date, end_date);
       if (overlapping.error) {
         return { error: overlapping.error };
       }
       if (overlapping.length > 0) {
-        return { error: "This facility is already reserved for the selected time period" };
+        return { error: "This reservation type is already booked for the selected time period" };
       }
 
       let sqlQuery = `INSERT INTO reservation (
         Owner_FK_ID, 
         Reservation_type_FK_ID, 
         Reservation_status_FK_ID, 
-        Facility_FK_ID,
         Reservation_start_time, 
         Reservation_end_time, 
         Reservation_description
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      ) VALUES (?, ?, ?, ?, ?, ?)`;
       
       const [result] = await connect.query(sqlQuery, [
         ownerIdToUse, 
         type_id, 
         status_id, 
-        facility_id,
         start_date, 
         end_date, 
         description
@@ -142,7 +144,7 @@ class ReservationModel {
     }
   }
 
-  static async update(id, { owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
+  static async update(id, { owner_id, type_id, status_id, start_date, end_date, description }) {
     try {
       const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
       if (validation.error) {
@@ -167,11 +169,6 @@ class ReservationModel {
         params.push(status_id);
       }
 
-      if (facility_id !== undefined) {
-        updates.push("Facility_FK_ID = ?");
-        params.push(facility_id);
-      }
-
       if (start_date !== undefined) {
         updates.push("Reservation_start_time = ?");
         params.push(start_date);
@@ -192,13 +189,26 @@ class ReservationModel {
       }
 
       // Check for overlapping reservations (excluding this reservation)
-      if (facility_id && start_date && end_date) {
-        const overlapping = await this.checkOverlappingReservations(facility_id, start_date, end_date, id);
+      if (start_date && end_date) {
+        const [currentReservationRows] = await connect.query(
+          'SELECT Reservation_type_FK_ID FROM reservation WHERE Reservation_id = ? LIMIT 1',
+          [id]
+        );
+
+        const currentReservation = currentReservationRows[0];
+
+        if (!currentReservation) {
+          return { error: "Reservation not found" };
+        }
+
+        const typeToCheck = type_id ?? currentReservation.Reservation_type_FK_ID;
+
+        const overlapping = await this.checkOverlappingReservations(typeToCheck, start_date, end_date, id);
         if (overlapping.error) {
           return { error: overlapping.error };
         }
         if (overlapping.length > 0) {
-          return { error: "This facility is already reserved for the selected time period" };
+          return { error: "This reservation type is already booked for the selected time period" };
         }
       }
 

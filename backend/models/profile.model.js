@@ -59,27 +59,62 @@ class ProfileModel {
     phone,
     document_type_id,
     document_number,
-    photo_url
+    photo_url,
+    email
   }) {
+    let connection;
     try {
-      let sqlQuery = `UPDATE profile SET 
-        Profile_fullName = ?,
-        Profile_document_type = ?,
-        Profile_document_number = ?,
-        Profile_telephone_number = ?,
-        Profile_photo = ?
-        WHERE Profile_id = ?`;
-      const [result] = await connect.query(sqlQuery, [
-        `${first_name} ${last_name}`,
-        document_type_id,
-        document_number,
-        phone,
-        photo_url,
-        id
-      ]);
+      const fullName = [first_name, last_name]
+        .filter((part) => Boolean(part))
+        .join(' ')
+        .trim() || null;
+
+      connection = await connect.getConnection();
+      await connection.beginTransaction();
+
+      const [result] = await connection.query(
+        `UPDATE profile SET 
+          Profile_fullName = ?,
+          Profile_document_type = ?,
+          Profile_document_number = ?,
+          Profile_telephone_number = ?,
+          Profile_photo = ?
+          WHERE Profile_id = ?`,
+        [
+          fullName,
+          document_type_id,
+          document_number,
+          phone,
+          photo_url,
+          id
+        ]
+      );
+
+      if (result.affectedRows > 0 && email !== undefined) {
+        await connection.query(
+          `UPDATE users u
+           INNER JOIN profile p ON p.User_FK_ID = u.Users_id
+           SET u.Users_email = ?
+           WHERE p.Profile_id = ?`,
+          [email, id]
+        );
+      }
+
+      await connection.commit();
       return result;
     } catch (error) {
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch (_) {
+          // noop
+        }
+      }
       return { error: error.message };
+    } finally {
+      if (connection) {
+        connection.release();
+      }
     }
   }
 
@@ -99,9 +134,14 @@ class ProfileModel {
 
   static async findById(id) {
     try {
-      let sqlQuery = `SELECT * FROM profile WHERE Profile_id = ?`;
-      const [result] = await connect.query(sqlQuery, id);
-      return result[0];
+      let sqlQuery = `
+        SELECT p.*, u.Users_email, u.Users_name
+        FROM profile p
+        LEFT JOIN users u ON p.User_FK_ID = u.Users_id
+        WHERE p.Profile_id = ?
+      `;
+      const [result] = await connect.query(sqlQuery, [id]);
+      return result[0] || null;
     } catch (error) {
       return { error: error.message };
     }
@@ -110,7 +150,7 @@ class ProfileModel {
   static async findByUserId(userId) {
     try {
       let sqlQuery = `
-        SELECT p.*, u.Users_name
+        SELECT p.*, u.Users_name, u.Users_email
         FROM profile p
         JOIN users u ON p.User_FK_ID = u.Users_id
         WHERE p.User_FK_ID = ?
