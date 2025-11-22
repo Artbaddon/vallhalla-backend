@@ -117,6 +117,27 @@ class ParkingModel {
       console.error("Error finding parking by status:", error.message);
       throw error;
     }
+  }static async getStatus() {
+    try {
+      const [result] = await connect.query(
+        `SELECT * FROM parking_status ORDER BY Parking_status_id;`
+      );
+      return result;
+    } catch (error) {
+      console.error("Error en ParkingModel.getTypes:", error.message);
+    }
+  }
+
+  
+  static async getTypes() {
+    try {
+      const [result] = await connect.query(
+        `SELECT * FROM parking_type ORDER BY Parking_type_id;`
+      );
+      return result;
+    } catch (error) {
+      console.error("Error en ParkingModel.getTypes:", error.message);
+    }
   }
 
   static async findByUser(userId) {

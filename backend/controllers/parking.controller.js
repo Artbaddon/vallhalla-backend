@@ -105,6 +105,37 @@ class ParkingistratorController {
       }
     }
   }
+  async getParkingTypes(req, res) {
+    try {
+      const types = await ParkingModel.getTypes();
+      res.json({
+        success: true,
+        data: types,
+      });
+    } catch (error) {
+      console.error("Error en getParkingTypes:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al obtener tipos de parqueadero",
+      });
+    }
+  }
+
+  async getParkingStatus(req, res) {
+    try {
+      const statuses = await ParkingModel.getStatus();
+      res.json({
+        success: true,
+        data: statuses,
+      });
+    } catch (error) {
+      console.error("Error en getParkingStatus:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al obtener estados de parqueadero",
+      });
+    }
+  }
 
   async show(req, res) {
     try {
@@ -153,22 +184,31 @@ class ParkingistratorController {
     }
   }
 
-  async findById(id) {
+  async findById(req, res) {
     try {
-      const [rows] = await connect.query(
-        `SELECT p.*, ps.Parking_status_name, pt.Parking_type_name, vt.Vehicle_type_name, u.Users_name
-       FROM parking p
-       LEFT JOIN parking_status ps ON p.Parking_status_ID_FK = ps.Parking_status_id
-       LEFT JOIN parking_type pt ON p.Parking_type_ID_FK = pt.Parking_type_id
-       LEFT JOIN vehicle_type vt ON p.Vehicle_type_ID_FK = vt.Vehicle_type_id
-       LEFT JOIN users u ON p.User_ID_FK = u.Users_id
-       WHERE p.Parking_id = ?`,
-        [id]
-      );
-      return rows[0] || null;
+      const { id } = req.params;
+
+      // Llamar al método del modelo
+      const parkingSpot = await ParkingModel.findById(id);
+
+      if (!parkingSpot) {
+        return res.status(404).json({
+          success: false,
+          error: "Parking spot not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Parking spot retrieved successfully",
+        data: parkingSpot,
+      });
     } catch (error) {
-      console.error("Error finding parking by ID:", error.message);
-      throw error;
+      console.error("Error in findById:", error);
+      res.status(500).json({
+        success: false,
+        error: "Internal server error while retrieving parking spot",
+      });
     }
   }
 

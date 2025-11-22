@@ -16,6 +16,18 @@ router.use(requireRoles(ROLES.OWNER, ROLES.SECURITY));
 // View all parking spots
 router.get("/", requirePermission("parking", "read"), ParkingController.show);
 
+router.get(
+  "/parking-types",
+  requirePermission("parking", "read"),
+  ParkingController.getParkingTypes
+);
+
+router.get(
+  "/parking-statuses",
+  requirePermission("parking", "read"),
+  ParkingController.getParkingStatus
+);
+
 // View specific parking spot
 router.get(
   "/:id",
