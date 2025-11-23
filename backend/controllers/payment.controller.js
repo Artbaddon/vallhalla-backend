@@ -335,11 +335,12 @@ class PaymentController {
       };
       const paymentStatus = statusMapping[wompiStatus] || 1;
 
+      // AJUSTE PRINCIPAL: Cambiar 'total' por 'amount' para coincidir con la tabla
       const paymentData = {
         user_id: owner_id,
-        total: amount,
+        amount: amount,
         currency: currency,
-        status: paymentStatus,
+        status: paymentStatus, // Este debe ser el ID del estado (1, 2, 3, etc.)
         payment_method: payment_method,
         reference: reference,
       };
@@ -387,23 +388,23 @@ class PaymentController {
 
       // Mapear estados de Wompi a tus estados internos
       const statusMap = {
-        APPROVED: 3, // COMPLETED
-        DECLINED: 4, // FAILED
-        VOIDED: 4, // FAILED
-        ERROR: 4, // FAILED
-        PENDING: 1, // PENDING
-        IN_PROGRESS: 2, // PROCESSING
+        APPROVED: 2, // APPROVED (aprobado)
+        DECLINED: 3, // DECLINED (rechazado)
+        VOIDED: 4, // VOIDED (anulado)
+        ERROR: 5, // ERROR (error)
+        PENDING: 1, // PENDING (pendiente)
+        IN_PROGRESS: 1, // PROCESSING -> PENDING
       };
 
-      const status_id = statusMap[wompiStatus];
+      const payment_status_id = statusMap[wompiStatus];
 
-      if (!status_id) {
+      if (!payment_status_id) {
         throw new Error(`Unknown Wompi status: ${wompiStatus}`);
       }
 
       // Llamar al model para actualizar el pago
       const updated = await PaymentModel.updateByReference(reference, {
-        status_id,
+        Payment_Status_ID_FK: payment_status_id, // ✅ Usar el nombre correcto de la columna
       });
 
       return {
@@ -411,7 +412,7 @@ class PaymentController {
         updated,
         reference,
         wompiStatus,
-        internalStatus: status_id,
+        internalStatus: payment_status_id,
       };
     } catch (error) {
       console.error("Error processing Wompi webhook:", error);

@@ -30,21 +30,30 @@ class PaymentModel {
   async create(paymentData) {
     const {
       user_id,
+      amount,
       currency = "COP",
       status,
       payment_method,
       reference,
     } = paymentData;
 
+    // ✅ Validar que no haya campos undefined
+    const requiredFields = [user_id, amount, status, payment_method, reference];
+    if (requiredFields.some((field) => field === undefined)) {
+      console.error("Undefined fields in paymentData:", paymentData);
+      throw new Error("All required payment fields must be defined");
+    }
+
     const query = `
-      INSERT INTO payment 
-      (Owner_ID_FK, Payment_Status_ID_FK, Payment_method, Payment_reference_number, currency)
-      VALUES (?, ?, ?, ?, ?)
-    `;
+    INSERT INTO payment 
+    (Owner_ID_FK, amount, Payment_Status_ID_FK, Payment_method, Payment_reference_number, currency)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
 
     try {
       const [result] = await this.db.execute(query, [
         user_id,
+        amount,
         status,
         payment_method,
         reference,
@@ -134,7 +143,7 @@ class PaymentModel {
     return allowedTransitions[currentStatus]?.includes(newStatus) || false;
   }
 
-  async updateByReference(reference, { status_id }) {
+  async updateByReference(reference, updateData) {
     try {
       await connect.query("START TRANSACTION");
 
@@ -142,6 +151,13 @@ class PaymentModel {
       const currentPayment = await this.findByReference(reference);
       if (!currentPayment) {
         throw new Error("Payment not found");
+      }
+
+      // Extract status_id from updateData (puede venir como status_id o Payment_Status_ID_FK)
+      const status_id = updateData.status_id || updateData.Payment_Status_ID_FK;
+
+      if (!status_id) {
+        throw new Error("Status ID is required");
       }
 
       // Validate status transition
@@ -155,9 +171,9 @@ class PaymentModel {
       }
 
       let sqlQuery = `
-        UPDATE payment 
-        SET Payment_Status_ID_FK = ?
-        WHERE Payment_reference_number = ?`;
+      UPDATE payment 
+      SET Payment_Status_ID_FK = ?
+      WHERE Payment_reference_number = ?`;
 
       const [result] = await connect.query(sqlQuery, [status_id, reference]);
 

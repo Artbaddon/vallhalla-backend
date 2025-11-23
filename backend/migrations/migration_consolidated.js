@@ -348,20 +348,6 @@ const sqlStatements = [
     UNIQUE KEY Payment_status_name (Payment_status_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-  `CREATE TABLE payment_service_items (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    payment_id INT NOT NULL,
-    service_pricing_id INT NOT NULL,
-    quantity INT DEFAULT 1,
-    duration_hours INT NULL, -- Para servicios por tiempo
-    unit_price DECIMAL(10,2) NOT NULL, -- Precio en el momento de la transacción
-    total_price DECIMAL(10,2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
-    FOREIGN KEY (payment_id) REFERENCES payment(payment_id) ON DELETE CASCADE,
-    FOREIGN KEY (service_pricing_id) REFERENCES service_pricing(id) ON DELETE RESTRICT
-);`,
-
   // Payment table (depends on owner, payment_status)
   `CREATE TABLE payment (
     payment_id int NOT NULL AUTO_INCREMENT,
@@ -370,6 +356,7 @@ const sqlStatements = [
     Payment_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Payment_method varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
     Payment_reference_number varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    amount decimal(15,2) NOT NULL,
     currency varchar(3) COLLATE utf8mb4_general_ci DEFAULT 'COP',
     PRIMARY KEY (payment_id),
     KEY Owner_ID_FK (Owner_ID_FK),
