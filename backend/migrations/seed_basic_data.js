@@ -128,11 +128,12 @@ export async function seedBasicData() {
     // 8. SEED PAYMENT STATUSES
     console.log('\n📝 Sembrando estados de pago...');
     await connection.query(`
-      INSERT INTO payment_status (Payment_status_name) VALUES
-    ('Pendiente'),           -- 1: PENDING
-    ('Procesando'),          -- 2: IN_PROGRESS  
-    ('Completado'),          -- 3: APPROVED
-    ('Fallido')              -- 4: DECLINED, VOIDED, ERROR
+      INSERT INTO payment_status (Payment_status_id, Payment_status_name) VALUES
+    (1, 'Pendiente'),        -- PENDING
+    (2, 'Completado'),       -- APPROVED  
+    (3, 'Rechazado'),        -- DECLINED
+    (4, 'Anulado'),          -- VOIDED
+    (5, 'Error')             -- ERROR
 ON DUPLICATE KEY UPDATE Payment_status_name = VALUES(Payment_status_name);
     `);
     console.log('   ✓ Estados de pago creados');

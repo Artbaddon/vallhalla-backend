@@ -103,14 +103,14 @@ class PaymentModel {
       console.log("Resolved owner ID:", ownerId);
       const [rows] = await connect.query(
         `SELECT p.*, 
-                ps.Payment_status_name as payment_status,
-                pr.Profile_fullName as owner_name
-         FROM payment p
-         LEFT JOIN payment_status ps ON p.Payment_Status_ID_FK = ps.Payment_status_id
-         LEFT JOIN owner o ON p.Owner_ID_FK = o.Owner_id
-         LEFT JOIN profile pr ON o.User_FK_ID = pr.User_FK_ID
-         WHERE p.Owner_ID_FK = ?
-         ORDER BY p.Payment_date DESC`,
+              ps.Payment_status_name as Payment_status_name,
+              pr.Profile_fullName as owner_name
+       FROM payment p
+       LEFT JOIN payment_status ps ON p.Payment_Status_ID_FK = ps.Payment_status_id
+       LEFT JOIN owner o ON p.Owner_ID_FK = o.Owner_id
+       LEFT JOIN profile pr ON o.User_FK_ID = pr.User_FK_ID
+       WHERE p.Owner_ID_FK = ?
+       ORDER BY p.Payment_date DESC`,
         [ownerId]
       );
       console.log("Found payments:", rows.length);
@@ -219,22 +219,27 @@ class PaymentModel {
     }
   }
 
-  async getPendingPayments(userId = null) {
-    let query = `SELECT * FROM payment WHERE status = 'PENDING'`;
-    const params = [];
-
-    if (userId) {
-      query += ` AND Owner_ID_FK = ?`;
-      params.push(userId);
-    }
-
-    query += ` ORDER BY Payment_date ASC`;
-
+  async findPendingByOwner(ownerId) {
     try {
-      const [rows] = await this.db.execute(query, params);
+      console.log("Finding pending payments for owner ID:", ownerId);
+
+      const [rows] = await connect.query(
+        `SELECT p.*, 
+              ps.Payment_status_name as Payment_status_name,
+              pr.Profile_fullName as owner_name
+       FROM payment p
+       LEFT JOIN payment_status ps ON p.Payment_Status_ID_FK = ps.Payment_status_id
+       LEFT JOIN owner o ON p.Owner_ID_FK = o.Owner_id
+       LEFT JOIN profile pr ON o.User_FK_ID = pr.User_FK_ID
+       WHERE p.Owner_ID_FK = ? 
+         AND p.Payment_Status_ID_FK = 1  -- Solo pagos pendientes
+       ORDER BY p.Payment_date DESC`,
+        [ownerId]
+      );
+      console.log("Found pending payments:", rows.length);
       return rows;
     } catch (error) {
-      console.error("Error getting pending payments:", error);
+      console.error("Error in findPendingByOwner:", error);
       throw error;
     }
   }

@@ -15,7 +15,14 @@ const router = express.Router();
 router.post(
   "/",
   verifyToken,
+  requireAdmin,
   paymentController.pay.bind(paymentController)
+);
+router.post(
+  "/create",
+  verifyToken,
+  requireAdmin,
+  paymentController.createPending
 );
 
 router.get(

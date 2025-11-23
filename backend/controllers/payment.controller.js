@@ -217,9 +217,7 @@ class PaymentController {
         }
       }
 
-      const pendingPayments = await PaymentModel.getOwnerPendingPayments(
-        ownerId
-      );
+      const pendingPayments = await PaymentModel.findPendingByOwner(ownerId);
 
       res.status(200).json({
         success: true,
@@ -327,11 +325,11 @@ class PaymentController {
       // Mapear estado de Wompi
       const wompiStatus = wompiTransaction.data?.status || "PENDING";
       const statusMapping = {
-        PENDING: 1,
-        APPROVED: 2,
-        DECLINED: 3,
-        VOIDED: 4,
-        ERROR: 5,
+        PENDING: 1, // Pendiente
+        APPROVED: 2, // Completado/Aprobado
+        DECLINED: 3, // Rechazado
+        VOIDED: 4, // Anulado
+        ERROR: 5, // Error
       };
       const paymentStatus = statusMapping[wompiStatus] || 1;
 
@@ -374,6 +372,143 @@ class PaymentController {
     }
   }
 
+  async createPending(req, res) {
+    try {
+      const {
+        owner_id,
+        Payment_method = "NEQUI",
+        amount,
+        currency = "COP",
+        Payment_reference_number = null,
+      } = req.body;
+
+      // Validaciones básicas
+      if (!owner_id || !amount) {
+        return res.status(400).json({
+          success: false,
+          error: "Owner_ID_FK y amount son requeridos",
+        });
+      }
+
+      // Generar referencia única
+      const reference = `PAY_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`.toUpperCase();
+
+      // Crear el pago pendiente (status = 1)
+      const paymentData = {
+        user_id: owner_id, // ← Tu método espera user_id, no Owner_ID_FK
+        amount: amount,
+        currency: currency,
+        status: 1, // Pendiente
+        payment_method: Payment_method,
+        reference: Payment_reference_number || reference,
+      };
+
+      console.log("📋 Datos para PaymentModel.create():", paymentData);
+
+      const payment = await PaymentModel.create(paymentData);
+
+      // Respuesta exitosa con TODOS los datos insertados
+      res.status(201).json({
+        success: true,
+        message: "Pago pendiente creado exitosamente",
+        data: {
+          payment_id: payment.payment_id,
+          Owner_ID_FK: payment.Owner_ID_FK,
+          Payment_Status_ID_FK: payment.Payment_Status_ID_FK,
+          Payment_method: payment.Payment_method,
+          amount: payment.amount,
+          currency: payment.currency,
+          Payment_reference_number: payment.Payment_reference_number,
+          Payment_date: payment.Payment_date,
+        },
+      });
+    } catch (error) {
+      console.error("Error creating pending payment:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor al crear pago pendiente",
+      });
+    }
+  }
+
+  async preparePaymentForWompi(req, res) {
+    try {
+      const { payment_id, customer_email, customer_phone } = req.body;
+
+      // Validaciones
+      if (!payment_id || !customer_email || !customer_phone) {
+        return res.status(400).json({
+          success: false,
+          error: "payment_id, customer_email y customer_phone son requeridos",
+        });
+      }
+
+      // Buscar el pago pendiente (solo datos básicos de BD)
+      const pendingPayment = await PaymentService.getPendingPaymentById(
+        payment_id
+      );
+
+      if (!pendingPayment) {
+        return res.status(404).json({
+          success: false,
+          error: "Pago pendiente no encontrado",
+        });
+      }
+
+      // Validar que el pago esté pendiente
+      if (pendingPayment.Payment_Status_ID_FK !== 1) {
+        return res.status(400).json({
+          success: false,
+          error: "El pago no está en estado pendiente",
+        });
+      }
+
+      // Formatear teléfono
+      let phoneNumber = customer_phone.replace(/\D/g, "");
+
+      if (phoneNumber.startsWith("57") && phoneNumber.length > 10) {
+        phoneNumber = phoneNumber.substring(2);
+      }
+
+      if (phoneNumber.length !== 10) {
+        return res.status(400).json({
+          success: false,
+          error: `El teléfono debe tener 10 dígitos. Actual: ${phoneNumber.length} dígitos`,
+        });
+      }
+
+      // Estructurar datos completos para Wompi
+      const wompiData = {
+        payment_method: pendingPayment.Payment_method,
+        customer_email: customer_email,
+        customer_data: {
+          phone: phoneNumber,
+        },
+        amount: pendingPayment.amount,
+        currency: pendingPayment.currency,
+        reference: pendingPayment.Payment_reference_number,
+      };
+
+      // Respuesta con todos los datos listos para Wompi
+      res.status(200).json({
+        success: true,
+        message: "Datos preparados para Wompi",
+        data: {
+          payment_id: pendingPayment.payment_id,
+          wompi_data: wompiData,
+        },
+      });
+    } catch (error) {
+      console.error("Error preparing payment for Wompi:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor",
+      });
+    }
+  }
+
   async processWompiWebhook(webhookData) {
     try {
       const { event, data } = webhookData;
@@ -388,12 +523,11 @@ class PaymentController {
 
       // Mapear estados de Wompi a tus estados internos
       const statusMap = {
-        APPROVED: 2, // APPROVED (aprobado)
-        DECLINED: 3, // DECLINED (rechazado)
-        VOIDED: 4, // VOIDED (anulado)
-        ERROR: 5, // ERROR (error)
-        PENDING: 1, // PENDING (pendiente)
-        IN_PROGRESS: 1, // PROCESSING -> PENDING
+        APPROVED: 2, // Completado/Aprobado
+        DECLINED: 3, // Rechazado
+        VOIDED: 4, // Anulado
+        ERROR: 5, // Error
+        PENDING: 1, // Pendiente
       };
 
       const payment_status_id = statusMap[wompiStatus];
