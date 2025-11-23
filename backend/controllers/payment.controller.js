@@ -281,33 +281,6 @@ class PaymentController {
         });
       }
 
-      // Validar permisos y obtener owner_id
-      const isAdmin = req.user.Role_name === "ADMIN" || req.user.roleId === 1;
-      const isOwner = req.user.roleId === 2;
-
-      if (isOwner) {
-        if (!req.user.Owner_id) {
-          return res.status(403).json({
-            success: false,
-            error:
-              "No se encontró el registro de propietario para este usuario",
-          });
-        }
-        owner_id = req.user.Owner_id;
-      } else if (isAdmin) {
-        if (!owner_id) {
-          return res.status(400).json({
-            success: false,
-            error: "Admin debe especificar el owner_id",
-          });
-        }
-      } else {
-        return res.status(403).json({
-          success: false,
-          error: "No tiene permisos para crear pagos",
-        });
-      }
-
       // Generar referencia única
       const reference = `PAY_${Date.now()}_${Math.random()
         .toString(36)

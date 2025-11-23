@@ -15,7 +15,6 @@ const router = express.Router();
 router.post(
   "/",
   verifyToken,
-  requireAdmin,
   paymentController.pay.bind(paymentController)
 );
 
