@@ -45,6 +45,7 @@ import vehicleTypeRouter from "../routers/vehicleType.router.js";
 import surveyRouter from "../routers/survey.router.js";
 import questionRouter from "../routers/question.router.js";
 import answerRouter from "../routers/answers.router.js";
+import servicePricingRouter from "../routers/servicePricing.router.js"
 
 const name = "/api";
 const app = express();
@@ -87,6 +88,7 @@ app.use(name + "/apartment-status", apartmentStatusRouter);
 
 // Payment System
 app.use(name + "/payment", paymentRouter);
+app.use(name + "/servicePricing", servicePricingRouter);
 
 // Security & Access
 app.use(name + "/guards", guardRouter);

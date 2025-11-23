@@ -1,4 +1,4 @@
-import mysql from "mysql2/promise";
+ import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
@@ -23,105 +23,73 @@ export async function seedServicePricing() {
     connection = await mysql.createConnection(dbConfig);
     console.log("💰 Sembrando tarifas de servicios...");
 
-    // Datos de tarifas
+    // Primero obtener los IDs de las tablas relacionadas
+    const [reservationTypes] = await connection.query(
+      "SELECT * FROM reservation_type"
+    );
+    const [vehicleTypes] = await connection.query("SELECT * FROM vehicle_type");
+
+    // Mapear nombres a IDs
+    const reservationTypeMap = {};
+    const vehicleTypeMap = {};
+
+    reservationTypes.forEach((rt) => {
+      reservationTypeMap[rt.Reservation_type_name] = rt.Reservation_type_id;
+    });
+
+    vehicleTypes.forEach((vt) => {
+      vehicleTypeMap[vt.Vehicle_type_name] = vt.Vehicle_type_id;
+    });
+
+    // Datos de tarifas SIMPLIFICADOS
     const pricingData = [
-      // PARQUEADEROS (generalmente por día)
+      // PARQUEADEROS (solo por tipo de vehículo - por día)
       {
-        service_type: "parking_rental",
-        name: "Parqueadero Residente",
-        base_price: 5000.0,
+        vehicle_type_id: vehicleTypeMap["Carro"],
         pricing_model: "per_day",
-        is_active: true,
+        base_price: 20000.0,
       },
       {
-        service_type: "parking_rental",
-        name: "Parqueadero Visitante",
-        base_price: 10000.0,
+        vehicle_type_id: vehicleTypeMap["Moto"],
         pricing_model: "per_day",
-        is_active: true,
-      },
-      {
-        service_type: "parking_rental",
-        name: "Parqueadero Discapacitado",
-        base_price: 3000.0,
-        pricing_model: "per_day",
-        is_active: true,
-      },
-
-      // ZONAS COMUNES (por horas o tarifa fija)
-      {
-        service_type: "common_area",
-        name: "Zona BBQ",
-        base_price: 25000.0,
-        pricing_model: "per_hour",
-        is_active: true,
-      },
-      {
-        service_type: "common_area",
-        name: "Salón Comunal",
-        base_price: 50000.0,
-        pricing_model: "per_hour",
-        is_active: true,
-      },
-      {
-        service_type: "common_area",
-        name: "Cancha Deportiva",
-        base_price: 15000.0,
-        pricing_model: "per_hour",
-        is_active: true,
-      },
-      {
-        service_type: "common_area",
-        name: "Piscina (Acceso Diario)",
-        base_price: 10000.0,
-        pricing_model: "fixed_fee",
-        is_active: true,
-      },
-      {
-        service_type: "common_area",
-        name: "Gimnasio (Acceso Diario)",
         base_price: 8000.0,
-        pricing_model: "fixed_fee",
-        is_active: true,
-      },
-
-      // ADMINISTRACIÓN (mensual)
-      {
-        service_type: "administration_fee",
-        name: "Administración Mensual Residente",
-        base_price: 150000.0,
-        pricing_model: "per_month",
-        is_active: true,
       },
       {
-        service_type: "administration_fee",
-        name: "Administración Mensual Visitante",
-        base_price: 200000.0,
-        pricing_model: "per_month",
-        is_active: true,
-      },
-      {
-        service_type: "administration_fee",
-        name: "Cuota Administración Básica",
-        base_price: 120000.0,
-        pricing_model: "per_month",
-        is_active: true,
-      },
-
-      // SERVICIOS INACTIVOS (ejemplos)
-      {
-        service_type: "common_area",
-        name: "Sala de Cine (Fuera de Servicio)",
-        base_price: 40000.0,
-        pricing_model: "per_hour",
-        is_active: false,
-      },
-      {
-        service_type: "parking_rental",
-        name: "Parqueadero Premium (No Disponible)",
-        base_price: 15000.0,
+        vehicle_type_id: vehicleTypeMap["Camioneta"],
         pricing_model: "per_day",
-        is_active: false,
+        base_price: 25000.0,
+      },
+      {
+        vehicle_type_id: vehicleTypeMap["Bicicleta"],
+        pricing_model: "per_day",
+        base_price: 0.0, // Gratis
+      },
+
+      // ÁREAS COMUNES (solo por tipo de reserva - por hora)
+      {
+        reservation_type_id: reservationTypeMap["Salón Comunal"],
+        pricing_model: "per_hour",
+        base_price: 25000.0,
+      },
+      {
+        reservation_type_id: reservationTypeMap["Zona BBQ"],
+        pricing_model: "per_hour",
+        base_price: 15000.0,
+      },
+      {
+        reservation_type_id: reservationTypeMap["Cancha Deportiva"],
+        pricing_model: "per_hour",
+        base_price: 10000.0,
+      },
+      {
+        reservation_type_id: reservationTypeMap["Gimnasio"],
+        pricing_model: "per_hour",
+        base_price: 8000.0,
+      },
+      {
+        reservation_type_id: reservationTypeMap["Piscina"],
+        pricing_model: "per_hour",
+        base_price: 12000.0,
       },
     ];
 
@@ -133,20 +101,18 @@ export async function seedServicePricing() {
         const [result] = await connection.query(
           `
           INSERT INTO service_pricing 
-          (service_type, name, base_price, pricing_model, is_active)
-          VALUES (?, ?, ?, ?, ?)
+          (reservation_type_id, vehicle_type_id, pricing_model, base_price)
+          VALUES (?, ?, ?, ?)
           ON DUPLICATE KEY UPDATE 
             base_price = VALUES(base_price),
             pricing_model = VALUES(pricing_model),
-            is_active = VALUES(is_active),
             updated_at = CURRENT_TIMESTAMP
         `,
           [
-            pricing.service_type,
-            pricing.name,
-            pricing.base_price,
+            pricing.reservation_type_id || null,
+            pricing.vehicle_type_id || null,
             pricing.pricing_model,
-            pricing.is_active,
+            pricing.base_price,
           ]
         );
 
@@ -156,10 +122,7 @@ export async function seedServicePricing() {
           updatedCount++;
         }
       } catch (error) {
-        console.error(
-          `   ❌ Error insertando tarifa "${pricing.name}":`,
-          error.message
-        );
+        console.error(`   ❌ Error insertando tarifa:`, error.message);
       }
     }
 
@@ -168,20 +131,43 @@ export async function seedServicePricing() {
     console.log(`   📊 Total: ${pricingData.length} tarifas procesadas`);
 
     // Verificar datos insertados
-    const [activePricing] = await connection.query(`
+    const [vehiclePricing] = await connection.query(`
       SELECT 
-        service_type,
+        vt.Vehicle_type_name,
+        sp.pricing_model,
         COUNT(*) as count,
         CONCAT('$', FORMAT(SUM(base_price), 2)) as total_base_value
-      FROM service_pricing 
-      WHERE is_active = true
-      GROUP BY service_type
+      FROM service_pricing sp
+      INNER JOIN vehicle_type vt ON sp.vehicle_type_id = vt.Vehicle_type_id
+      WHERE sp.vehicle_type_id IS NOT NULL
+      GROUP BY vt.Vehicle_type_name, sp.pricing_model
     `);
 
-    console.log("\n   📈 Resumen de tarifas activas:");
-    activePricing.forEach((row) => {
+    const [reservationPricing] = await connection.query(`
+      SELECT 
+        rt.Reservation_type_name,
+        sp.pricing_model,
+        COUNT(*) as count,
+        CONCAT('$', FORMAT(SUM(base_price), 2)) as total_base_value
+      FROM service_pricing sp
+      INNER JOIN reservation_type rt ON sp.reservation_type_id = rt.Reservation_type_id
+      WHERE sp.reservation_type_id IS NOT NULL
+      GROUP BY rt.Reservation_type_name, sp.pricing_model
+    `);
+
+    console.log("\n   📈 Resumen de tarifas:");
+
+    console.log("   🚗 Parqueaderos (por vehículo):");
+    vehiclePricing.forEach((row) => {
       console.log(
-        `      ${row.service_type}: ${row.count} servicios (${row.total_base_value})`
+        `      ${row.Vehicle_type_name} (${row.pricing_model}): ${row.count} tarifa - ${row.total_base_value}`
+      );
+    });
+
+    console.log("   🏠 Áreas Comunes:");
+    reservationPricing.forEach((row) => {
+      console.log(
+        `      ${row.Reservation_type_name} (${row.pricing_model}): ${row.count} tarifa - ${row.total_base_value}`
       );
     });
 
@@ -191,7 +177,8 @@ export async function seedServicePricing() {
         total: pricingData.length,
         inserted: insertedCount,
         updated: updatedCount,
-        active: activePricing.reduce((sum, row) => sum + row.count, 0),
+        vehicle_pricing: vehiclePricing.length,
+        reservation_pricing: reservationPricing.length,
       },
     };
   } catch (error) {

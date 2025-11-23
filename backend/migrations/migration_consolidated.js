@@ -341,7 +341,6 @@ const sqlStatements = [
   // ==================== PAYMENTS ====================
 
   // Payment status table (no FK dependencies)
-  // Payment status table (no FK dependencies)
   `CREATE TABLE payment_status (
     Payment_status_id INT(11) NOT NULL AUTO_INCREMENT,
     Payment_status_name VARCHAR(30) NOT NULL,
@@ -381,14 +380,22 @@ const sqlStatements = [
 
   `CREATE TABLE service_pricing (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    service_type ENUM('parking_rental', 'common_area', 'administration_fee'),
-    name VARCHAR(100), -- 'Parqueadero Visita', 'Zona BBQ', 'Administración Mensual'
-    base_price DECIMAL(10,2),
-    pricing_model ENUM('per_hour', 'per_day', 'fixed_fee', 'per_month'),
-    is_active BOOLEAN DEFAULT true,
+    reservation_type_id INT NULL,      
+    vehicle_type_id INT NULL,               
+    base_price DECIMAL(10,2) NOT NULL,
+    pricing_model ENUM('per_hour', 'per_day') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);`,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (reservation_type_id) REFERENCES reservation_type(Reservation_type_id),
+    FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_type(Vehicle_type_id),
+    
+    -- Validación: debe tener solo UN tipo de servicio (vehicle O reservation)
+    CHECK (
+        (vehicle_type_id IS NOT NULL AND reservation_type_id IS NULL) OR
+        (vehicle_type_id IS NULL AND reservation_type_id IS NOT NULL)
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== NOTIFICATIONS ====================
 

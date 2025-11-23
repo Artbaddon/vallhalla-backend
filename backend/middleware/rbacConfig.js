@@ -29,7 +29,7 @@ const OWNER_RULES = {
   surveys: ["read", "create"],
   payments: ["create", "read", "update"],
   payment: ["create", "read", "update"], // Add singular form
-
+  servicepricing: ["read"],
   notifications: ["read"],
   profile: ["read", "update"], // Singular form
   profiles: ["read", "update"],
