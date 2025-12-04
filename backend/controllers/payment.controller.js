@@ -445,10 +445,8 @@ class PaymentController {
         });
       }
 
-      // Buscar el pago pendiente (solo datos básicos de BD)
-      const pendingPayment = await PaymentService.getPendingPaymentById(
-        payment_id
-      );
+      // Buscar el pago pendiente
+      const pendingPayment = await PaymentModel.findById(payment_id);
 
       if (!pendingPayment) {
         return res.status(404).json({
@@ -479,32 +477,47 @@ class PaymentController {
         });
       }
 
-      // Estructurar datos completos para Wompi
+      // Obtener acceptance token de Wompi
+      const acceptanceToken = await WompiService.getAcceptanceToken();
+
+      // Crear transacción en Wompi
       const wompiData = {
-        payment_method: pendingPayment.Payment_method,
-        customer_email: customer_email,
-        customer_data: {
-          phone: phoneNumber,
-        },
-        amount: pendingPayment.amount,
+        amount_in_cents: Math.round(pendingPayment.amount * 100),
         currency: pendingPayment.currency,
         reference: pendingPayment.Payment_reference_number,
+        customer_email: customer_email,
+        payment_method: {
+          type: pendingPayment.Payment_method,
+          installments: 1,
+          phone_number: phoneNumber,
+        },
+        acceptance_token: acceptanceToken,
       };
 
-      // Respuesta con todos los datos listos para Wompi
+      console.log("📦 Datos enviados a Wompi:", wompiData);
+
+      // ENVIAR PAGO A WOMPI
+      const wompiTransaction = await WompiService.createTransaction(wompiData);
+
+      // Respuesta con el resultado del pago de Wompi
       res.status(200).json({
         success: true,
-        message: "Datos preparados para Wompi",
+        message: "Pago enviado a Wompi exitosamente",
         data: {
           payment_id: pendingPayment.payment_id,
-          wompi_data: wompiData,
+          reference: pendingPayment.Payment_reference_number,
+          amount: pendingPayment.amount,
+          currency: pendingPayment.currency,
+          wompi_transaction: wompiTransaction.data, // Respuesta completa de Wompi
         },
       });
     } catch (error) {
-      console.error("Error preparing payment for Wompi:", error);
-      res.status(500).json({
+      console.error("Error processing payment with Wompi:", error);
+
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
         success: false,
-        error: "Error interno del servidor",
+        error: error.message || "Error procesando el pago con Wompi",
       });
     }
   }
@@ -551,6 +564,49 @@ class PaymentController {
     } catch (error) {
       console.error("Error processing Wompi webhook:", error);
       throw error;
+    }
+  }
+
+  async checkPaymentStatus(req, res) {
+    try {
+      const { reference } = req.params;
+
+      // Usar tu método existente
+      const payment = await PaymentModel.findByReference(reference);
+
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          error: "Pago no encontrado",
+        });
+      }
+
+      // Mapear estados numéricos a texto legible
+      const statusMap = {
+        1: "PENDING",
+        2: "APPROVED",
+        3: "DECLINED",
+        4: "VOIDED",
+        5: "ERROR",
+      };
+
+      res.json({
+        success: true,
+        data: {
+          reference: payment.Payment_reference_number,
+          status: payment.Payment_Status_ID_FK, // Tu estado numérico
+          status_text: statusMap[payment.Payment_Status_ID_FK] || "UNKNOWN",
+          amount: payment.Payment_total_payment,
+          currency: payment.Payment_currency, // si tienes este campo
+          created_at: payment.Payment_date,
+        },
+      });
+    } catch (error) {
+      console.error("Error checking payment status:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor",
+      });
     }
   }
 

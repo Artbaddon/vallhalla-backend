@@ -25,6 +25,19 @@ router.post(
   paymentController.createPending
 );
 
+router.post(
+  "/pay",
+  verifyToken,
+  requireAdmin,
+  paymentController.preparePaymentForWompi
+);
+
+router.post(
+  "/check/:reference",
+  verifyToken,
+  paymentController.checkPaymentStatus
+);
+
 router.get(
   "/",
   verifyToken,
