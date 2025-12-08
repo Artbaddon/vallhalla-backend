@@ -8,7 +8,10 @@ export const connect = createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
-
+  ssl: process.env.DB_SSL_CA_PATH && fs.existsSync(process.env.DB_SSL_CA_PATH) ? {
+    ca: fs.readFileSync(process.env.DB_SSL_CA_PATH),
+    rejectUnauthorized: false
+  } : undefined
 });
 
 export const dbConfig = {

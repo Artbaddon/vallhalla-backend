@@ -1,4 +1,4 @@
-import { createConnection } from './dbConnection.js';
+import { createConnection, dbConfig } from './dbConnection.js';
 
 /**
  * CLEANUP OLD RBAC STRUCTURE
