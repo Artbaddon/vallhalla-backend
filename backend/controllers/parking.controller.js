@@ -5,9 +5,9 @@ dotenv.config();
 class ParkingistratorController {
   async register(req, res) {
     try {
-      const { number, type_id, status_id } = req.body;
+      const { number, type_id, status_id, vehicle_id, user_id } = req.body;
 
-      // Validación básica
+      // Validación básica (mantenida)
       if (!number || !type_id) {
         return res.status(400).json({
           success: false,
@@ -19,7 +19,9 @@ class ParkingistratorController {
       const parkingId = await ParkingModel.create({
         number,
         type_id,
-        status_id: status_id || 1, // 1 = Available by default
+        status_id: status_id || 1,
+        user_id: user_id || null,
+        vehicle_id: vehicle_id,
       });
 
       res.status(201).json({
@@ -30,15 +32,18 @@ class ParkingistratorController {
           number,
           type_id,
           status_id: status_id || 1,
+          user_id: user_id || null, 
+          vehicle_id: vehicle_id,
         },
       });
     } catch (error) {
       console.error("Error en register parking:", error);
+
       if (error.code === "ER_NO_REFERENCED_ROW_2") {
         res.status(400).json({
           success: false,
           error:
-            "El tipo de parking especificado no existe. Tipos válidos: 1 (Regular), 2 (Visitor), 3 (Disabled)",
+            "Una de las referencias (tipo de parking, tipo de vehículo o ID de usuario) no existe o es inválida.",
         });
       } else {
         res.status(500).json({

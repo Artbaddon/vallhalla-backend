@@ -2,11 +2,13 @@ import { connect } from "../config/db/connectMysql.js";
 import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class ParkingModel {
-  static async create({ number, status_id, type_id, user_id }) {
+  static async create({ number, status_id, type_id, user_id, vehicle_id }) {
     try {
       const [result] = await connect.query(
-        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK, User_ID_FK) VALUES (?, ?, ?, ?)",
-        [number, status_id, type_id, user_id]
+        // 2. AÑADIR la columna Vehicle_type_ID_FK
+        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK, User_ID_FK, Vehicle_type_ID_FK) VALUES (?, ?, ?, ?, ?)",
+        // 3. AÑADIR el valor de vehicle_id
+        [number, status_id, type_id, user_id || null, vehicle_id]
       );
       return result.insertId;
     } catch (error) {
