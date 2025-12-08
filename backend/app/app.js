@@ -55,14 +55,6 @@ const uploadsRoot = path.resolve(__dirname, "../uploads");
 
 // Middleware
 app.use(cors());
-
-// Debug middleware to check request size
-app.use((req, res, next) => {
-  console.log('🔍 Incoming request:', req.method, req.path, 'Content-Length:', req.get('Content-Length'));
-  next();
-});
-
-console.log('🔧 Configuring body parser limits to 50mb...');
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use("/uploads", express.static(uploadsRoot));
