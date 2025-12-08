@@ -1,21 +1,4 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: resolve(__dirname, '../../.env') });
-
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'vallhalladb',
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  multipleStatements: true,
-};
+import { createConnection } from './dbConnection.js';
 
 /**
  * CLEANUP OLD RBAC STRUCTURE
@@ -50,23 +33,16 @@ export async function cleanupOldRBAC() {
   let connection;
 
   console.log('\n🧹 Starting RBAC cleanup...');
-  console.log('📋 Database config:', {
-    host: dbConfig.host,
-    port: dbConfig.port,
-    user: dbConfig.user,
-    database: dbConfig.database
-  });
 
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection({ multipleStatements: true });
     console.log('✅ Connected to MySQL database');
 
     // Check which tables exist before cleanup
     const [tables] = await connection.query(
       `SELECT TABLE_NAME FROM information_schema.TABLES 
-       WHERE TABLE_SCHEMA = ? 
-       AND TABLE_NAME IN ('module', 'module_role', 'permissions', 'permissions_module_role')`,
-      [dbConfig.database]
+       WHERE TABLE_SCHEMA = DATABASE() 
+       AND TABLE_NAME IN ('module', 'module_role', 'permissions', 'permissions_module_role')`
     );
 
     if (tables.length === 0) {
