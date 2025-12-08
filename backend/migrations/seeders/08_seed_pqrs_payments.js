@@ -2,20 +2,11 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
-
-const sslCertPath = '/home/deploy/DigiCertGlobalRootCA.crt.pem';
-const sslOptions = fs.existsSync(sslCertPath)
-  ? {
-      ca: fs.readFileSync(sslCertPath),
-      rejectUnauthorized: false,
-    }
-  : undefined;
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -24,10 +15,6 @@ const dbConfig = {
   database: process.env.DB_NAME || 'vallhalladb',
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
 };
-
-if (sslOptions) {
-  dbConfig.ssl = sslOptions;
-}
 
 export async function seedPQRSAndPayments() {
   let connection;
@@ -107,10 +94,80 @@ export async function seedPQRSAndPayments() {
     }
     console.log(`   ✓ ${pqrsRecords.length} registros PQRS creados`);
 
+    // Sembrar Pagos
+    const [paymentStatuses] = await connection.query('SELECT Payment_status_id, Payment_status_name FROM payment_status');
+    const pending = paymentStatuses.find(s => s.Payment_status_name === 'Pendiente').Payment_status_id;
+    const processing = paymentStatuses.find(s => s.Payment_status_name === 'Procesando').Payment_status_id;
+    const completed = paymentStatuses.find(s => s.Payment_status_name === 'Completado').Payment_status_id;
+    const failed = paymentStatuses.find(s => s.Payment_status_name === 'Fallido').Payment_status_id;
+
+    const payments = [
+      { 
+        owner: owners[0].Owner_id, 
+        amount: 450000, 
+        status: completed, 
+        date: '2025-10-01 10:00:00',
+        method: 'Tarjeta de Crédito', 
+        reference: 'PAY-2025-001' 
+      },
+      { 
+        owner: owners[1].Owner_id, 
+        amount: 350000, 
+        status: completed, 
+        date: '2025-10-02 14:30:00',
+        method: 'Transferencia Bancaria', 
+        reference: 'PAY-2025-002' 
+      },
+      { 
+        owner: owners[2].Owner_id, 
+        amount: 480000, 
+        status: processing, 
+        date: '2025-10-05 09:15:00',
+        method: 'Pago Móvil', 
+        reference: 'PAY-2025-003' 
+      },
+      { 
+        owner: owners[3].Owner_id, 
+        amount: 520000, 
+        status: failed, 
+        date: '2025-10-06 16:45:00',
+        method: 'Tarjeta de Crédito', 
+        reference: 'PAY-2025-004' 
+      },
+      { 
+        owner: owners[4].Owner_id, 
+        amount: 450000, 
+        status: pending, 
+        date: '2025-10-10 11:20:00',
+        method: 'Efectivo', 
+        reference: 'PAY-2025-005' 
+      },
+      { 
+        owner: owners[0].Owner_id, 
+        amount: 500000, 
+        status: completed, 
+        date: '2025-09-01 10:00:00',
+        method: 'Banca en Línea', 
+        reference: 'PAY-2025-006' 
+      }
+    ];
+
+    for (const payment of payments) {
+      await connection.query(`
+        INSERT INTO payment (
+          Owner_ID_FK, Payment_total_payment, Payment_Status_ID_FK,
+          Payment_date, Payment_method, Payment_reference_number
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `, [
+        payment.owner, payment.amount, payment.status,
+        payment.date, payment.method, payment.reference
+      ]);
+    }
+    console.log(`   ✓ ${payments.length} pagos creados`);
 
     return { success: true };
   } catch (error) {
-    console.error('   ❌ Error sembrando PQRS:', error);
+    console.error('   ❌ Error sembrando PQRS y pagos:', error);
     return { success: false, error };
   } finally {
     if (connection) await connection.end();

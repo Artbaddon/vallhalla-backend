@@ -142,6 +142,12 @@ vallhalla-api/
 
 ## 🔌 API Documentation
 
+### Swagger / OpenAPI
+- `docs/openapi.yaml` contiene la especificación completa generada a partir de `backend/postman_collection.json`.
+- Ejecuta `npm run openapi:generate` desde `backend/` para regenerar la especificación (usa las variables `SWAGGER_BASE_URL` y `SWAGGER_ROOT_URL` si necesitas apuntar a otro entorno).
+- Importa el archivo YAML en Swagger UI, Stoplight, Insomnia o cualquier visor compatible para obtener documentación navegable y probar los endpoints.
+- Puedes versionar el archivo en pipelines o adjuntarlo a portales externos para mantener la documentación sincronizada con la colección Postman.
+
 ### Authentication Endpoints
 
 #### Login

@@ -12,7 +12,8 @@
     "seed": "node migrations/seed_all.js",
     "seed:basic": "node migrations/seed_basic_data.js",
     "db:reset": "npm run migrate && npm run seed",
-    "db:fresh": "npm run migrate && npm run seed:basic"
+    "db:fresh": "npm run migrate && npm run seed:basic",
+    "openapi:generate": "node scripts/generate-openapi.js"
   },
   "keywords": [],
   "author": "",
@@ -21,19 +22,16 @@
     "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
-    "crypto-js": "^4.2.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.0",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
-    "node-fetch": "^3.3.2",
-    "nodemailer": "^7.0.9",
-    "xlsx-populate": "^1.21.0"
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.0.3",
+    "postman-to-openapi": "^1.7.3"
   }
 }
