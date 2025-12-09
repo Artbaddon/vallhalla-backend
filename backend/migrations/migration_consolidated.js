@@ -170,6 +170,8 @@ const sqlStatements = [
     Vehicle_type_ID_FK INT(11) DEFAULT NULL,
     Parking_type_ID_FK INT(11) NOT NULL,
     User_ID_FK INT(11) DEFAULT NULL,
+    reservation_start_date DATETIME NULL,
+    reservation_end_date DATETIME NULL,
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (Parking_id),
@@ -324,7 +326,8 @@ const sqlStatements = [
   `CREATE TABLE payment (
     payment_id INT(11) NOT NULL AUTO_INCREMENT,
     Owner_ID_FK INT(11) NOT NULL,
-    Payment_total_payment FLOAT NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'COP' NULL,
     Payment_Status_ID_FK INT(11) NOT NULL,
     Payment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Payment_method VARCHAR(30) NOT NULL,

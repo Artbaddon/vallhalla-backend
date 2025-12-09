@@ -175,7 +175,7 @@ class ParkingModel {
   static async reserve({
     parking_id,
     user_id,
-    vehicle_id,
+    vehicle_type_id, // Cambiar nombre para claridad
     start_date,
     end_date,
   }) {
@@ -184,20 +184,17 @@ class ParkingModel {
     try {
       await connection.beginTransaction();
 
-      // 1. Verificar que el vehículo exista y pertenezca al usuario
-      const [vehicleCheck] = await connection.query(
-        `SELECT v.*, vt.Vehicle_type_name 
-       FROM vehicles v 
-       INNER JOIN vehicle_type vt ON v.Vehicle_type_FK_ID = vt.Vehicle_type_id
-       WHERE v.Vehicle_id = ? AND v.User_FK_ID = ?`,
-        [vehicle_id, user_id]
+      // 1. Verificar que el tipo de vehículo exista
+      const [vehicleTypeCheck] = await connection.query(
+        `SELECT * FROM vehicle_type WHERE Vehicle_type_id = ?`,
+        [vehicle_type_id]
       );
 
-      if (vehicleCheck.length === 0) {
-        throw new Error("Vehículo no encontrado o no pertenece al usuario");
+      if (vehicleTypeCheck.length === 0) {
+        throw new Error("Tipo de vehículo no encontrado");
       }
 
-      const vehicle = vehicleCheck[0];
+      const vehicleType = vehicleTypeCheck[0];
 
       // 2. Verificar disponibilidad del parking
       const [parkingCheck] = await connection.query(
@@ -219,6 +216,16 @@ class ParkingModel {
         throw new Error("El espacio de parking no está disponible");
       }
 
+      // 3. Verificar compatibilidad (opcional - puedes quitarla)
+      if (
+        parkingSpot.Vehicle_type_ID_FK &&
+        parkingSpot.Vehicle_type_ID_FK !== vehicle_type_id
+      ) {
+        throw new Error(
+          "El tipo de vehículo no es compatible con este espacio de parking"
+        );
+      }
+
       // 4. Calcular duración en días
       const start = new Date(start_date);
       const end = new Date(end_date);
@@ -233,13 +240,13 @@ class ParkingModel {
       const [updateResult] = await connection.query(
         `UPDATE parking 
         SET Parking_status_ID_FK = 3, -- 3 = reservado
-        Vehicle_ID_FK = ?,
+        Vehicle_type_ID_FK = ?,
         User_ID_FK = ?,
         reservation_start_date = ?,
         reservation_end_date = ?,
-        updated_at = CURRENT_TIMESTAMP
+        updatedAt = CURRENT_TIMESTAMP
       WHERE Parking_id = ? AND Parking_status_ID_FK = 1`,
-        [vehicle_id, user_id, start_date, end_date, parking_id]
+        [vehicle_type_id, user_id, start_date, end_date, parking_id]
       );
 
       if (updateResult.affectedRows === 0) {
@@ -251,9 +258,8 @@ class ParkingModel {
       return {
         parking_id,
         user_id,
-        vehicle_id,
-        vehicle_type_id: vehicle.Vehicle_type_FK_ID,
-        vehicle_type_name: vehicle.Vehicle_type_name,
+        vehicle_type_id,
+        vehicle_type_name: vehicleType.Vehicle_type_name,
         start_date,
         end_date,
         duration_days: durationDays,

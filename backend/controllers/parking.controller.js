@@ -313,7 +313,7 @@ class ParkingistratorController {
       const {
         parking_id,
         user_id,
-        vehicle_id,
+        vehicle_id, // Este realmente es vehicle_type_id
         start_date,
         end_date,
         amount,
@@ -326,7 +326,7 @@ class ParkingistratorController {
         return res.status(400).json({
           success: false,
           error:
-            "Parking ID, user ID, vehicle ID, start date, and end date are required",
+            "Parking ID, user ID, vehicle type ID, start date, and end date are required",
         });
       }
 
@@ -350,19 +350,15 @@ class ParkingistratorController {
         });
       }
 
-      // OPCIONAL: Validar que el usuario existe (si es necesario)
-      // OPCIONAL: Validar que el vehículo existe (si es necesario)
-      // OPCIONAL: Validar que el parqueadero existe y está disponible
-
       const reservationResult = await ParkingModel.reserve({
         parking_id,
         user_id,
-        vehicle_id,
+        vehicle_type_id: vehicle_id, // Cambiar nombre aquí
         start_date: start,
         end_date: end,
-        amount, // Agregar monto si lo necesitas
-        payment_reference, // Agregar referencia de pago
-        status: status || "active", // Estado por defecto
+        amount: amount || 0,
+        payment_reference: payment_reference || `RES_${Date.now()}`,
+        status: status || "active",
       });
 
       res.status(200).json({
@@ -373,28 +369,9 @@ class ParkingistratorController {
     } catch (error) {
       console.error("Error in reserve:", error);
 
-      // Manejar diferentes tipos de errores
-      let statusCode = 500;
-      let errorMessage = "Internal server error while reserving parking spot";
-
-      if (
-        error.message.includes("no encontrado") ||
-        error.message.includes("not found")
-      ) {
-        statusCode = 404;
-        errorMessage = error.message;
-      } else if (
-        error.message.includes("no está disponible") ||
-        error.message.includes("not available") ||
-        error.message.includes("cannot be in the past")
-      ) {
-        statusCode = 400;
-        errorMessage = error.message;
-      }
-
-      res.status(statusCode).json({
+      res.status(400).json({
         success: false,
-        error: errorMessage,
+        error: error.message,
       });
     }
   }
