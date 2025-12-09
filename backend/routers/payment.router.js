@@ -15,7 +15,6 @@ const router = express.Router();
 router.post(
   "/",
   verifyToken,
-  requireAdmin,
   paymentController.pay.bind(paymentController)
 );
 router.post(
@@ -28,7 +27,6 @@ router.post(
 router.post(
   "/pay",
   verifyToken,
-  requireAdmin,
   paymentController.preparePaymentForWompi
 );
 

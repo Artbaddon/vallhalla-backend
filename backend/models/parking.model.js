@@ -219,13 +219,6 @@ class ParkingModel {
         throw new Error("El espacio de parking no está disponible");
       }
 
-      // 3. Verificar compatibilidad del tipo de vehículo con el parking
-      if (parkingSpot.Vehicle_type_ID_FK !== vehicle.Vehicle_type_FK_ID) {
-        throw new Error(
-          "El tipo de vehículo no es compatible con este espacio de parking"
-        );
-      }
-
       // 4. Calcular duración en días
       const start = new Date(start_date);
       const end = new Date(end_date);

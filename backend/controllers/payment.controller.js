@@ -242,9 +242,6 @@ class PaymentController {
         payment_method,
         customer_email,
         customer_data,
-        // payment_detail
-        item_type,
-        item_id,
       } = req.body;
 
       // Validaciones básicas
@@ -255,21 +252,6 @@ class PaymentController {
         });
       }
 
-      // Validar campos para payment_detail
-      if (!item_type || !item_id) {
-        return res.status(400).json({
-          success: false,
-          error: "item_type e item_id son requeridos para el detalle del pago",
-        });
-      }
-
-      // Validar que item_type sea válido
-      if (!["parking", "reservation"].includes(item_type)) {
-        return res.status(400).json({
-          success: false,
-          error: "item_type debe ser 'parking' o 'reservation'",
-        });
-      }
 
       // VALIDAR QUE HAY TELÉFONO PARA NEQUI
       if (payment_method === "NEQUI" && !customer_data?.phone) {
