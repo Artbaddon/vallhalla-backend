@@ -55,9 +55,10 @@ const uploadsRoot = path.resolve(__dirname, "../uploads");
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use("/uploads", express.static(uploadsRoot));
+app.use(name + "/uploads", express.static(uploadsRoot));
 
 // development Weebhook
 app.use('/webhooks', webhookRouter);

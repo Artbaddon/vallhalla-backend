@@ -1,0 +1,4487 @@
+openapi: 3.0.0
+info:
+  title: Vallhalla API
+  description: OpenAPI documentation generated automatically from the Postman collection.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+tags:
+  - name: 00_Collection_Runner
+    description: Flujo rápido para obtener tokens y validar permisos básicos.
+  - name: 00_Authentication
+    description: Colección rápida para autenticar actores comunes.
+  - name: 00_Permission_Tests
+    description: Escenarios guiados para verificar RBAC.
+  - name: 00_Permission_Tests / Pruebas administrador
+  - name: 00_Permission_Tests / Pruebas propietario
+  - name: 00_Permission_Tests / Pruebas seguridad
+  - name: auth
+    description: Endpoints públicos y protegidos del módulo de autenticación.
+  - name: auth / post
+  - name: auth / get
+  - name: auth / update
+  - name: apartments
+    description: Gestión completa de apartamentos y búsquedas.
+  - name: apartments / get
+  - name: apartments / post
+  - name: apartments / update
+  - name: apartments / delete
+  - name: apartmentStatus
+    description: Catálogo de estados de apartamento.
+  - name: apartmentStatus / get
+  - name: apartmentStatus / post
+  - name: apartmentStatus / update
+  - name: apartmentStatus / delete
+  - name: owners
+    description: Administración de propietarios registrados.
+  - name: owners / get
+  - name: owners / post
+  - name: owners / update
+  - name: owners / delete
+  - name: users
+    description: Gestión de usuarios del sistema y sus perfiles.
+  - name: users / get
+  - name: users / post
+  - name: users / update
+  - name: users / delete
+  - name: profile
+    description: Perfiles vinculados a usuarios web.
+  - name: profile / get
+  - name: profile / post
+  - name: profile / update
+  - name: profile / delete
+  - name: userStatus
+    description: Catálogo de estados para usuarios.
+  - name: userStatus / get
+  - name: userStatus / post
+  - name: userStatus / update
+  - name: userStatus / delete
+  - name: roles
+    description: Administración de roles del sistema.
+  - name: roles / get
+  - name: roles / post
+  - name: roles / update
+  - name: roles / delete
+  - name: permissions
+    description: Matriz de permisos y consultas auxiliares.
+  - name: permissions / get
+  - name: permissions / post
+  - name: permissions / update
+  - name: permissions / delete
+  - name: rolePermissions
+    description: Asignación directa de permisos a roles.
+  - name: rolePermissions / get
+  - name: rolePermissions / post
+  - name: rolePermissions / update
+  - name: rolePermissions / delete
+  - name: modules
+    description: Catálogo de módulos del sistema.
+  - name: modules / get
+  - name: modules / post
+  - name: modules / update
+  - name: modules / delete
+  - name: towers
+    description: Configuración de torres del conjunto.
+  - name: towers / get
+  - name: towers / post
+  - name: towers / update
+  - name: towers / delete
+  - name: payment
+    description: Operaciones y reportes de pagos.
+  - name: payment / post
+  - name: payment / get
+  - name: payment / delete
+  - name: servicePricing
+    description: Motor de precios para parqueaderos y reservas.
+  - name: servicePricing / get
+  - name: servicePricing / post
+  - name: servicePricing / update
+  - name: servicePricing / delete
+  - name: parking
+    description: Parqueaderos, asignaciones y reservas.
+  - name: parking / get
+  - name: parking / post
+  - name: parking / update
+  - name: parking / delete
+  - name: vehicleTypes
+    description: Vehículos autorizados y metadatos.
+  - name: vehicleTypes / get
+  - name: vehicleTypes / post
+  - name: vehicleTypes / update
+  - name: vehicleTypes / delete
+  - name: pets
+    description: Mascotas registradas por propietarios.
+  - name: pets / get
+  - name: pets / post
+  - name: pets / update
+  - name: pets / delete
+  - name: guards
+    description: Gestión de guardas de seguridad.
+  - name: guards / get
+  - name: guards / post
+  - name: guards / update
+  - name: guards / delete
+  - name: visitors
+    description: Control de visitantes y reportes.
+  - name: visitors / get
+  - name: visitors / post
+  - name: visitors / update
+  - name: visitors / delete
+  - name: notifications
+    description: Notificaciones internas, segmentadas y métricas.
+  - name: notifications / get
+  - name: notifications / post
+  - name: notifications / update
+  - name: notifications / delete
+  - name: packages
+    description: Gestión de paquetería (MongoDB) para guardas y propietarios.
+  - name: packages / get
+  - name: packages / post
+  - name: packages / update
+  - name: packages / delete
+  - name: pqrs
+    description: Radicación y seguimiento de PQRS con adjuntos.
+  - name: pqrs / get
+  - name: pqrs / post
+  - name: pqrs / update
+  - name: pqrs / delete
+  - name: pqrsCategories
+    description: Catálogo de categorías disponibles para PQRS.
+  - name: pqrsCategories / get
+  - name: pqrsCategories / post
+  - name: pqrsCategories / update
+  - name: pqrsCategories / delete
+  - name: reservations
+    description: Agenda de espacios comunes (propietarios y admin).
+  - name: reservations / get
+  - name: reservations / post
+  - name: reservations / update
+  - name: reservations / delete
+  - name: reservationStatus
+    description: Estados configurables para las reservas.
+  - name: reservationStatus / get
+  - name: reservationStatus / post
+  - name: reservationStatus / update
+  - name: reservationStatus / delete
+  - name: reservationTypes
+    description: Tipos de reserva para clasificar solicitudes.
+  - name: reservationTypes / get
+  - name: reservationTypes / post
+  - name: reservationTypes / update
+  - name: reservationTypes / delete
+  - name: surveys
+    description: Encuestas con preguntas, respuestas y métricas.
+  - name: surveys / get
+  - name: surveys / post
+  - name: surveys / update
+  - name: surveys / delete
+  - name: questions
+    description: Banco de preguntas asociado a encuestas.
+  - name: questions / get
+  - name: questions / post
+  - name: questions / update
+  - name: questions / delete
+  - name: answers
+    description: Respuestas de encuestas y consultas analíticas.
+  - name: answers / get
+  - name: answers / post
+  - name: answers / delete
+  - name: webhooks
+    description: Integraciones entrantes (Wompi).
+  - name: webhooks / post
+paths:
+  /api:
+    get:
+      tags:
+        - 00_Authentication
+      summary: Ping API
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/auth/login:
+    post:
+      tags:
+        - auth / post
+      summary: Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: usuario
+                password: secreto
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/auth/validate-token:
+    get:
+      tags:
+        - auth / get
+      summary: Validar token
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users:
+    get:
+      tags:
+        - users / get
+      summary: Listar todos (incluye inactivos)
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - users / post
+      summary: Registrar usuario
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: John Doe
+                password: secreto123
+                user_status_id: 1
+                role_id: 3
+                profile:
+                  first_name: John
+                  last_name: Doe
+                  phone: '5551234567'
+                  document_type_id: 1
+                  document_number: ABC123456
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments:
+    get:
+      tags:
+        - apartments / get
+      summary: Listar apartamentos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - apartments / post
+      summary: Registrar apartamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                apartment_number: '101'
+                status_id: 1
+                tower_id: 1
+                owner_id: 1
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners/me/profile:
+    get:
+      tags:
+        - owners / get
+      summary: Mi perfil de propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/visitors:
+    get:
+      tags:
+        - visitors / get
+      summary: Listar visitantes
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - visitors / post
+      summary: Registrar visitante
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                visitor_name: Ana López
+                visitor_document: '987654321'
+                visitor_host: 1
+                visitor_enter_date: '2025-01-15T09:00:00Z'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservations:
+    post:
+      tags:
+        - reservations / post
+      summary: Crear reserva
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                type_id: 2
+                start_date: '2025-02-01T15:00:00Z'
+                end_date: '2025-02-01T17:00:00Z'
+                description: Cumpleaños en salón social
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    get:
+      tags:
+        - reservations / get
+      summary: Listar reservas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/auth/register:
+    post:
+      tags:
+        - auth / post
+      summary: Registro
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: nuevo
+                password: secreto
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - auth / post
+      summary: Olvidé mi contraseña
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                email: usuario@ejemplo.com
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/auth/reset-password:
+    post:
+      tags:
+        - auth / post
+      summary: Restablecer contraseña
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                token: codigo-de-reset
+                new_password: nuevaClave
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/auth/change-password:
+    post:
+      tags:
+        - auth / update
+      summary: Cambiar contraseña
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                old_password: anterior
+                new_password: nueva
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/details:
+    get:
+      tags:
+        - apartments / get
+      summary: Vista detallada global
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/search/number:
+    get:
+      tags:
+        - apartments / get
+      summary: Buscar por número
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/search/owner:
+    get:
+      tags:
+        - apartments / get
+      summary: Buscar por propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/search/status:
+    get:
+      tags:
+        - apartments / get
+      summary: Buscar por estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/search/tower:
+    get:
+      tags:
+        - apartments / get
+      summary: Buscar por torre
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/report/occupancy:
+    get:
+      tags:
+        - apartments / get
+      summary: Reporte de ocupación
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/1:
+    get:
+      tags:
+        - apartments / get
+      summary: Consultar por ID
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - apartments / update
+      summary: Actualizar apartamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                apartment_number: 101A
+                status_id: 2
+                tower_id: 1
+                owner_id: 2
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - apartments / delete
+      summary: Eliminar apartamento
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/1/details:
+    get:
+      tags:
+        - apartments / get
+      summary: Detalle por ID
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartments/1/status:
+    patch:
+      tags:
+        - apartments / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_id: 3
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartment-status:
+    get:
+      tags:
+        - apartmentStatus / get
+      summary: Listar estados
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - apartmentStatus / post
+      summary: Crear estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_name: Disponible
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/apartment-status/1:
+    get:
+      tags:
+        - apartmentStatus / get
+      summary: Consultar estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - apartmentStatus / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_name: Ocupado
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - apartmentStatus / delete
+      summary: Eliminar estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners:
+    get:
+      tags:
+        - owners / get
+      summary: Listar propietarios
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - owners / post
+      summary: Registrar propietario
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: owner_user
+                password: password123
+                email: owner@example.com
+                user_status_id: 1
+                role_id: 3
+                is_tenant: true
+                birth_date: '1990-01-15'
+                first_name: John
+                last_name: Doe
+                document_type: CC
+                document_number: '1234567890'
+                phone: '5551234567'
+                photo_url: null
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners/details:
+    get:
+      tags:
+        - owners / get
+      summary: Vista detallada
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners/search:
+    get:
+      tags:
+        - owners / get
+      summary: Buscar por usuario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners/report:
+    get:
+      tags:
+        - owners / get
+      summary: Reporte en Excel
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners/1:
+    get:
+      tags:
+        - owners / get
+      summary: Consultar por ID
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - owners / update
+      summary: Actualizar propietario
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: owner_actualizado
+                is_tenant: false
+                first_name: Jane
+                last_name: Doe
+                phone: '5550001111'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - owners / delete
+      summary: Eliminar propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/owners/1/details:
+    get:
+      tags:
+        - owners / get
+      summary: Detalle por ID
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users/details:
+    get:
+      tags:
+        - users / get
+      summary: Usuarios con detalles
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users/me/profile:
+    get:
+      tags:
+        - users / get
+      summary: Mi perfil
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users/me/permissions:
+    get:
+      tags:
+        - users / get
+      summary: Mis permisos efectivos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users/search:
+    get:
+      tags:
+        - users / get
+      summary: Buscar por nombre
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users/1:
+    get:
+      tags:
+        - users / get
+      summary: Consultar por ID
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - users / update
+      summary: Actualizar usuario
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: Jane Doe
+                role_id: 2
+                profile:
+                  first_name: Jane
+                  last_name: Doe
+                  phone: '5559990000'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - users / delete
+      summary: Eliminar usuario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/users/1/status:
+    patch:
+      tags:
+        - users / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_id: 2
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/profile:
+    get:
+      tags:
+        - profile / get
+      summary: Listar perfiles
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - profile / post
+      summary: Crear perfil
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                web_user_id: 1
+                first_name: John
+                last_name: Doe
+                address: Calle 123
+                phone: '5551234567'
+                document_type_id: 1
+                document_number: ABC123456
+                birth_date: '1990-01-01'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/profile/me:
+    get:
+      tags:
+        - profile / get
+      summary: Mi perfil
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/profile/1:
+    get:
+      tags:
+        - profile / get
+      summary: Consultar perfil
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - profile / update
+      summary: Actualizar perfil
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                first_name: Jane
+                last_name: Smith
+                phone: '5550002222'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - profile / delete
+      summary: Eliminar perfil
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/user-status:
+    get:
+      tags:
+        - userStatus / get
+      summary: Listar estados
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - userStatus / post
+      summary: Crear estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_name: Activo
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/user-status/1:
+    get:
+      tags:
+        - userStatus / get
+      summary: Consultar estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - userStatus / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_name: Suspendido
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - userStatus / delete
+      summary: Eliminar estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/roles:
+    get:
+      tags:
+        - roles / get
+      summary: Listar roles
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - roles / post
+      summary: Crear rol
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: admin
+                description: Rol administrador
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/roles/1:
+    get:
+      tags:
+        - roles / get
+      summary: Consultar rol
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - roles / update
+      summary: Actualizar rol
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: super-admin
+                description: Rol con privilegios completos
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - roles / delete
+      summary: Eliminar rol
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/permissions:
+    get:
+      tags:
+        - permissions / get
+      summary: Listar permisos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - permissions / post
+      summary: Crear permiso
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                module_name: users
+                action: read
+                description: Lectura de usuarios
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/permissions/1:
+    get:
+      tags:
+        - permissions / get
+      summary: Consultar permiso
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - permissions / update
+      summary: Actualizar permiso
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                description: Actualización de descripción
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - permissions / delete
+      summary: Eliminar permiso
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/permissions/role/1/permissions:
+    get:
+      tags:
+        - permissions / get
+      summary: Permisos por rol
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/permissions/module/1/permissions:
+    get:
+      tags:
+        - permissions / get
+      summary: Permisos por módulo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/permissions/role/1/modules:
+    get:
+      tags:
+        - permissions / get
+      summary: Módulos permitidos por rol
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/permissions/role/1/check:
+    post:
+      tags:
+        - permissions / post
+      summary: Verificar permiso para rol
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                module: users
+                action: create
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/role-permissions:
+    get:
+      tags:
+        - rolePermissions / get
+      summary: Listar asignaciones
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - rolePermissions / post
+      summary: Crear asignación
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                role_id: 2
+                permission_id: 5
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/role-permissions/1:
+    get:
+      tags:
+        - rolePermissions / get
+      summary: Consultar asignación
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - rolePermissions / update
+      summary: Actualizar asignación
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                permission_id: 6
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - rolePermissions / delete
+      summary: Eliminar asignación
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/modules:
+    get:
+      tags:
+        - modules / get
+      summary: Listar módulos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - modules / post
+      summary: Crear módulo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: parking
+                description: Gestión de parqueaderos
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/modules/1:
+    get:
+      tags:
+        - modules / get
+      summary: Consultar módulo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - modules / update
+      summary: Actualizar módulo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                description: Descripción actualizada
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - modules / delete
+      summary: Eliminar módulo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/towers:
+    get:
+      tags:
+        - towers / get
+      summary: Listar torres
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - towers / post
+      summary: Crear torre
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                Tower_name: Torre A
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/towers/1:
+    get:
+      tags:
+        - towers / get
+      summary: Consultar torre
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - towers / update
+      summary: Actualizar torre
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                Tower_name: Torre A+
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - towers / delete
+      summary: Eliminar torre
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment:
+    post:
+      tags:
+        - payment / post
+      summary: Registrar pago
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                owner_id: 1
+                amount: 150000
+                payment_method: transferencia
+                reference: PAY-001
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    get:
+      tags:
+        - payment / get
+      summary: Listar pagos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment/create:
+    post:
+      tags:
+        - payment / post
+      summary: Crear pago pendiente
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                owner_id: 1
+                amount: 200000
+                concept: Cuota administración
+                due_date: '2025-01-31'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment/report:
+    get:
+      tags:
+        - payment / get
+      summary: Reporte en Excel
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment/stats:
+    get:
+      tags:
+        - payment / get
+      summary: Estadísticas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment/1:
+    get:
+      tags:
+        - payment / get
+      summary: Consultar pago
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - payment / delete
+      summary: Eliminar pago
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment/owner/1:
+    get:
+      tags:
+        - payment / get
+      summary: Pagos por propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/payment/owner/1/pending:
+    get:
+      tags:
+        - payment / get
+      summary: Pendientes por propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/servicePricing:
+    get:
+      tags:
+        - servicePricing / get
+      summary: Listar tarifas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - servicePricing / post
+      summary: Crear tarifa
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                service_name: Parqueadero carro
+                base_price: 10000
+                billing_unit: hour
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/servicePricing/1:
+    get:
+      tags:
+        - servicePricing / get
+      summary: Consultar tarifa
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - servicePricing / update
+      summary: Actualizar tarifa
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                base_price: 12000
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - servicePricing / delete
+      summary: Eliminar tarifa
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/servicePricing/vehicle/1:
+    get:
+      tags:
+        - servicePricing / get
+      summary: Tarifa por tipo de vehículo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/servicePricing/reservation/1:
+    get:
+      tags:
+        - servicePricing / get
+      summary: Tarifa por tipo de reserva
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/servicePricing/calculate/parking:
+    post:
+      tags:
+        - servicePricing / post
+      summary: Calcular parking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                vehicle_type_id: 1
+                hours: 4
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/servicePricing/calculate/reservation:
+    post:
+      tags:
+        - servicePricing / post
+      summary: Calcular reserva
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                reservation_type_id: 2
+                hours: 3
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking:
+    get:
+      tags:
+        - parking / get
+      summary: Listar cupos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - parking / post
+      summary: Crear cupo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                parking_number: P-101
+                tower_id: 1
+                vehicle_type_id: 1
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking/parking-types:
+    get:
+      tags:
+        - parking / get
+      summary: Tipos de parqueadero
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking/parking-statuses:
+    get:
+      tags:
+        - parking / get
+      summary: Estados disponibles
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking/1:
+    get:
+      tags:
+        - parking / get
+      summary: Consultar cupo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - parking / update
+      summary: Actualizar cupo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                parking_number: P-201
+                vehicle_type_id: 2
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - parking / delete
+      summary: Eliminar cupo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking/spots/1:
+    get:
+      tags:
+        - parking / get
+      summary: Mis cupos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking/assign:
+    post:
+      tags:
+        - parking / post
+      summary: Asignar vehículo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                parking_id: 1
+                vehicle_plate: ABC123
+                owner_id: 1
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/parking/action/reserve:
+    put:
+      tags:
+        - parking / update
+      summary: Reservar cupo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                parking_id: 1
+                owner_id: 1
+                start_time: '2025-01-15T08:00:00Z'
+                end_time: '2025-01-15T10:00:00Z'
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/vehicle-types:
+    get:
+      tags:
+        - vehicleTypes / get
+      summary: Listar vehículos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - vehicleTypes / post
+      summary: Registrar vehículo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                Vehicle_type_name: Automóvil
+                vehicle_plate: ABC123
+                vehicle_model: Toyota Camry
+                vehicle_brand: Toyota
+                vehicle_color: Azul
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/vehicle-types/1:
+    get:
+      tags:
+        - vehicleTypes / get
+      summary: Consultar vehículo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - vehicleTypes / update
+      summary: Actualizar vehículo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                Vehicle_type_name: SUV
+                vehicle_color: Rojo
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - vehicleTypes / delete
+      summary: Eliminar registro
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pets:
+    get:
+      tags:
+        - pets / get
+      summary: Listar mascotas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - pets / post
+      summary: Registrar mascota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                owner_id: 1
+                name: Firulais
+                species: Perro
+                breed: Labrador
+                color: Negro
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pets/report:
+    get:
+      tags:
+        - pets / get
+      summary: Reporte en Excel
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pets/my/pets:
+    get:
+      tags:
+        - pets / get
+      summary: Mis mascotas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pets/1:
+    get:
+      tags:
+        - pets / get
+      summary: Consultar mascota
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - pets / update
+      summary: Actualizar mascota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: Firulais
+                color: Café
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - pets / delete
+      summary: Eliminar mascota
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/guards:
+    get:
+      tags:
+        - guards / get
+      summary: Listar guardas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - guards / post
+      summary: Crear guarda
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: Carlos Pérez
+                identification: '12345678'
+                shift: morning
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/guards/shift/night:
+    get:
+      tags:
+        - guards / get
+      summary: Buscar por turno
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/guards/document/12345678:
+    get:
+      tags:
+        - guards / get
+      summary: Buscar por documento
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/guards/1:
+    get:
+      tags:
+        - guards / get
+      summary: Consultar guarda
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - guards / update
+      summary: Actualizar guarda
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                shift: evening
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - guards / delete
+      summary: Eliminar guarda
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/visitors/report:
+    get:
+      tags:
+        - visitors / get
+      summary: Reporte en Excel
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/visitors/1:
+    get:
+      tags:
+        - visitors / get
+      summary: Consultar visitante
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - visitors / update
+      summary: Actualizar visitante
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                visitor_reason: Entrega
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - visitors / delete
+      summary: Eliminar visitante
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/visitors/host/1:
+    get:
+      tags:
+        - visitors / get
+      summary: Por anfitrión
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/visitors/date/2025-01-15:
+    get:
+      tags:
+        - visitors / get
+      summary: Por fecha
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/visitors/1/exit:
+    put:
+      tags:
+        - visitors / update
+      summary: Registrar salida
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                exit_notes: Salió 10:30
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/notifications:
+    get:
+      tags:
+        - notifications / get
+      summary: Listar notificaciones
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - notifications / post
+      summary: Crear notificación
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                type_id: 1
+                description: Corte de agua programado
+                user_id: 0
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/notifications/stats:
+    get:
+      tags:
+        - notifications / get
+      summary: Estadísticas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/notifications/recipient/1/OWNER:
+    get:
+      tags:
+        - notifications / get
+      summary: Por destinatario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/notifications/unread/1/OWNER:
+    get:
+      tags:
+        - notifications / get
+      summary: No leídas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/notifications/type/2:
+    get:
+      tags:
+        - notifications / get
+      summary: Por tipo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/notifications/1:
+    get:
+      tags:
+        - notifications / get
+      summary: Consultar notificación
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - notifications / update
+      summary: Actualizar notificación
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                description: Aviso actualizado
+                user_id: 15
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - notifications / delete
+      summary: Eliminar notificación
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/packages:
+    get:
+      tags:
+        - packages / get
+      summary: Listar paquetes
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{securityToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/packages/my-packages:
+    get:
+      tags:
+        - packages / get
+      summary: Mis paquetes
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/packages/PKG-ABC123:
+    get:
+      tags:
+        - packages / get
+      summary: Consultar por código
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{securityToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - packages / delete
+      summary: Eliminar paquete
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{securityToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/packages/owner/1/packages:
+    get:
+      tags:
+        - packages / get
+      summary: Paquetes de un propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{securityToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/packages/register:
+    post:
+      tags:
+        - packages / post
+      summary: Registrar paquete
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                recipient_owner_id: 1
+                recipient_apartment: '302'
+                recipient_tower: B
+                sender_name: Mensajería Express
+                description: Factura banco
+                package_type: letter
+                size: small
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{securityToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/packages/PKG-ABC123/status:
+    put:
+      tags:
+        - packages / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status: delivered
+                delivery_notes: Entregado al propietario
+                recipient_signature: Ana L.
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs:
+    get:
+      tags:
+        - pqrs / get
+      summary: Listar PQRS
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - pqrs / post
+      summary: Crear PQRS
+      requestBody:
+        content: {}
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs/stats:
+    get:
+      tags:
+        - pqrs / get
+      summary: Estadísticas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs/owner/1:
+    get:
+      tags:
+        - pqrs / get
+      summary: Por propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs/status/1:
+    get:
+      tags:
+        - pqrs / get
+      summary: Por estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs/category/2:
+    get:
+      tags:
+        - pqrs / get
+      summary: Por categoría
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs/1:
+    get:
+      tags:
+        - pqrs / get
+      summary: Consultar PQRS
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - pqrs / update
+      summary: Actualizar PQRS
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                subject: Ruido nocturno - seguimiento
+                description: Sigue presentándose los fines de semana
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - pqrs / delete
+      summary: Eliminar PQRS
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs/1/status:
+    put:
+      tags:
+        - pqrs / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_id: 3
+                admin_response: Se notificó al vecino
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs-categories:
+    get:
+      tags:
+        - pqrsCategories / get
+      summary: Listar categorías
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - pqrsCategories / post
+      summary: Crear categoría
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                category_name: Convivencia
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/pqrs-categories/1:
+    get:
+      tags:
+        - pqrsCategories / get
+      summary: Consultar categoría
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - pqrsCategories / update
+      summary: Actualizar categoría
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                category_name: Servicios
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - pqrsCategories / delete
+      summary: Eliminar categoría
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservations/date-range:
+    get:
+      tags:
+        - reservations / get
+      summary: Por rango de fechas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservations/my/reservations:
+    get:
+      tags:
+        - reservations / get
+      summary: Mis reservas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservations/1:
+    get:
+      tags:
+        - reservations / get
+      summary: Consultar reserva
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - reservations / update
+      summary: Actualizar reserva
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_id: 2
+                description: Aprobada por administración
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - reservations / delete
+      summary: Cancelar reserva
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservations/owner/1:
+    get:
+      tags:
+        - reservations / get
+      summary: Por propietario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservation-status:
+    get:
+      tags:
+        - reservationStatus / get
+      summary: Listar estados
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - reservationStatus / post
+      summary: Crear estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_name: Pendiente
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservation-status/1:
+    get:
+      tags:
+        - reservationStatus / get
+      summary: Consultar estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - reservationStatus / update
+      summary: Actualizar estado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status_name: Confirmada
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - reservationStatus / delete
+      summary: Eliminar estado
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservation-types:
+    get:
+      tags:
+        - reservationTypes / get
+      summary: Listar tipos
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - reservationTypes / post
+      summary: Crear tipo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                type_name: Salón social
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/reservation-types/1:
+    get:
+      tags:
+        - reservationTypes / get
+      summary: Consultar tipo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - reservationTypes / update
+      summary: Actualizar tipo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                type_name: BBQ
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - reservationTypes / delete
+      summary: Eliminar tipo
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys:
+    get:
+      tags:
+        - surveys / get
+      summary: Listar encuestas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - surveys / post
+      summary: Crear encuesta con preguntas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: Satisfacción trimestral
+                status: active
+                question:
+                  title: Califica la limpieza
+                  question_type_id: 1
+                  options:
+                    - Excelente
+                    - Buena
+                    - Regular
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys/1:
+    get:
+      tags:
+        - surveys / get
+      summary: Consultar encuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - surveys / update
+      summary: Actualizar encuesta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: Encuesta actualizada
+                status: inactive
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - surveys / delete
+      summary: Eliminar encuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys/1/questions:
+    get:
+      tags:
+        - surveys / get
+      summary: Preguntas de encuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys/my/answered:
+    get:
+      tags:
+        - surveys / get
+      summary: Mis encuestas respondidas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys/my/pending:
+    get:
+      tags:
+        - surveys / get
+      summary: Pendientes por responder
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys/stats/overview:
+    get:
+      tags:
+        - surveys / get
+      summary: Estadísticas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/surveys/1/answer:
+    post:
+      tags:
+        - surveys / post
+      summary: Responder encuesta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                answers:
+                  - question_id: 5
+                    value: Excelente
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/questions/survey/1:
+    get:
+      tags:
+        - questions / get
+      summary: Preguntas por encuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/questions/1:
+    get:
+      tags:
+        - questions / get
+      summary: Consultar pregunta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    put:
+      tags:
+        - questions / update
+      summary: Actualizar pregunta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: ¿Cómo califica el aseo?
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - questions / delete
+      summary: Eliminar pregunta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/questions:
+    post:
+      tags:
+        - questions / post
+      summary: Crear pregunta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                survey_id: 1
+                title: ¿Cómo califica la portería?
+                question_type_id: 1
+                options:
+                  - Excelente
+                  - Buena
+                  - Regular
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/answers:
+    get:
+      tags:
+        - answers / get
+      summary: Listar respuestas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    post:
+      tags:
+        - answers / post
+      summary: Registrar respuesta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                survey_id: 1
+                question_id: 5
+                value: Sí
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/answers/1:
+    get:
+      tags:
+        - answers / get
+      summary: Consultar respuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+    delete:
+      tags:
+        - answers / delete
+      summary: Eliminar respuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/answers/survey/1:
+    get:
+      tags:
+        - answers / get
+      summary: Por encuesta
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/answers/user/5:
+    get:
+      tags:
+        - answers / get
+      summary: Por usuario
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/answers/my/answers:
+    get:
+      tags:
+        - answers / get
+      summary: Mis respuestas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{ownerToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /api/answers/stats/overview:
+    get:
+      tags:
+        - answers / get
+      summary: Estadísticas
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+          example: Bearer {{authToken}}
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /webhooks/wompi-events:
+    post:
+      tags:
+        - webhooks / post
+      summary: Webhook Wompi - evento de prueba
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                event: transaction.updated
+                data:
+                  transaction:
+                    id: '123456'
+                    status: APPROVED
+                    amount_in_cents: 150000
+      parameters:
+        - name: Content-Type
+          in: header
+          schema:
+            type: string
+          example: application/json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}

@@ -5,12 +5,11 @@ import { seedUsers } from './seeders/02_seed_users.js';
 import { seedProfiles } from './seeders/03_seed_profiles.js';
 import { seedOwnersAndGuards } from './seeders/04_seed_owners_guards.js';
 import { seedApartments } from './seeders/05_seed_apartments.js';
-import { seedReservations } from './seeders/06_seed_facilities_reservations.js';
+import { seedFacilitiesAndReservations } from './seeders/06_seed_facilities_reservations.js';
 import { seedParking } from './seeders/07_seed_parking.js';
 import { seedPQRSAndPayments } from './seeders/08_seed_pqrs_payments.js';
 import { seedSurveysAndVisitors } from './seeders/09_seed_surveys_visitors.js';
 import { seedNotifications } from './seeders/10_seed_notifications.js';
-import { seedServicePricing } from './seeders/11_seed_service_pricing.js';
 
 async function runAllSeeders() {
   console.log('═══════════════════════════════════════════════════════');
@@ -28,12 +27,11 @@ async function runAllSeeders() {
     { name: 'Perfiles', fn: seedProfiles },
     { name: 'Propietarios y Guardias', fn: seedOwnersAndGuards },
     { name: 'Apartamentos', fn: seedApartments },
-    { name: 'Reservas', fn: seedReservations },
+    { name: 'Instalaciones y Reservas', fn: seedFacilitiesAndReservations },
     { name: 'Parqueaderos y Mascotas', fn: seedParking },
     { name: 'PQRS y Pagos', fn: seedPQRSAndPayments },
     { name: 'Encuestas y Visitantes', fn: seedSurveysAndVisitors },
-    { name: 'Notificaciones', fn: seedNotifications },
-    { name: 'Precios de servicio', fn: seedServicePricing }
+    { name: 'Notificaciones', fn: seedNotifications }
   ];
 
   for (const seeder of seeders) {

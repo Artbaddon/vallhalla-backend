@@ -1,34 +1,5 @@
-import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import fs from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: resolve(__dirname, '../../.env') });
-
-const sslCertPath = '/home/deploy/DigiCertGlobalRootCA.crt.pem';
-const sslOptions = fs.existsSync(sslCertPath)
-  ? {
-      ca: fs.readFileSync(sslCertPath),
-      rejectUnauthorized: false,
-    }
-  : undefined;
-
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'vallhalladb',
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-};
-
-if (sslOptions) {
-  dbConfig.ssl = sslOptions;
-}
+import { createConnection } from './dbConnection.js';
 
 /**
  * BASIC SEEDER - Populates essential data
@@ -40,7 +11,7 @@ export async function seedBasicData() {
   console.log('🌱 Iniciando sembrado de datos básicos...\n');
 
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection();
     console.log('✅ Conectado a la base de datos');
 
     // 1. SEED ROLES
@@ -128,13 +99,12 @@ export async function seedBasicData() {
     // 8. SEED PAYMENT STATUSES
     console.log('\n📝 Sembrando estados de pago...');
     await connection.query(`
-      INSERT INTO payment_status (Payment_status_id, Payment_status_name) VALUES
-    (1, 'Pendiente'),        -- PENDING
-    (2, 'Completado'),       -- APPROVED  
-    (3, 'Rechazado'),        -- DECLINED
-    (4, 'Anulado'),          -- VOIDED
-    (5, 'Error')             -- ERROR
-ON DUPLICATE KEY UPDATE Payment_status_name = VALUES(Payment_status_name);
+      INSERT INTO payment_status (Payment_status_name) VALUES
+        ('Pendiente'),
+        ('Procesando'),
+        ('Completado'),
+        ('Fallido')
+      ON DUPLICATE KEY UPDATE Payment_status_name = VALUES(Payment_status_name)
     `);
     console.log('   ✓ Estados de pago creados');
 

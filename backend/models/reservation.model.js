@@ -2,7 +2,7 @@ import { connect } from "../config/db/connectMysql.js";
 import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class ReservationModel {
-  static async validateForeignKeys({ owner_id, type_id, status_id }) {
+  static async validateForeignKeys({ owner_id, type_id, status_id, facility_id }) {
     try {
       let resolvedOwnerId;
 
@@ -27,6 +27,14 @@ class ReservationModel {
         const [statusResult] = await connect.query('SELECT Reservation_status_id FROM reservation_status WHERE Reservation_status_id = ?', [status_id]);
         if (statusResult.length === 0) {
           return { error: "Reservation status not found" };
+        }
+      }
+
+      // Check facility exists
+      if (facility_id) {
+        const [facilityResult] = await connect.query('SELECT Facility_id FROM facility WHERE Facility_id = ?', [facility_id]);
+        if (facilityResult.length === 0) {
+          return { error: "Facility not found" };
         }
       }
 
@@ -79,10 +87,10 @@ class ReservationModel {
     }
   }
 
-  static async create({ owner_id, type_id, status_id, start_date, end_date, description }) {
+  static async create({ owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
     try {
       // Validate foreign keys first
-      const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
+      const validation = await this.validateForeignKeys({ owner_id, type_id, status_id, facility_id });
       if (validation.error) {
         return { error: validation.error };
       }
@@ -106,15 +114,17 @@ class ReservationModel {
         Owner_FK_ID, 
         Reservation_type_FK_ID, 
         Reservation_status_FK_ID, 
+        Facility_FK_ID,
         Reservation_start_time, 
         Reservation_end_time, 
         Reservation_description
-      ) VALUES (?, ?, ?, ?, ?, ?)`;
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       
       const [result] = await connect.query(sqlQuery, [
         ownerIdToUse, 
         type_id, 
         status_id, 
+        facility_id,
         start_date, 
         end_date, 
         description
@@ -144,9 +154,9 @@ class ReservationModel {
     }
   }
 
-  static async update(id, { owner_id, type_id, status_id, start_date, end_date, description }) {
+  static async update(id, { owner_id, type_id, status_id, facility_id, start_date, end_date, description }) {
     try {
-      const validation = await this.validateForeignKeys({ owner_id, type_id, status_id });
+      const validation = await this.validateForeignKeys({ owner_id, type_id, status_id, facility_id });
       if (validation.error) {
         return { error: validation.error };
       }
@@ -167,6 +177,11 @@ class ReservationModel {
       if (status_id !== undefined) {
         updates.push("Reservation_status_FK_ID = ?");
         params.push(status_id);
+      }
+
+      if (facility_id !== undefined) {
+        updates.push("Facility_FK_ID = ?");
+        params.push(facility_id);
       }
 
       if (start_date !== undefined) {
@@ -304,6 +319,18 @@ class ReservationModel {
       return result;
     } catch (error) {
       return { error: error.message };
+    }
+  }
+
+  static async getDefaultFacilityId() {
+    try {
+      const [rows] = await connect.query(
+        'SELECT Facility_id FROM facility ORDER BY Facility_id ASC LIMIT 1'
+      );
+      return rows[0]?.Facility_id ?? null;
+    } catch (error) {
+      console.error('Error fetching default facility:', error);
+      return null;
     }
   }
 }

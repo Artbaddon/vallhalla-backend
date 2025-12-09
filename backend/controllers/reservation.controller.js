@@ -1,89 +1,98 @@
 import ReservationModel from "../models/reservation.model.js";
 import OwnerModel from "../models/owner.model.js";
 
+const formatDateForMySQL = (dateObj) => {
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+    return null;
+  }
+  return dateObj.toISOString().slice(0, 19).replace("T", " ");
+};
+
 class ReservationController {
   static async create(req, res) {
     try {
       const {
         type_id,
+        facility_id,
         start_date,
         end_date,
         description,
-        owner_id, 
+        owner_id,
       } = req.body;
 
-      // Validate required fields
       if (!type_id || !start_date || !end_date) {
         return res.status(400).json({
           error: "Type ID, start date, and end date are required",
         });
       }
 
-      // Validate date format and range
       const startDateTime = new Date(start_date);
       const endDateTime = new Date(end_date);
       const now = new Date();
 
-      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      if (isNaN(startDateTime) || isNaN(endDateTime)) {
         return res.status(400).json({
-          error: "Invalid date format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)",
+          error: "Invalid date format. Please use ISO 8601.",
         });
       }
 
       if (startDateTime < now) {
-        return res.status(400).json({
-          error: "Start date cannot be in the past",
-        });
+        return res.status(400).json({ error: "Start date cannot be in the past" });
       }
 
       if (endDateTime <= startDateTime) {
-        return res.status(400).json({
-          error: "End date must be after start date",
-        });
+        return res
+          .status(400)
+          .json({ error: "End date must be after start date" });
       }
 
       let reservationOwnerId;
 
-      // If user is admin, they can create reservation for any owner
-      if (req.user.roleId === 1) { // Admin role
-        if (owner_id) {
-          // Admin specified an owner_id
-          const ownerExists = await OwnerModel.findById(owner_id);
-          if (!ownerExists) {
-            return res.status(404).json({
-              error: "Specified owner not found"
-            });
-          }
-          reservationOwnerId = owner_id;
-        } else {
-          return res.status(400).json({
-            error: "Admin must specify owner_id when creating a reservation"
-          });
+      if (req.user.roleId === 1) {
+        if (!owner_id) {
+          return res
+            .status(400)
+            .json({ error: "Admin must specify owner_id" });
         }
-      } else if (req.user.roleId === 2) { // Owner role (Propietario)
-        // Get owner ID from the authenticated user
+
+        const ownerExists = await OwnerModel.findById(owner_id);
+        if (!ownerExists) {
+          return res.status(404).json({ error: "Specified owner not found" });
+        }
+        reservationOwnerId = owner_id;
+      } else if (req.user.roleId === 2) {
         const owner = await OwnerModel.findByUserId(req.user.userId);
         if (!owner) {
-          return res.status(403).json({
-            error: "Owner record not found for this user"
-          });
+          return res
+            .status(403)
+            .json({ error: "Owner record not found for this user" });
         }
         reservationOwnerId = owner.Owner_id;
       } else {
         return res.status(403).json({
-          error: "Only administrators and owners can make reservations"
+          error: "Only administrators and owners can make reservations",
         });
       }
 
-      // Default status is 1 (Pending)
-      const initialStatusId = 1;
+      let reservationFacilityId = facility_id;
+      if (!reservationFacilityId) {
+        reservationFacilityId = await ReservationModel.getDefaultFacilityId();
+        if (!reservationFacilityId) {
+          return res.status(400).json({
+            error: "Facility ID is required. No default facility is configured",
+          });
+        }
+      }
+
+      const initialStatusId = 1; // Pending
 
       const reservationId = await ReservationModel.create({
         owner_id: reservationOwnerId,
         type_id,
         status_id: initialStatusId,
-        start_date: startDateTime.toISOString(),
-        end_date: endDateTime.toISOString(),
+        facility_id: reservationFacilityId,
+        start_date: formatDateForMySQL(startDateTime),
+        end_date: formatDateForMySQL(endDateTime),
         description: description || null,
       });
 
@@ -98,8 +107,9 @@ class ReservationController {
           owner_id: reservationOwnerId,
           type_id,
           status_id: initialStatusId,
-          start_date: startDateTime.toISOString(),
-          end_date: endDateTime.toISOString(),
+          facility_id: reservationFacilityId,
+          start_date: formatDateForMySQL(startDateTime),
+          end_date: formatDateForMySQL(endDateTime),
           description,
         },
       });
@@ -118,6 +128,7 @@ class ReservationController {
       if (reservations.error) {
         return res.status(500).json({ error: reservations.error });
       }
+
       if (reservations.length === 0) {
         return res.status(404).json({ error: "No reservations found" });
       }
@@ -163,50 +174,55 @@ class ReservationController {
   static async update(req, res) {
     try {
       const id = req.params.id;
+      if (!id) {
+        return res.status(400).json({ error: "Reservation ID is required" });
+      }
+
       const {
         owner_id,
         type_id,
         status_id,
+        facility_id,
         start_date,
         end_date,
         description,
       } = req.body;
 
-      if (!id) {
-        return res.status(400).json({ error: "Reservation ID is required" });
-      }
+      let formattedStart;
+      let formattedEnd;
 
-      // Validate date format and range if dates are being updated
       if (start_date || end_date) {
-        const startDateTime = new Date(start_date);
-        const endDateTime = new Date(end_date);
+        const startDateTime = start_date ? new Date(start_date) : null;
+        const endDateTime = end_date ? new Date(end_date) : null;
         const now = new Date();
 
-        if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-          return res.status(400).json({
-            error: "Invalid date format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)",
-          });
+        if ((startDateTime && isNaN(startDateTime)) || (endDateTime && isNaN(endDateTime))) {
+          return res.status(400).json({ error: "Invalid date format" });
         }
 
-        if (startDateTime < now) {
-          return res.status(400).json({
-            error: "Start date cannot be in the past",
-          });
+        if (startDateTime && startDateTime < now) {
+          return res.status(400).json({ error: "Start date cannot be in the past" });
         }
 
-        if (endDateTime <= startDateTime) {
-          return res.status(400).json({
-            error: "End date must be after start date",
-          });
+        if (startDateTime && endDateTime && endDateTime <= startDateTime) {
+          return res
+            .status(400)
+            .json({ error: "End date must be after start date" });
         }
+
+        formattedStart = startDateTime
+          ? formatDateForMySQL(startDateTime)
+          : undefined;
+        formattedEnd = endDateTime ? formatDateForMySQL(endDateTime) : undefined;
       }
 
       const updateResult = await ReservationModel.update(id, {
         owner_id,
         type_id,
         status_id,
-        start_date: start_date ? new Date(start_date).toISOString() : undefined,
-        end_date: end_date ? new Date(end_date).toISOString() : undefined,
+        facility_id,
+        start_date: formattedStart,
+        end_date: formattedEnd,
         description,
       });
 
@@ -218,11 +234,12 @@ class ReservationController {
         message: "Reservation updated successfully",
         data: {
           id,
+          owner_id,
           type_id,
           status_id,
-    owner_id,
-          start_date: start_date ? new Date(start_date).toISOString() : undefined,
-          end_date: end_date ? new Date(end_date).toISOString() : undefined,
+          facility_id,
+          start_date: formattedStart,
+          end_date: formattedEnd,
           description,
         },
       });
@@ -295,21 +312,19 @@ class ReservationController {
     try {
       let reservations;
 
-      if (req.user.roleId === 1) { // Admin role
-        // Admins can see all reservations
+      if (req.user.roleId === 1) {
         reservations = await ReservationModel.show();
-      } else if (req.user.roleId === 3) { // Owner role
-        // Get owner ID from the authenticated user
+      } else if (req.user.roleId === 3) {
         const owner = await OwnerModel.findByUserId(req.user.id);
         if (!owner) {
-          return res.status(403).json({
-            error: "Owner record not found for this user"
-          });
+          return res
+            .status(403)
+            .json({ error: "Owner record not found for this user" });
         }
         reservations = await ReservationModel.findByOwner(owner.Owner_id);
       } else {
         return res.status(403).json({
-          error: "Only administrators and owners can view reservations"
+          error: "Only administrators and owners can view reservations",
         });
       }
 
@@ -325,9 +340,7 @@ class ReservationController {
       console.error("Error finding reservations:", error);
       res
         .status(500)
-        .json({
-          error: "Internal server error while finding reservations",
-        });
+        .json({ error: "Internal server error while finding reservations" });
     }
   }
 
@@ -346,9 +359,9 @@ class ReservationController {
       });
     } catch (error) {
       console.error("Error finding reservations by owner:", error);
-      res
-        .status(500)
-        .json({ error: "Internal server error while finding reservations by owner" });
+      res.status(500).json({
+        error: "Internal server error while finding reservations by owner",
+      });
     }
   }
 }

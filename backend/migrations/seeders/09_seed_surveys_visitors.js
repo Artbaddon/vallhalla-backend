@@ -1,39 +1,10 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import fs from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: resolve(__dirname, '../../../.env') });
-
-const sslCertPath = '/home/deploy/DigiCertGlobalRootCA.crt.pem';
-const sslOptions = fs.existsSync(sslCertPath)
-  ? {
-      ca: fs.readFileSync(sslCertPath),
-      rejectUnauthorized: false,
-    }
-  : undefined;
-
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'vallhalladb',
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-};
-
-if (sslOptions) {
-  dbConfig.ssl = sslOptions;
-}
+import { createConnection } from '../dbConnection.js';
 
 export async function seedSurveysAndVisitors() {
   let connection;
   
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection();
     console.log('📊 Sembrando encuestas y visitantes...');
 
     // Sembrar Encuestas

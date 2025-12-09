@@ -1,40 +1,10 @@
-import mysql from "mysql2/promise";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-import fs from "fs";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: resolve(__dirname, "../../.env") });
-
-const sslCertPath = "/home/deploy/DigiCertGlobalRootCA.crt.pem";
-const sslOptions = fs.existsSync(sslCertPath)
-  ? {
-      ca: fs.readFileSync(sslCertPath),
-      rejectUnauthorized: false,
-    }
-  : undefined;
-
-const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "vallhalladb",
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  multipleStatements: true,
-};
-
-if (sslOptions) {
-  dbConfig.ssl = sslOptions;
-}
+import { createConnection, dbConfig } from './dbConnection.js';
 
 /**
  * CONSOLIDATED MIGRATION
  * This migration creates the entire database schema from scratch
  * Use this for fresh installations - it will DROP and recreate the database
- *
+ * 
  * For seeding data, use separate seeder files
  */
 const sqlStatements = [
@@ -44,7 +14,7 @@ const sqlStatements = [
   `USE ${dbConfig.database};`,
 
   // ==================== CORE TABLES ====================
-
+  
   // Role table (no FK dependencies)
   `CREATE TABLE role (
     Role_id INT(11) NOT NULL AUTO_INCREMENT,
@@ -149,45 +119,32 @@ const sqlStatements = [
     Apartment_number VARCHAR(4) NOT NULL,
     Apartment_status_FK_ID INT(11) NOT NULL,
     Tower_FK_ID INT(11) NOT NULL,
-    Owner_FK_ID INT(11) DEFAULT NULL,
+    Owner_FK_ID INT(11) NOT NULL,
     PRIMARY KEY (Apartment_id),
     KEY Apartment_status_FK_ID (Apartment_status_FK_ID),
     KEY Tower_FK_ID (Tower_FK_ID),
     KEY Owner_FK_ID (Owner_FK_ID),
-    CONSTRAINT fk_apartment_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id) ON DELETE SET NULL,
+    CONSTRAINT fk_apartment_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id),
     CONSTRAINT fk_apartment_status FOREIGN KEY (Apartment_status_FK_ID) REFERENCES apartment_status (Apartment_status_id),
     CONSTRAINT fk_apartment_tower FOREIGN KEY (Tower_FK_ID) REFERENCES tower (Tower_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== PARKING MANAGEMENT ====================
+
   // Vehicle type table (no FK dependencies)
   `CREATE TABLE vehicle_type (
     Vehicle_type_id INT(11) NOT NULL AUTO_INCREMENT,
     Vehicle_type_name VARCHAR(50) NOT NULL,
-    Vehicle_type_description VARCHAR(255) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    vehicle_plate VARCHAR(20) DEFAULT NULL,
+    vehicle_model VARCHAR(20) DEFAULT NULL,
+    vehicle_brand VARCHAR(50) DEFAULT NULL,
+    vehicle_color VARCHAR(30) DEFAULT NULL,
+    vehicle_engineCC VARCHAR(20) DEFAULT NULL,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (Vehicle_type_id),
     UNIQUE KEY Vehicle_type_name (Vehicle_type_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-  // vehicle
-  `CREATE TABLE vehicles (
-    Vehicle_id INT(11) NOT NULL AUTO_INCREMENT,
-    Vehicle_type_FK_ID INT(11) NOT NULL,
-    User_FK_ID INT(11) NOT NULL,
-    vehicle_plate VARCHAR(20) NOT NULL UNIQUE,
-    vehicle_model VARCHAR(50) NOT NULL,
-    vehicle_brand VARCHAR(50) NOT NULL,
-    vehicle_color VARCHAR(30) NOT NULL,
-    vehicle_engineCC VARCHAR(20) NULL,
-    vehicle_year YEAR NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (Vehicle_id),
-    FOREIGN KEY (Vehicle_type_FK_ID) REFERENCES vehicle_type(Vehicle_type_id),
-    FOREIGN KEY (User_FK_ID) REFERENCES users(Users_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // Parking status table (no FK dependencies)
   `CREATE TABLE parking_status (
@@ -210,22 +167,22 @@ const sqlStatements = [
     Parking_id INT(11) NOT NULL AUTO_INCREMENT,
     Parking_number VARCHAR(10) NOT NULL,
     Parking_status_ID_FK INT(11) NOT NULL,
-    Vehicle_type_ID_FK INT(11) NOT NULL,  -- Tipo de vehículo PERMITIDO
-    Vehicle_ID_FK INT(11) NULL,           -- Vehículo ACTUAL (si está ocupado)
+    Vehicle_type_ID_FK INT(11) DEFAULT NULL,
     Parking_type_ID_FK INT(11) NOT NULL,
-    User_ID_FK INT(11) NULL,              -- Usuario ACTUAL (si está ocupado/reservado)
-    reservation_start_date DATETIME NULL,
-    reservation_end_date DATETIME NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    User_ID_FK INT(11) DEFAULT NULL,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (Parking_id),
     UNIQUE KEY Parking_number (Parking_number),
-    FOREIGN KEY (Parking_status_ID_FK) REFERENCES parking_status(Parking_status_id),
-    FOREIGN KEY (Vehicle_type_ID_FK) REFERENCES vehicle_type(Vehicle_type_id),
-    FOREIGN KEY (Vehicle_ID_FK) REFERENCES vehicles(Vehicle_id),
-    FOREIGN KEY (Parking_type_ID_FK) REFERENCES parking_type(Parking_type_id),
-    FOREIGN KEY (User_ID_FK) REFERENCES users(Users_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    KEY Parking_status_ID_FK (Parking_status_ID_FK),
+    KEY Vehicle_type_ID_FK (Vehicle_type_ID_FK),
+    KEY Parking_type_ID_FK (Parking_type_ID_FK),
+    KEY User_ID_FK (User_ID_FK),
+    CONSTRAINT fk_parking_parking_type FOREIGN KEY (Parking_type_ID_FK) REFERENCES parking_type (Parking_type_id),
+    CONSTRAINT fk_parking_status FOREIGN KEY (Parking_status_ID_FK) REFERENCES parking_status (Parking_status_id),
+    CONSTRAINT fk_parking_user FOREIGN KEY (User_ID_FK) REFERENCES users (Users_id),
+    CONSTRAINT fk_parking_vehicle_type FOREIGN KEY (Vehicle_type_ID_FK) REFERENCES vehicle_type (Vehicle_type_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== PETS ====================
 
@@ -300,7 +257,19 @@ const sqlStatements = [
     CONSTRAINT fk_pqrs_tracking_user FOREIGN KEY (PQRS_tracking_user_FK_ID) REFERENCES users (Users_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-  // ==================== RESERVATIONS ====================
+  // ==================== FACILITIES & RESERVATIONS ====================
+
+  // Facility table (no FK dependencies)
+  `CREATE TABLE facility (
+    Facility_id INT(11) NOT NULL AUTO_INCREMENT,
+    Facility_name VARCHAR(100) NOT NULL,
+    Facility_description TEXT DEFAULT NULL,
+    Facility_capacity INT(11) NOT NULL,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (Facility_id),
+    UNIQUE KEY Facility_name (Facility_name)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // Reservation status table (no FK dependencies)
   `CREATE TABLE reservation_status (
@@ -318,13 +287,14 @@ const sqlStatements = [
     UNIQUE KEY Reservation_type_name (Reservation_type_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-  // Reservation table (depends on reservation_type, reservation_status, owner)
+  // Reservation table (depends on reservation_type, reservation_status, facility, owner)
   `CREATE TABLE reservation (
     Reservation_id INT(11) NOT NULL AUTO_INCREMENT,
     Reservation_type_FK_ID INT(11) NOT NULL,
     Reservation_status_FK_ID INT(11) NOT NULL,
     Reservation_start_time DATETIME NOT NULL,
     Reservation_end_time DATETIME NOT NULL,
+    Facility_FK_ID INT(11) NOT NULL,
     Reservation_description TEXT DEFAULT NULL,
     Owner_FK_ID INT(11) NOT NULL,
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -333,6 +303,8 @@ const sqlStatements = [
     KEY Reservation_type_FK_ID (Reservation_type_FK_ID),
     KEY Reservation_status_FK_ID (Reservation_status_FK_ID),
     KEY Owner_FK_ID (Owner_FK_ID),
+    KEY Facility_FK_ID (Facility_FK_ID),
+    CONSTRAINT fk_reservation_facility FOREIGN KEY (Facility_FK_ID) REFERENCES facility (Facility_id),
     CONSTRAINT fk_reservation_owner FOREIGN KEY (Owner_FK_ID) REFERENCES owner (Owner_id),
     CONSTRAINT fk_reservation_status FOREIGN KEY (Reservation_status_FK_ID) REFERENCES reservation_status (Reservation_status_id),
     CONSTRAINT fk_reservation_type FOREIGN KEY (Reservation_type_FK_ID) REFERENCES reservation_type (Reservation_type_id)
@@ -350,39 +322,19 @@ const sqlStatements = [
 
   // Payment table (depends on owner, payment_status)
   `CREATE TABLE payment (
-    payment_id int NOT NULL AUTO_INCREMENT,
-    Owner_ID_FK int NOT NULL,
-    Payment_Status_ID_FK int NOT NULL,
-    Payment_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Payment_method varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
-    Payment_reference_number varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    amount decimal(15,2) NOT NULL,
-    currency varchar(3) COLLATE utf8mb4_general_ci DEFAULT 'COP',
+    payment_id INT(11) NOT NULL AUTO_INCREMENT,
+    Owner_ID_FK INT(11) NOT NULL,
+    Payment_total_payment FLOAT NOT NULL,
+    Payment_Status_ID_FK INT(11) NOT NULL,
+    Payment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Payment_method VARCHAR(30) NOT NULL,
+    Payment_reference_number VARCHAR(50) DEFAULT NULL,
     PRIMARY KEY (payment_id),
     KEY Owner_ID_FK (Owner_ID_FK),
     KEY Payment_Status_ID_FK (Payment_Status_ID_FK),
     CONSTRAINT fk_payment_owner FOREIGN KEY (Owner_ID_FK) REFERENCES owner (Owner_id),
     CONSTRAINT fk_payment_status FOREIGN KEY (Payment_Status_ID_FK) REFERENCES payment_status (Payment_status_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-
-  `CREATE TABLE service_pricing (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    reservation_type_id INT NULL,      
-    vehicle_type_id INT NULL,               
-    base_price DECIMAL(10,2) NOT NULL,
-    pricing_model ENUM('per_hour', 'per_day') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (reservation_type_id) REFERENCES reservation_type(Reservation_type_id),
-    FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_type(Vehicle_type_id),
-    
-    -- Validación: debe tener solo UN tipo de servicio (vehicle O reservation)
-    CHECK (
-        (vehicle_type_id IS NOT NULL AND reservation_type_id IS NULL) OR
-        (vehicle_type_id IS NULL AND reservation_type_id IS NOT NULL)
-    )
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
   // ==================== NOTIFICATIONS ====================
 
@@ -482,16 +434,16 @@ const sqlStatements = [
 export async function runConsolidatedMigration() {
   let connection;
 
-  console.log("🚀 Starting consolidated migration...");
-  console.log("📋 Database config:", {
+  console.log('🚀 Starting consolidated migration...');
+  console.log('📋 Database config:', {
     host: dbConfig.host,
     port: dbConfig.port,
     user: dbConfig.user,
-    database: dbConfig.database,
+    database: dbConfig.database
   });
 
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection({ multipleStatements: true });
     console.log("✅ Connected to MySQL database");
 
     let statementCount = 0;
@@ -500,9 +452,7 @@ export async function runConsolidatedMigration() {
         await connection.query(sql);
         statementCount++;
         if (statementCount % 10 === 0) {
-          console.log(
-            `⏳ Executed ${statementCount}/${sqlStatements.length} statements...`
-          );
+          console.log(`⏳ Executed ${statementCount}/${sqlStatements.length} statements...`);
         }
       } catch (error) {
         console.error("❌ Error executing SQL statement:", error.message);
@@ -517,7 +467,7 @@ export async function runConsolidatedMigration() {
     console.log("   1. Run seeders to populate initial data");
     console.log("   2. Create an admin user");
     console.log("   3. Start your application\n");
-
+    
     return { success: true };
   } catch (error) {
     console.error("\n❌ Migration failed:", error);

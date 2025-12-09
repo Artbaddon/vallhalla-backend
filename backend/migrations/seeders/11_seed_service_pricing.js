@@ -1,27 +1,11 @@
- import mysql from "mysql2/promise";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: resolve(__dirname, "../../../.env") });
-
-const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "vallhalladb",
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-};
+import { createConnection } from '../dbConnection.js';
 
 export async function seedServicePricing() {
   let connection;
 
   try {
-    connection = await mysql.createConnection(dbConfig);
-    console.log("💰 Sembrando tarifas de servicios...");
+    connection = await createConnection();
+    console.log("💰 Sembrando precios de servicios...");
 
     // Primero obtener los IDs de las tablas relacionadas
     const [reservationTypes] = await connection.query(
