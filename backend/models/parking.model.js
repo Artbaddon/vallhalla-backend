@@ -2,13 +2,11 @@ import { connect } from "../config/db/connectMysql.js";
 import { resolveOwnerId } from "../utils/ownerUtils.js";
 
 class ParkingModel {
-  static async create({ number, status_id, type_id, user_id, vehicle_id }) {
+  static async create({ number, status_id, type_id, user_id }) {
     try {
       const [result] = await connect.query(
-        // 2. AÑADIR la columna Vehicle_type_ID_FK
-        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK, User_ID_FK, Vehicle_type_ID_FK) VALUES (?, ?, ?, ?, ?)",
-        // 3. AÑADIR el valor de vehicle_id
-        [number, status_id, type_id, user_id || null, vehicle_id]
+        "INSERT INTO parking (Parking_number, Parking_status_ID_FK, Parking_type_ID_FK, User_ID_FK) VALUES (?, ?, ?, ?)",
+        [number, status_id, type_id, user_id]
       );
       return result.insertId;
     } catch (error) {
@@ -171,11 +169,23 @@ class ParkingModel {
     }
   }
 
+  // Helper to format date for MySQL (YYYY-MM-DD HH:MM:SS)
+  static formatDateForMySQL(dateInput) {
+    const d = new Date(dateInput);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+
   // New method to reserve a parking spot
   static async reserve({
     parking_id,
     user_id,
-    vehicle_type_id, // Cambiar nombre para claridad
+    vehicle_type_id,
     start_date,
     end_date,
   }) {
@@ -186,7 +196,7 @@ class ParkingModel {
 
       // 1. Verificar que el tipo de vehículo exista
       const [vehicleTypeCheck] = await connection.query(
-        `SELECT * FROM vehicle_type WHERE Vehicle_type_id = ?`,
+        `SELECT Vehicle_type_id, Vehicle_type_name FROM vehicle_type WHERE Vehicle_type_id = ?`,
         [vehicle_type_id]
       );
 
@@ -216,17 +226,7 @@ class ParkingModel {
         throw new Error("El espacio de parking no está disponible");
       }
 
-      // 3. Verificar compatibilidad (opcional - puedes quitarla)
-      if (
-        parkingSpot.Vehicle_type_ID_FK &&
-        parkingSpot.Vehicle_type_ID_FK !== vehicle_type_id
-      ) {
-        throw new Error(
-          "El tipo de vehículo no es compatible con este espacio de parking"
-        );
-      }
-
-      // 4. Calcular duración en días
+      // 3. Calcular duración en días
       const start = new Date(start_date);
       const end = new Date(end_date);
       const durationMs = end - start;
@@ -236,17 +236,21 @@ class ParkingModel {
         throw new Error("La duración de la reserva debe ser de al menos 1 día");
       }
 
-      // 5. Actualizar el parking con la reserva
+      // Format dates for MySQL
+      const mysqlStartDate = this.formatDateForMySQL(start_date);
+      const mysqlEndDate = this.formatDateForMySQL(end_date);
+
+      // 4. Actualizar el parking con la reserva
       const [updateResult] = await connection.query(
         `UPDATE parking 
-        SET Parking_status_ID_FK = 3, -- 3 = reservado
+        SET Parking_status_ID_FK = 3,
         Vehicle_type_ID_FK = ?,
         User_ID_FK = ?,
         reservation_start_date = ?,
         reservation_end_date = ?,
         updatedAt = CURRENT_TIMESTAMP
       WHERE Parking_id = ? AND Parking_status_ID_FK = 1`,
-        [vehicle_type_id, user_id, start_date, end_date, parking_id]
+        [vehicle_type_id, user_id, mysqlStartDate, mysqlEndDate, parking_id]
       );
 
       if (updateResult.affectedRows === 0) {
@@ -258,10 +262,10 @@ class ParkingModel {
       return {
         parking_id,
         user_id,
-        vehicle_type_id,
+        vehicle_type_id: vehicleType.Vehicle_type_id,
         vehicle_type_name: vehicleType.Vehicle_type_name,
-        start_date,
-        end_date,
+        start_date: mysqlStartDate,
+        end_date: mysqlEndDate,
         duration_days: durationDays,
         status: "reserved",
       };
