@@ -341,12 +341,24 @@ class ParkingistratorController {
         });
       }
 
+      // Verificar que la fecha de inicio no sea en el pasado
+      const now = new Date();
+      if (start < now) {
+        return res.status(400).json({
+          success: false,
+          error: "Start date cannot be in the past",
+        });
+      }
+
       const reservationResult = await ParkingModel.reserve({
         parking_id,
         user_id,
-        vehicle_type_id: vehicle_id,
-        start_date: start_date,
-        end_date: end_date,
+        vehicle_type_id: vehicle_id, // Cambiar nombre aquí
+        start_date: start,
+        end_date: end,
+        amount: amount || 0,
+        payment_reference: payment_reference || `RES_${Date.now()}`,
+        status: status || "active",
       });
 
       res.status(200).json({
