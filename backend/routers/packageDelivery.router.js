@@ -10,7 +10,6 @@ router.use(PackageAuthMiddleware.authenticateUser);
 // Guard-only routes - Package registration and management
 router.post('/register', 
   PackageAuthMiddleware.checkGuardRole,
-  PackageAuthMiddleware.validatePackageData,
   packageDeliveryController.registerPackage.bind(packageDeliveryController)
 );
 

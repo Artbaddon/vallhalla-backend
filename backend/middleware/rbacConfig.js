@@ -38,6 +38,7 @@ const OWNER_RULES = {
   pqrscategories: ["read"],
   pqrs: ["create", "read", "update"],
   pqrscategory: ["read"],
+  check: ["create"],
   parking: ["read", "update"],
   "vehicle-type": ["read"],
   "vehicle-types": ["read"],

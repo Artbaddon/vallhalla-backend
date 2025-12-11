@@ -101,9 +101,10 @@ export async function seedBasicData() {
     await connection.query(`
       INSERT INTO payment_status (Payment_status_name) VALUES
         ('Pendiente'),
-        ('Procesando'),
         ('Completado'),
-        ('Fallido')
+        ('Rechazado'),
+        ('Anulado'),
+        ('Error')
       ON DUPLICATE KEY UPDATE Payment_status_name = VALUES(Payment_status_name)
     `);
     console.log('   ✓ Estados de pago creados');

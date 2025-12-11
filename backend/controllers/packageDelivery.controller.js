@@ -22,10 +22,17 @@ class PackageDeliveryController {
     return null;
   }
 
-  // Helper to get owner from MySQL
+  // Helper to get owner from MySQL (optimized)
   async getOwnerFromMySQL(ownerId) {
     try {
-      const owner = await OwnerModel.findById(ownerId);
+      const owner = await OwnerModel.findById(ownerId, {
+        attributes: [
+          "Owner_id",
+          "Apartment_number",
+          "Tower_name",
+          "User_FK_ID",
+        ], // Solo los datos que necesitas
+      });
       return owner;
     } catch (error) {
       console.error("Error fetching owner from MySQL:", error);
@@ -33,10 +40,12 @@ class PackageDeliveryController {
     }
   }
 
-  // Helper to get user from MySQL
+  // Helper to get user from MySQL (optimized)
   async getUserFromMySQL(userId) {
     try {
-      const user = await UserModel.findById(userId);
+      const user = await UserModel.findById(userId, {
+        attributes: ["Users_id", "Users_name", "Users_email"], // Incluye el username (Users_name)
+      });
       return user;
     } catch (error) {
       console.error("Error fetching user from MySQL:", error);
@@ -61,76 +70,148 @@ class PackageDeliveryController {
     return false;
   }
 
-  // CREATE - Register new package (Guards only)
   async registerPackage(req, res) {
     try {
-      const { recipient_owner_id } = req.body;
+      const {
+        recipient_owner_id,
+        package_type = "package",
+        sender_name,
+        description,
+        carrier,
+        urgent = false,
+      } = req.body;
 
-      // Validate owner exists in MySQL
-      const owner = await this.getOwnerFromMySQL(recipient_owner_id);
-      if (!owner) {
+      // Validar campo obligatorio
+      if (!recipient_owner_id) {
         return res.status(400).json({
-          error: "Invalid owner ID. Owner not found in system.",
+          error: "recipient_owner_id es requerido",
         });
       }
 
-      const user = await this.getUserFromMySQL(owner.User_FK_ID);
+      // Obtener owner
+      const owner = await OwnerModel.findById(recipient_owner_id);
+      if (!owner) {
+        return res.status(400).json({
+          error: `Owner con ID ${recipient_owner_id} no encontrado`,
+        });
+      }
 
-      // Generate unique package ID
+      // Obtener user
+      const user = await UserModel.findById(owner.User_FK_ID);
+      if (!user) {
+        return res.status(400).json({
+          error: "Usuario asociado no encontrado",
+        });
+      }
+
+      // Validar guardia
+      if (!req.user?.userId) {
+        return res.status(401).json({
+          error: "No autorizado. Se requiere autenticación de guardia",
+        });
+      }
+
+      // Generar ID único
       const packageId = `PKG-${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 5)
         .toUpperCase()}`;
 
-      // Create package data for MongoDB
+      // Preparar datos para MongoDB
       const packageData = {
-        ...req.body,
         package_id: packageId,
+        package_type: package_type,
+        recipient_owner_id: Number(recipient_owner_id),
+        recipient_apartment: String(owner.Apartment_number || "").trim(),
+        recipient_tower: String(owner.Tower_name || "").trim(),
         received_by_guard: {
-          guard_id: req.user.userId, // From JWT (MySQL user)
+          guard_id: Number(req.user.userId),
           received_at: new Date(),
         },
+        photos: [],
+        delivered_to_owner: null,
+        urgent: Boolean(urgent),
       };
 
-      // Save to MongoDB
+      // Agregar campos opcionales
+      if (sender_name) packageData.sender_name = sender_name.trim();
+      if (description) packageData.description = description.trim();
+      if (carrier) packageData.carrier = carrier.trim();
+
+      // Guardar en MongoDB
       const newPackage = new PackageDelivery(packageData);
       await newPackage.save();
 
-      const mailOptions = {
-        from: '"Valhalla" <valhalla.email.co@gmail.com>',
-        to: user.Users_email,
-        subject: "Llegada de paquete",
-        html: packageTemplate(user, packageId),
-      };
+      // Enviar notificación por correo
+      if (user.Users_email) {
+        try {
+          const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.Users_email,
+            subject: `📦 Nuevo paquete recibido - ${packageId}`,
+            html: packageTemplate({
+              ownerName: user.Users_name,
+              packageId: packageId,
+              packageType: package_type,
+              sender: sender_name || "No especificado",
+              description: description || "Sin descripción",
+              apartment: owner.Apartment_number,
+              tower: owner.Tower_name,
+              receivedAt: new Date().toLocaleString(),
+              guardName: req.user.username || "Guardia de seguridad",
+            }),
+          };
 
-      try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log("✅ Correo enviado:", info.messageId);
-      } catch (mailError) {
-        console.error("❌ Error al enviar correo:", mailError);
+          await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+          // No fallar si el email no se envía, solo loguear
+          console.warn("⚠️ No se pudo enviar el correo:", emailError.message);
+        }
       }
 
-      res.status(201).json({
-        message: "Package registered successfully",
+      // Responder con éxito
+      return res.status(201).json({
+        success: true,
+        message: "Paquete registrado exitosamente",
         data: {
-          ...newPackage.toObject(),
-          owner_info: {
-            name: owner.Owners_name,
-            email: owner.Owners_email,
+          package_id: packageId,
+          recipient: {
+            owner_id: owner.Owner_id,
+            owner_name: user.Users_name,
+            apartment: owner.Apartment_number,
+            tower: owner.Tower_name,
+            email: user.Users_email,
           },
+          sender: sender_name || "No especificado",
+          description: description || "Sin descripción",
+          carrier: carrier || "No especificado",
+          status: "recibido",
+          urgent: Boolean(urgent),
+          received_by: {
+            guard_id: req.user.userId,
+            received_at: new Date().toISOString(),
+          },
+          notification_sent: !!user.Users_email,
         },
       });
     } catch (error) {
-      console.error("Register package error:", error);
+      console.error("Error registrando paquete:", error);
+
       if (error.name === "ValidationError") {
         return res.status(400).json({
-          error: "Validation failed",
-          details: Object.values(error.errors).map((e) => e.message),
+          error: "Error de validación",
+          details: error.message,
         });
       }
-      res.status(500).json({
-        error: "Failed to register package",
-        details: error.message,
+
+      if (error.code === 11000) {
+        return res.status(409).json({
+          error: "ID de paquete duplicado",
+        });
+      }
+
+      return res.status(500).json({
+        error: "Error interno del servidor",
       });
     }
   }
@@ -179,29 +260,56 @@ class PackageDeliveryController {
         .limit(limit * 1)
         .skip((page - 1) * limit);
 
-      // Enrich with MySQL data
+      // Enrich with MySQL data - OBTENER USERNAME DEL USER
       const enrichedPackages = await Promise.all(
         packages.map(async (pkg) => {
-          const [ownerInfo, guardInfo] = await Promise.all([
-            this.getOwnerFromMySQL(pkg.recipient_owner_id),
-            this.getUserFromMySQL(pkg.received_by_guard.guard_id),
-          ]);
+          try {
+            // Obtener owner desde MySQL
+            const ownerInfo = await this.getOwnerFromMySQL(
+              pkg.recipient_owner_id
+            );
 
-          return {
-            ...pkg.toObject(),
-            owner_info: ownerInfo
-              ? {
-                  name: ownerInfo.Owners_name,
-                  email: ownerInfo.Owners_email,
-                  phone: ownerInfo.Owners_phone,
-                }
-              : null,
-            guard_info: guardInfo
-              ? {
-                  name: guardInfo.Users_name,
-                }
-              : null,
-          };
+            // Obtener USER (no guard) para el username del owner
+            let ownerUserInfo = null;
+            if (ownerInfo && ownerInfo.User_FK_ID) {
+              ownerUserInfo = await this.getUserFromMySQL(ownerInfo.User_FK_ID);
+            }
+
+            // Obtener guard info
+            const guardInfo = await this.getUserFromMySQL(
+              pkg.received_by_guard.guard_id
+            );
+
+            return {
+              ...pkg.toObject(),
+              owner_info: ownerInfo
+                ? {
+                    name: ownerUserInfo
+                      ? ownerUserInfo.Users_name
+                      : "No disponible",
+                    email: ownerUserInfo
+                      ? ownerUserInfo.Users_email
+                      : "No disponible",
+                    apartment: ownerInfo.Apartment_number,
+                    tower: ownerInfo.Tower_name,
+                    // Otros campos que quieras
+                  }
+                : null,
+              guard_info: guardInfo
+                ? {
+                    name: guardInfo.Users_name,
+                    email: guardInfo.Users_email,
+                  }
+                : null,
+            };
+          } catch (error) {
+            console.error("Error enriching package:", error);
+            return {
+              ...pkg.toObject(),
+              owner_info: null,
+              guard_info: null,
+            };
+          }
         })
       );
 
@@ -226,13 +334,13 @@ class PackageDeliveryController {
   async getPackageById(req, res) {
     try {
       const { id } = req.params;
-      // Validate ID format or support business code lookup
+
+      // Validate ID format
       const isObjectId = mongoose.Types.ObjectId.isValid(id);
       const isBizId = this.isBusinessPackageId(id);
       if (!isObjectId && !isBizId) {
         return res.status(400).json({
-          error:
-            "Invalid package identifier. Provide a valid Mongo ObjectId or business package_id (e.g., PKG-...)",
+          error: "Invalid package identifier",
         });
       }
 
@@ -253,24 +361,42 @@ class PackageDeliveryController {
         });
       }
 
-      // Enrich with owner and guard info
-      const [ownerInfo, guardInfo] = await Promise.all([
-        this.getOwnerFromMySQL(packageItem.recipient_owner_id),
-        this.getUserFromMySQL(packageItem.received_by_guard.guard_id),
-      ]);
+      // Enrich with owner and guard info - OBTENER USERNAME DEL USER
+      let ownerUserInfo = null;
+      let ownerInfo = null;
+
+      // Obtener owner desde MySQL
+      ownerInfo = await this.getOwnerFromMySQL(packageItem.recipient_owner_id);
+
+      // Obtener USER para el username del owner
+      if (ownerInfo && ownerInfo.User_FK_ID) {
+        ownerUserInfo = await this.getUserFromMySQL(ownerInfo.User_FK_ID);
+      }
+
+      // Obtener guard info
+      const guardInfo = await this.getUserFromMySQL(
+        packageItem.received_by_guard.guard_id
+      );
 
       const enrichedPackage = {
         ...packageItem.toObject(),
         owner_info: ownerInfo
           ? {
-              name: ownerInfo.Owners_name,
-              email: ownerInfo.Owners_email,
-              phone: ownerInfo.Owners_phone,
+              id: ownerInfo.Owner_id,
+              name: ownerUserInfo ? ownerUserInfo.Users_name : "No disponible",
+              email: ownerUserInfo
+                ? ownerUserInfo.Users_email
+                : "No disponible",
+              apartment: ownerInfo.Apartment_number,
+              tower: ownerInfo.Tower_name,
+              phone: ownerInfo.Owners_phone || "No disponible",
             }
           : null,
         guard_info: guardInfo
           ? {
+              id: guardInfo.Users_id,
               name: guardInfo.Users_name,
+              email: guardInfo.Users_email,
             }
           : null,
       };

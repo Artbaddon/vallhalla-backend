@@ -1,9 +1,15 @@
-export default function packageArrivalTemplate(user, packageNumber) {
-  // Color Definitions:
-  // secondaryColor: #494CA2 (Dark Blue/Indigo)
-  // accentColor: #6A5ACD (Slate Blue - for the main button)
-  // textColor: #F3F3FF (Off-White - for text on dark backgrounds)
-  // lightBackground: #E6E6FA (Pale Lavender - for main body background)
+export default function packageArrivalTemplate(data) {
+  const {
+    ownerName = "guerrero",
+    packageId = "PKG-000000",
+    packageType = "paquete",
+    sender = "No especificado",
+    description = "Sin descripción",
+    apartment = "N/A",
+    tower = "N/A",
+    receivedAt = new Date().toLocaleString(),
+    guardName = "Guardia de seguridad",
+  } = data;
 
   return `
   <!DOCTYPE html>
@@ -11,10 +17,9 @@ export default function packageArrivalTemplate(user, packageNumber) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>¡Tu paquete ha llegado!</title>
+    <title>¡Tu paquete ha llegado a Valhalla!</title>
     <style>
       body {
-        /* Using lightBackground: #E6E6FA */
         background-color: #E6E6FA; 
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         margin: 0;
@@ -29,9 +34,7 @@ export default function packageArrivalTemplate(user, packageNumber) {
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       }
       .header {
-        /* Using secondaryColor: #494CA2 */
         background-color: #494CA2; 
-        /* Using textColor: #F3F3FF */
         color: #F3F3FF; 
         text-align: center;
         padding: 20px 0;
@@ -52,62 +55,83 @@ export default function packageArrivalTemplate(user, packageNumber) {
         border-radius: 8px;
         padding: 20px;
         margin: 25px auto;
-        max-width: 350px;
+        max-width: 400px;
         background-color: #ffffff;
         text-align: left;
       }
       .package-details p {
-        margin: 8px 0;
+        margin: 10px 0;
         font-size: 16px;
       }
       .package-number {
-        /* Usando accentColor para resaltar el número */
         color: #6A5ACD; 
         font-weight: bold;
         font-size: 18px;
       }
-      /* CTA styles kept, but not used in the HTML now */
-      .button-cta {
-        display: inline-block;
-        background-color: #6A5ACD; 
-        color: #F3F3FF; 
-        text-decoration: none;
-        padding: 12px 25px;
-        margin-top: 20px;
-        border-radius: 5px;
+      .detail-label {
         font-weight: bold;
-        font-size: 16px;
+        color: #494CA2;
+        display: inline-block;
+        width: 150px;
       }
       .footer {
         text-align: center;
         color: #888;
         font-size: 13px;
         padding: 15px 0 30px 0;
+        border-top: 1px solid #eee;
+        margin-top: 20px;
+      }
+      .status-badge {
+        display: inline-block;
+        background-color: #28a745;
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+        margin-left: 10px;
       }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>📦 Valhalla</h1>
+        <h1>📦 Valhalla - Notificación de Paquete</h1>
       </div>
       <div class="content">
-        <h2>¡Hola ${user.Users_name || "guerrero"}!</h2>
+        <h2>¡Hola ${ownerName}!</h2>
         
-        <p>¡Tenemos buenas noticias! Un nuevo paquete ha sido registrado en Valhalla y está listo para ser recogido o gestionado.</p>
+        <p>Se ha registrado un nuevo paquete a tu nombre en Valhalla. Aquí están los detalles:</p>
 
         <div class="package-details">
-          <p><strong>Destinatario:</strong> ${user.Users_name || "Guerrero Valiente"}</p>
-          <p><strong>Número de Paquete:</strong> <span class="package-number">${packageNumber}</span></p>
-          <p><strong>Estado:</strong> <span style="color:#28a745; font-weight:bold;">Listo para entrega/recogida</span></p>
+          <p><span class="detail-label">ID del Paquete:</span> <span class="package-number">${packageId}</span></p>
+          <p><span class="detail-label">Tipo:</span> ${packageType}</p>
+          <p><span class="detail-label">Remitente:</span> ${sender}</p>
+          <p><span class="detail-label">Descripción:</span> ${description}</p>
+          <p><span class="detail-label">Destino:</span> Torre ${tower}, Apartamento ${apartment}</p>
+          <p><span class="detail-label">Recibido por:</span> ${guardName}</p>
+          <p><span class="detail-label">Fecha/Hora:</span> ${receivedAt}</p>
+          <p><span class="detail-label">Estado:</span> <span class="status-badge">RECIBIDO</span></p>
         </div>
 
-        <p>Por favor, usa el número de paquete para cualquier consulta o gestión.</p>
+        <p>Puedes pasar a recoger tu paquete por la portería presentando tu identificación.</p>
+        
+        <p style="margin-top: 25px; font-size: 15px; color: #666;">
+          <strong>📋 Información importante:</strong><br>
+          • Horario de recogida: Lunes a Viernes 8:00 AM - 6:00 PM<br>
+          • Presenta esta notificación o tu documento de identidad<br>
+          • El paquete será almacenado por máximo 15 días
+        </p>
 
-        <p style="margin-top: 30px; font-size: 14px; color: #666;">Gracias por confiar en Valhalla.</p>
+        <p style="margin-top: 30px; font-size: 14px; color: #666;">
+          Si tienes alguna pregunta, contacta con la portería.<br>
+          ¡Gracias por confiar en Valhalla!
+        </p>
       </div>
       <div class="footer">
-        © 2025 Valhalla App. Todos los derechos reservados.
+        © 2025 Valhalla App. Sistema de Gestión de Paquetes.<br>
+        Este es un mensaje automático, por favor no responder.
       </div>
     </div>
   </body>
